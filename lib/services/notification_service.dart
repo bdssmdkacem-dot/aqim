@@ -8,33 +8,104 @@ import '../models/prayer.dart';
 import '../navigation/nav_key.dart';
 import '../screens/pre_prayer_screen.dart';
 
-/// يدير تذكيرين لكل صلاة:
-/// 1) "قبل الصلاة" — عشر دقائق قبل الوقت الحقيقي.
-/// 2) "هل صليت؟" — عشرين دقيقة بعد الوقت الحقيقي.
-///
-/// يُجدوَل فقط بناءً على أوقات حقيقية (AppState.realTimes)، ولا يُستعمل
-/// أبدًا مع الأوقات الاحتياطية الوهمية، تجنّبًا لتنبيه المستخدم فـ وقت
-/// خاطئ. يستعمل جدولة "غير دقيقة" (inexact) عمدًا كي لا يحتاج التطبيق
-/// صلاحية "المنبّهات الدقيقة" الحساسة على أندرويد 12+.
 class NotificationService {
   NotificationService._();
+
   static final NotificationService instance = NotificationService._();
 
-  final _plugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
+
   bool _initialized = false;
 
   Future<void> init() async {
     if (_initialized) return;
 
     tzdata.initializeTimeZones();
-    try {
-      final localTz = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(localTz));
-    } catch (_) {
-      // نبقى على UTC كخيار احتياطي إن تعذّر تحديد المنطقة الزمنية —
-      // أفضل من تعطّل الجدولة بالكامل.
-    }
 
+    try {
+      final timezoneName = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timezoneName));
+    } catch (_) {}
+
+    const initializationSettings = InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    );
+
+    await _plugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: _onNotificationTap,
+    );
+
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+
+    _initialized = true;
+  }
+
+  void _onNotificationTap(NotificationResponse response) {
+    final payload = response.payload;
+    if (payload == null) return;
+
+    final prayer = _prayerFromId(payload);
+    if (prayer == null) return;
+
+    rootNavigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (_) => PrePrayerScreen(prayer: prayer),
+      ),
+    );
+  }
+
+  Prayer? _prayerFromId(String id) {
+    for (final prayer in Prayer.values) {
+      if (prayer.name == id) {
+        return prayer;
+      }
+    }
+    return null;
+  }
+
+  int _idFor(Prayer prayer, {required bool isCheckIn}) {
+    return Prayer.values.indexOf(prayer) * 10 + (isCheckIn ? 1 : 0);
+  }
+
+  Future<void> scheduleAllForToday(
+      Map<Prayer, DateTime> realTimes) async {
+    if (!_initialized) return;
+
+    await _plugin.cancelAll();
+
+    final now = DateTime.now();
+
+    for (final entry in realTimes.entries) {
+      final prayer = entry.key;
+      final prayerTime = entry.value;
+
+      final beforeTime =
+          prayerTime.subtract(const Duration(minutes: 10));
+
+      final checkTime =
+          prayerTime.add(const Duration(minutes: 20));
+
+      if (beforeTime.isAfter(now)) {
+        await _schedule(
+          id: _idFor(prayer, isCheckIn: false),
+          title: 'اقترب وقت ${prayer.arabicName}',
+          body: 'تبقّى عشر دقائق — استعد لصلاة ${prayer.arabicName}.',
+          scheduledDate: beforeTime,
+          payload: prayer.name,
+        );
+      }
+
+      if (checkTime.isAfter(now)) {
+        await _schedule(
+          id: _idFor(prayer, isCheckIn: true),
+          title: 'هل صليت ${prayer.arabicName}؟',
+          body: 'اضغط هنا لتسجيل صلاتك أو معرفة السبب إن فاتتك.',
+          scheduledDate
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidInit);
 

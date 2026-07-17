@@ -34,10 +34,19 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Show package versions
+        run: flutter pub deps
+
+      - name: Show notification_service.dart
+        run: |
+          echo "===== notification_service.dart ====="
+          nl -ba lib/services/notification_service.dart | sed -n '30,60p'
+
       - name: Build Debug APK
         run: flutter build apk --debug
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: aqim-debug-apk

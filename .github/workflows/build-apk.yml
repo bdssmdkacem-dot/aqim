@@ -34,13 +34,27 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Show flutter_local_notifications version
+        run: |
+          echo "===== pubspec.lock ====="
+          grep -A8 "flutter_local_notifications:" pubspec.lock || true
+
+      - name: Show dependency tree
+        run: |
+          flutter pub deps | grep -A5 flutter_local_notifications || true
+
       - name: Show package versions
         run: flutter pub deps
 
       - name: Show notification_service.dart
         run: |
           echo "===== notification_service.dart ====="
-          nl -ba lib/services/notification_service.dart | sed -n '30,60p'
+          nl -ba lib/services/notification_service.dart | sed -n '1,80p'
+
+      - name: Show battery_service.dart
+        run: |
+          echo "===== battery_service.dart ====="
+          nl -ba lib/services/battery_service.dart
 
       - name: Build Debug APK
         run: flutter build apk --debug

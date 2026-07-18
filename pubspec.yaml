@@ -14,15 +14,17 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  provider: ^6.1.2
-  shared_preferences: ^2.2.3
-  google_fonts: ^6.2.1
+  provider: ^6.1.5
+  shared_preferences: ^2.5.5
+  google_fonts: ^6.3.3
 
+  # Required by Flutter 3.41.9
   intl: ^0.20.2
 
   audioplayers: ^6.7.1
   google_mobile_ads: ^5.3.1
   http: ^1.6.0
+
   geolocator: ^13.0.4
 
   flutter_local_notifications: ^21.0.0

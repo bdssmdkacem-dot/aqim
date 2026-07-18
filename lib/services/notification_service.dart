@@ -40,9 +40,9 @@ class NotificationService {
     const initSettings = InitializationSettings(android: androidInit);
 
     await _plugin.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: _onNotificationTap,
-    );
+  initializationSettings: initSettings,
+  onDidReceiveNotificationResponse: _onNotificationTap,
+);
 
     final androidImpl = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();

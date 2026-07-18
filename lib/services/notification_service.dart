@@ -18,33 +18,82 @@ import '../screens/pre_prayer_screen.dart';
 /// صلاحية "المنبّهات الدقيقة" الحساسة على أندرويد 12+.
 class NotificationService {
   NotificationService._();
-  static final NotificationService instance = NotificationService._();
+
+  static final NotificationService instance =
+      NotificationService._();
 
   final _plugin = FlutterLocalNotificationsPlugin();
+
   bool _initialized = false;
 
   Future<void> init() async {
-    if (_initialized) return;
-
-    tzdata.initializeTimeZones();
-    try {
-      final localTz = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(localTz));
-    } catch (_) {
-      // نبقى على UTC كخيار احتياطي إن تعذّر تحديد المنطقة الزمنية —
-      // أفضل من تعطّل الجدولة بالكامل.
-    }
-
-    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidInit);
-
-    await _plugin.initialize();
-    final androidImpl = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    await androidImpl?.requestNotificationsPermission();
-
-    _initialized = true;
+    // <-- the method above
   }
+
+  tzdata.initializeTimeZones();
+
+  try {
+    final localTz = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(localTz));
+  } catch (_) {
+    // fallback
+  }
+
+  const androidSettings =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  const settings = InitializationSettings(
+    android: androidSettings,
+  );
+
+  await _plugin.initialize(
+    settings: settings,
+    onDidReceiveNotificationResponse: _onNotificationTap,
+  );
+
+  final android =
+      _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
+  await android?.requestNotificationsPermission();
+
+  _initialized = true;
+}
+  final _plugin = FlutterLocalNotificationsPlugin();
+  bool _initialized = false;
+
+Future<void> init() async {
+  if (_initialized) return;
+
+  tzdata.initializeTimeZones();
+
+  try {
+    final localTz = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(localTz));
+  } catch (_) {
+    // نبقى على UTC إذا تعذر الحصول على المنطقة الزمنية
+  }
+
+  const androidInit =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  const initSettings = InitializationSettings(
+    android: androidInit,
+  );
+
+  await _plugin.initialize(
+    settings: initSettings,
+    onDidReceiveNotificationResponse: _onNotificationTap,
+  );
+
+  final androidImpl =
+      _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
+  await androidImpl?.requestNotificationsPermission();
+
+  _initialized = true;
+}
 
   static const _snoozeActionId = 'snooze_15';
 

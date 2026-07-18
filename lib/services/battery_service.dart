@@ -6,7 +6,9 @@ import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 class BatteryService {
   static Future<bool> isFullyExempted() async {
     try {
-      return await DisableBatteryOptimization.isAllBatteryOptimizationDisabled;
+      return (await DisableBatteryOptimization
+        .isAllBatteryOptimizationDisabled) ??
+    false;
     } catch (_) {
       return true; // لا نزعج المستخدم إن تعذّر التحقق (مثلاً جهاز لا يدعمه).
     }

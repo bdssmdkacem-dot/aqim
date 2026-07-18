@@ -5,14 +5,14 @@ import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 /// كي تصل تذكيرات الصلاة فوقتها ولا يقتلها النظام فـ الخلفية.
 class BatteryService {
   static Future<bool> isFullyExempted() async {
-    try {
-      return (await DisableBatteryOptimization
-        .isAllBatteryOptimizationDisabled) ??
-    false;
-    } catch (_) {
-      return true; // لا نزعج المستخدم إن تعذّر التحقق (مثلاً جهاز لا يدعمه).
-    }
+  try {
+    return (await DisableBatteryOptimization
+            .isAllBatteryOptimizationDisabled) ??
+        false;
+  } catch (_) {
+    return true;
   }
+}
 
   /// يفتح شاشات النظام المناسبة (استثناء عام + إعدادات الشركة المصنّعة
   /// إن وُجدت) بخطوتين متتاليتين.

@@ -38,11 +38,7 @@ class NotificationService {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidInit);
 
-    await _plugin.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: _onNotificationTap,
-    );
-
+    await _plugin.initialize();
     final androidImpl = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await androidImpl?.requestNotificationsPermission();

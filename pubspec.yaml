@@ -21,9 +21,11 @@ dependencies:
   google_mobile_ads: ^5.1.0
   http: ^1.2.2
   geolocator: ^13.0.1
+
   flutter_local_notifications: 17.2.4
-timezone: ^0.9.4
+  timezone: ^0.9.4
   flutter_timezone: ^2.1.0
+
   disable_battery_optimization: ^1.1.2
   url_launcher: ^6.3.1
 

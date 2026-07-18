@@ -41,7 +41,18 @@ jobs:
 
       - name: Show dependency tree
         run: |
-          flutter pub deps | grep -A5 flutter_local_notifications || true
+          flutter pub deps | grep -A10 flutter_local_notifications || true
+
+      - name: Inspect flutter_local_notifications API
+        run: |
+          echo "===== initialize() signature ====="
+          grep -R "Future.*initialize" \
+            ~/.pub-cache/hosted/pub.dev/flutter_local_notifications-*/lib -n || true
+
+      - name: Check notification imports
+        run: |
+          echo "===== Imports ====="
+          sed -n '1,60p' lib/services/notification_service.dart
 
       - name: Show package versions
         run: flutter pub deps

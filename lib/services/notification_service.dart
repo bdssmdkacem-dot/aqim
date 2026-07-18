@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
@@ -8,95 +7,64 @@ import '../models/prayer.dart';
 import '../navigation/nav_key.dart';
 import '../screens/pre_prayer_screen.dart';
 
-/// يدير تذكيرين لكل صلاة:
-/// 1) "قبل الصلاة" — عشر دقائق قبل الوقت الحقيقي.
-/// 2) "هل صليت؟" — عشرين دقيقة بعد الوقت الحقيقي.
-///
-/// يُجدوَل فقط بناءً على أوقات حقيقية (AppState.realTimes)، ولا يُستعمل
-/// أبدًا مع الأوقات الاحتياطية الوهمية، تجنّبًا لتنبيه المستخدم فـ وقت
-/// خاطئ. يستعمل جدولة "غير دقيقة" (inexact) عمدًا كي لا يحتاج التطبيق
-/// صلاحية "المنبّهات الدقيقة" الحساسة على أندرويد 12+.
+
 class NotificationService {
   NotificationService._();
 
   static final NotificationService instance =
       NotificationService._();
 
-  final _plugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
+
 
   Future<void> init() async {
-    // <-- the method above
+    if (_initialized) return;
+
+    tzdata.initializeTimeZones();
+
+    try {
+      final localTz = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(
+        tz.getLocation(localTz),
+      );
+    } catch (_) {
+      tz.setLocalLocation(
+        tz.getLocation('Africa/Casablanca'),
+      );
+    }
+
+
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+
+    const settings = InitializationSettings(
+      android: androidSettings,
+    );
+
+
+    await _plugin.initialize(
+  settings,
+  onDidReceiveNotificationResponse: _onNotificationTap,
+);
+
+
+    final android =
+        _plugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+
+    await android?.requestNotificationsPermission();
+
+
+    _initialized = true;
   }
 
-  tzdata.initializeTimeZones();
-
-  try {
-    final localTz = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(localTz));
-  } catch (_) {
-    // fallback
-  }
-
-  const androidSettings =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-
-  const settings = InitializationSettings(
-    android: androidSettings,
-  );
-
-  await _plugin.initialize(
-    settings: settings,
-    onDidReceiveNotificationResponse: _onNotificationTap,
-  );
-
-  final android =
-      _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
-
-  await android?.requestNotificationsPermission();
-
-  _initialized = true;
-}
-  final _plugin = FlutterLocalNotificationsPlugin();
-  bool _initialized = false;
-
-Future<void> init() async {
-  if (_initialized) return;
-
-  tzdata.initializeTimeZones();
-
-  try {
-    final localTz = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(localTz));
-  } catch (_) {
-    // نبقى على UTC إذا تعذر الحصول على المنطقة الزمنية
-  }
-
-  const androidInit =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-
-  const initSettings = InitializationSettings(
-    android: androidInit,
-  );
-
-  await _plugin.initialize(
-    settings: initSettings,
-    onDidReceiveNotificationResponse: _onNotificationTap,
-  );
-
-  final androidImpl =
-      _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
-
-  await androidImpl?.requestNotificationsPermission();
-
-  _initialized = true;
-}
 
   static const _snoozeActionId = 'snooze_15';
-
   void _onNotificationTap(NotificationResponse response) {
     final payload = response.payload;
     if (payload == null) return;

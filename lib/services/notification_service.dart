@@ -32,7 +32,7 @@ class NotificationService {
       final timezoneInfo = await FlutterTimezone.getLocalTimezone();
 
 tz.setLocalLocation(
-  tz.getLocation(timezoneInfo.name),
+  tz.getLocation(timezoneInfo.identifier),
 );
     } catch (_) {
       // نبقى على UTC كخيار احتياطي إن تعذّر تحديد المنطقة الزمنية —
@@ -43,7 +43,7 @@ tz.setLocalLocation(
     const initSettings = InitializationSettings(android: androidInit);
 
     await _plugin.initialize(
-  settings: initSettings,
+  initializationSettings: initSettings,
   onDidReceiveNotificationResponse: _onNotificationTap,
 );
 

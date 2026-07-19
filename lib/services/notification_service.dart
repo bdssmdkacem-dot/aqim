@@ -43,7 +43,7 @@ tz.setLocalLocation(
     const initSettings = InitializationSettings(android: androidInit);
 
     await _plugin.initialize(
-  initializationSettings: initSettings,
+  settings: initSettings,
   onDidReceiveNotificationResponse: _onNotificationTap,
 );
 

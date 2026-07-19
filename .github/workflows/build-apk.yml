@@ -39,6 +39,11 @@ jobs:
           echo "===== notification_service.dart ====="
           nl -ba lib/services/notification_service.dart | sed -n '35,55p'
 
+      - name: Show notification imports
+        run: |
+          echo "===== Imports ====="
+          sed -n '1,60p' lib/services/notification_service.dart
+
       - name: Show flutter_local_notifications version
         run: |
           echo "===== pubspec.lock ====="
@@ -48,16 +53,21 @@ jobs:
         run: |
           flutter pub deps | grep -A10 flutter_local_notifications || true
 
-      - name: Show notification plugin API
+      - name: Locate notification plugin
         run: |
-          FILE=$(find ~/.pub-cache/hosted/pub.dev -path "*flutter_local_notifications*/lib/src/flutter_local_notifications_plugin.dart" | head -n1)
-          echo "FILE=$FILE"
-          sed -n '90,170p' "$FILE"
+          find ~/.pub-cache/hosted/pub.dev -name flutter_local_notifications_plugin.dart
 
-      - name: Check notification imports
+      - name: Show initialize signature
         run: |
-          echo "===== Imports ====="
-          sed -n '1,60p' lib/services/notification_service.dart
+          grep -n "Future<bool.*initialize" -R ~/.pub-cache/hosted/pub.dev/flutter_local_notifications-21.0.0/lib || true
+          grep -n "initialize(" -R ~/.pub-cache/hosted/pub.dev/flutter_local_notifications-21.0.0/lib | head -20
+
+      - name: Search for duplicate FlutterLocalNotificationsPlugin
+        run: |
+          echo "===== Duplicate class search ====="
+          grep -R "class FlutterLocalNotificationsPlugin" . || true
+          grep -R "typedef FlutterLocalNotificationsPlugin" . || true
+          grep -R "extension FlutterLocalNotificationsPlugin" . || true
 
       - name: Build Debug APK
         run: flutter build apk --debug

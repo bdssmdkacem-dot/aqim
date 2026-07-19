@@ -43,11 +43,11 @@ jobs:
         run: |
           flutter pub deps | grep -A10 flutter_local_notifications || true
 
-      - name: Inspect flutter_local_notifications API
+      - name: Show notification plugin API
         run: |
-          echo "===== initialize() signature ====="
-          grep -R "Future.*initialize" \
-            ~/.pub-cache/hosted/pub.dev/flutter_local_notifications-*/lib -n || true
+          FILE=$(find ~/.pub-cache/hosted/pub.dev -path "*flutter_local_notifications*/lib/src/flutter_local_notifications_plugin.dart" | head -n1)
+          echo "FILE=$FILE"
+          sed -n '90,170p' "$FILE"
 
       - name: Check notification imports
         run: |

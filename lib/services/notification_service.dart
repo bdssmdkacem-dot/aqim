@@ -29,8 +29,11 @@ class NotificationService {
 
     tzdata.initializeTimeZones();
     try {
-      final localTz = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(localTz));
+      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+
+tz.setLocalLocation(
+  tz.getLocation(timezoneInfo.name),
+);
     } catch (_) {
       // نبقى على UTC كخيار احتياطي إن تعذّر تحديد المنطقة الزمنية —
       // أفضل من تعطّل الجدولة بالكامل.

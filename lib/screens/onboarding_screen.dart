@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/prayer.dart';
 import 'package:provider/provider.dart';
 import '../services/battery_service.dart';
 import '../state/app_state.dart';

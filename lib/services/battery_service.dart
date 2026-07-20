@@ -2,24 +2,32 @@ import 'package:disable_battery_optimization/disable_battery_optimization.dart';
 
 /// يتحقق من إعدادات توفير البطارية (العامة وإعدادات الشركة المصنّعة
 /// الخاصة مثل Xiaomi/Huawei/Oppo) ويعرض حوارًا يوجّه المستخدم لتعطيلها،
-/// كي تصل تذكيرات الصلاة فوقتها ولا يقتلها النظام فـ الخلفية.
+/// كي تصل تذكيرات الصلاة فوقتها ولا يقتلها النظام في الخلفية.
 class BatteryService {
+  /// يتحقق مما إذا كانت جميع قيود البطارية معطلة.
   static Future<bool> isFullyExempted() async {
     try {
-      return await DisableBatteryOptimization.isAllBatteryOptimizationDisabled;
+      final result = await DisableBatteryOptimization
+          .isAllBatteryOptimizationDisabled;
+
+      return result ?? false;
     } catch (_) {
-      return true; // لا نزعج المستخدم إن تعذّر التحقق (مثلاً جهاز لا يدعمه).
+      // إذا لم يكن الجهاز يدعم هذه الميزة، فلا نمنع التطبيق من العمل.
+      return true;
     }
   }
 
-  /// يفتح شاشات النظام المناسبة (استثناء عام + إعدادات الشركة المصنّعة
-  /// إن وُجدت) بخطوتين متتاليتين.
-  static void openSettings() {
-    DisableBatteryOptimization.showDisableAllOptimizationsSettings(
-      'فعّل التشغيل التلقائي',
-      'اسمح لتطبيق أقم بالعمل فـ الخلفية كي تصلك تذكيرات الصلاة فوقتها',
-      'إعدادات بطارية إضافية',
-      'بعض الأجهزة (Xiaomi، Huawei، Oppo...) عندها إعداد بطارية خاص بها — عطّله لنفس السبب',
-    );
+  /// يفتح إعدادات تعطيل تحسين البطارية وإعدادات الشركة المصنّعة إن وُجدت.
+  static Future<void> openSettings() async {
+    try {
+      await DisableBatteryOptimization.showDisableAllOptimizationsSettings(
+        'فعّل التشغيل التلقائي',
+        'اسمح لتطبيق أقم بالعمل في الخلفية كي تصلك تذكيرات الصلاة في وقتها.',
+        'إعدادات بطارية إضافية',
+        'في بعض الأجهزة (Xiaomi، Huawei، Oppo...) توجد إعدادات بطارية إضافية، يُرجى تعطيلها لهذا التطبيق.',
+      );
+    } catch (_) {
+      // تجاهل أي خطأ على الأجهزة غير المدعومة.
+    }
   }
 }

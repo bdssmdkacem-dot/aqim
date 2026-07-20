@@ -1,19 +1,19 @@
 import 'package:adhan_dart/adhan_dart.dart' as adhan;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../models/prayer.dart' as model;
+import '../models/prayer.dart';
 
 /// يحسب أوقات الصلاة محليًا على الهاتف (بلا إنترنت)
 class OfflinePrayerTimesService {
-  static Map<adhan.Prayer, DateTime>? calculateToday({
+  static Map<Prayer, DateTime>? calculateToday({
     required double latitude,
     required double longitude,
   }) {
     try {
       final coordinates = adhan.Coordinates(latitude, longitude);
 
-      final params =
-          adhan.CalculationMethod.muslimWorldLeague.getParameters();
+      // adhan_dart 1.2.0
+      final params = adhan.CalculationMethod.MuslimWorldLeague();
 
       final now = DateTime.now();
 
@@ -43,16 +43,20 @@ class OfflinePrayerTimesService {
       final maghrib = toLocalWallClock(prayerTimes.maghrib);
       final isha = toLocalWallClock(prayerTimes.isha);
 
-      if ([fajr, dhuhr, asr, maghrib, isha].contains(null)) {
+      if (fajr == null ||
+          dhuhr == null ||
+          asr == null ||
+          maghrib == null ||
+          isha == null) {
         return null;
       }
 
       return {
-        adhan.Prayer.fajr: fajr!,
-        adhan.Prayer.dhuhr: dhuhr!,
-        adhan.Prayer.asr: asr!,
-        adhan.Prayer.maghrib: maghrib!,
-        adhan.Prayer.isha: isha!,
+        Prayer.fajr: fajr,
+        Prayer.dhuhr: dhuhr,
+        Prayer.asr: asr,
+        Prayer.maghrib: maghrib,
+        Prayer.isha: isha,
       };
     } catch (_) {
       return null;

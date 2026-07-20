@@ -4,6 +4,7 @@ import '../services/battery_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import 'home_screen.dart';
+import 'package:aqim/models/prayer.dart';
 
 const _beforeOptions = [5, 10, 15, 20, 30];
 const _afterOptions = [10, 15, 20, 30, 45];

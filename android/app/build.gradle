@@ -17,7 +17,7 @@ def flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "
 
 android {
     namespace "com.comptaflow.aqim"
-    compileSdk 36
+    compileSdk 37
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -38,7 +38,7 @@ android {
     defaultConfig {
         applicationId "com.comptaflow.aqim"
         minSdk 23
-        targetSdk 36
+        targetSdk 37
         multiDexEnabled true
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

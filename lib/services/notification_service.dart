@@ -28,13 +28,13 @@ class NotificationService {
     if (_initialized) return;
 
     tzdata.initializeTimeZones();
-    try {
-      final localTz = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(localTz));
-    } catch (_) {
-      // نبقى على UTC كخيار احتياطي إن تعذّر تحديد المنطقة الزمنية —
-      // أفضل من تعطّل الجدولة بالكامل.
-    }
+
+try {
+  final localTz = await FlutterTimezone.getLocalTimezone();
+  tz.setLocalLocation(tz.getLocation(localTz.identifier));
+} catch (_) {
+  // نبقى على UTC كخيار احتياطي إن تعذّر تحديد المنطقة الزمنية
+}
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidInit);

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سياسة الخصوصية — أقم | Privacy Policy — Aqim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#101A2E;
+    --ink-soft:#3A4358;
+    --paper:#F4EFE3;
+    --paper-line:#E4DCC8;
+    --gold:#C9A24B;
+    --text-muted:#6B7280;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Cairo', sans-serif;
+    line-height:1.9;
+  }
+  header{
+    background:var(--ink);
+    padding:48px 20px 36px;
+    text-align:center;
+  }
+  header h1{
+    font-family:'Amiri', serif;
+    color:var(--gold);
+    font-size:32px;
+    margin:0 0 6px;
+  }
+  header p{
+    color:#B9C0D4;
+    font-family:'Tajawal', sans-serif;
+    font-size:13px;
+    margin:0;
+    letter-spacing:.03em;
+  }
+  .lang-switch{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    margin-top:18px;
+  }
+  .lang-switch button{
+    font-family:'Tajawal', sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    padding:7px 16px;
+    border-radius:20px;
+    border:1px solid rgba(244,239,227,.25);
+    background:transparent;
+    color:#D8DCE8;
+    cursor:pointer;
+  }
+  .lang-switch button.active{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#221604;
+  }
+  main{
+    max-width:760px;
+    margin:0 auto;
+    padding:36px 22px 70px;
+  }
+  section{ display:none; }
+  section.active{ display:block; }
+  .updated{
+    font-family:'Tajawal', sans-serif;
+    font-size:12px;
+    color:var(--text-muted);
+    margin-bottom:28px;
+  }
+  h2{
+    font-size:19px;
+    margin:34px 0 10px;
+    color:var(--ink);
+    border-right:4px solid var(--gold);
+    padding-right:12px;
+  }
+  [dir="ltr"] h2{
+    border-right:none;
+    border-left:4px solid var(--gold);
+    padding-right:0;
+    padding-left:12px;
+  }
+  p, li{
+    font-size:14.5px;
+    color:var(--ink-soft);
+  }
+  ul{ padding-right:20px; margin:10px 0; }
+  [dir="ltr"] ul{ padding-right:0; padding-left:20px; }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:14px 0 6px;
+    font-size:13.5px;
+  }
+  th, td{
+    border:1px solid var(--paper-line);
+    padding:10px 12px;
+    text-align:right;
+    vertical-align:top;
+  }
+  [dir="ltr"] th, [dir="ltr"] td{ text-align:left; }
+  th{
+    background:#fff;
+    font-weight:700;
+    font-family:'Tajawal', sans-serif;
+    font-size:12.5px;
+    color:var(--ink);
+  }
+  a{ color:#8a6a24; }
+  .contact-box{
+    margin-top:36px;
+    padding:18px 20px;
+    background:#fff;
+    border:1px solid var(--paper-line);
+    border-radius:14px;
+  }
+  .contact-box p{ margin:4px 0; }
+  footer{
+    text-align:center;
+    font-family:'Tajawal', sans-serif;
+    font-size:11.5px;
+    color:var(--text-muted);
+    padding:20px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>أقم — Aqim</h1>
+  <p>سياسة الخصوصية · Privacy Policy</p>
+  <div class="lang-switch">
+    <button id="btn-ar" class="active" onclick="showLang('ar')">العربية</button>
+    <button id="btn-en" onclick="showLang('en')">English</button>
+  </div>
+</header>
+
+<main>
+
+<section id="ar" dir="rtl" class="active">
+  <div class="updated">آخر تحديث: 22 يوليوز 2026</div>
+
+  <p>تطبيق "أقم" مصمَّم لمساعدتك على المحافظة على الصلوات الخمس. نأخذ خصوصيتك على محمل الجد، وهذه الصفحة تشرح بوضوح ما نجمعه من بيانات، وكيف نستعمله، ومع من نشاركه.</p>
+
+  <h2>البيانات التي نجمعها</h2>
+  <p>التطبيق لا يطلب منك إنشاء حساب، ولا يجمع اسمك أو بريدك الإلكتروني أو رقم هاتفك. البيانات التالية فقط تُستعمل:</p>
+  <table>
+    <tr><th>البيانات</th><th>الغرض منها</th><th>أين تُرسَل</th></tr>
+    <tr><td>الموقع الجغرافي (إحداثيات GPS)</td><td>حساب أوقات الصلاة بدقة، وعرض أقرب مسجد</td><td>AlAdhan API، OpenStreetMap (Nominatim وOverpass)</td></tr>
+    <tr><td>معرّف الإعلانات (Advertising ID)</td><td>عرض إعلانات عبر Google AdMob</td><td>Google AdMob</td></tr>
+    <tr><td>حالة الشراء (إزالة الإعلانات)</td><td>تفعيل الشراء واستعادته</td><td>Google Play Billing</td></tr>
+  </table>
+
+  <h2>أين تُخزَّن بياناتك</h2>
+  <p>كل بيانات استعمالك للتطبيق (سجل الصلوات، السلسلة المتتالية، إعداداتك) تُخزَّن <strong>محليًا على هاتفك فقط</strong> (عبر آلية تخزين النظام)، ولا نُشغّل أي خادم خاص بنا يجمع أو يحتفظ ببياناتك الشخصية. حذف التطبيق يحذف كل هذه البيانات نهائيًا.</p>
+
+  <h2>خدمات الطرف الثالث المستعملة</h2>
+  <ul>
+    <li><strong>AlAdhan API</strong> — لحساب أوقات الصلاة الحقيقية بناءً على إحداثياتك.</li>
+    <li><strong>OpenStreetMap (Nominatim وOverpass)</strong> — لتحديد اسم مدينتك وعرض أقرب المساجد. راجع <a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank">سياسة خصوصية مؤسسة OpenStreetMap</a>.</li>
+    <li><strong>Google AdMob</strong> — لعرض الإعلانات. راجع <a href="https://policies.google.com/privacy" target="_blank">سياسة خصوصية Google</a>.</li>
+    <li><strong>Google Play Billing</strong> — لمعالجة عملية شراء "إزالة الإعلانات". لا نطّلع نحن على أي بيانات دفع (بطاقة بنكية أو غيرها) — تُعالَج بالكامل عبر Google.</li>
+  </ul>
+
+  <h2>الصلاحيات التي يطلبها التطبيق</h2>
+  <ul>
+    <li><strong>الموقع</strong> — لحساب أوقات الصلاة وعرض أقرب مسجد. يمكنك رفضها أو سحبها فـ أي وقت من إعدادات هاتفك؛ التطبيق يستمر بالعمل بأوقات تقريبية.</li>
+    <li><strong>الإشعارات</strong> — لإرسال تذكيرات الصلاة.</li>
+    <li><strong>الإنترنت</strong> — لجلب أوقات الصلاة، الإعلانات، وأقرب مسجد.</li>
+    <li><strong>استثناء توفير البطارية (اختياري)</strong> — لضمان وصول التذكيرات فوقتها؛ يُطلَب فقط بموافقتك الصريحة.</li>
+  </ul>
+
+  <h2>خصوصية الأطفال</h2>
+  <p>التطبيق مناسب لجميع الأعمار من ناحية المحتوى (تعليمي/ديني)، لكنه غير موجَّه خصيصًا للأطفال دون 13 عامًا ولا يجمع بيانات تستهدفهم عمدًا.</p>
+
+  <h2>حقوقك</h2>
+  <ul>
+    <li>تعطيل صلاحية الموقع أو الإشعارات فـ أي وقت من إعدادات هاتفك.</li>
+    <li>حذف كل بياناتك المحلية بحذف التطبيق.</li>
+    <li>استعادة مشترياتك عبر حساب Google Play الخاص بك من شاشة الإعدادات داخل التطبيق.</li>
+  </ul>
+
+  <h2>تحديثات على هذه السياسة</h2>
+  <p>قد نُحدِّث هذه الصفحة من وقت لآخر لتعكس أي تغيير فـ التطبيق. تاريخ آخر تحديث يظهر أعلى الصفحة.</p>
+
+  <div class="contact-box">
+    <p><strong>للتواصل بخصوص الخصوصية:</strong></p>
+    <p>📧 Ezcare9@gmail.com</p>
+  </div>
+</section>
+
+<section id="en" dir="ltr">
+  <div class="updated">Last updated: July 22, 2026</div>
+
+  <p>Aqim is designed to help you maintain the five daily prayers. We take your privacy seriously. This page explains clearly what data we collect, how we use it, and who we share it with.</p>
+
+  <h2>Data We Collect</h2>
+  <p>The app does not require account creation and does not collect your name, email, or phone number. Only the following data is used:</p>
+  <table>
+    <tr><th>Data</th><th>Purpose</th><th>Sent to</th></tr>
+    <tr><td>Location (GPS coordinates)</td><td>Accurately calculating prayer times and showing nearby mosques</td><td>AlAdhan API, OpenStreetMap (Nominatim &amp; Overpass)</td></tr>
+    <tr><td>Advertising ID</td><td>Displaying ads via Google AdMob</td><td>Google AdMob</td></tr>
+    <tr><td>Purchase status (Remove Ads)</td><td>Activating and restoring your purchase</td><td>Google Play Billing</td></tr>
+  </table>
+
+  <h2>Where Your Data Is Stored</h2>
+  <p>All your usage data (prayer log, streak, preferences) is stored <strong>locally on your device only</strong> via the operating system's standard storage. We do not operate any server that collects or retains your personal data. Uninstalling the app permanently deletes this data.</p>
+
+  <h2>Third-Party Services Used</h2>
+  <ul>
+    <li><strong>AlAdhan API</strong> — calculates real prayer times from your coordinates.</li>
+    <li><strong>OpenStreetMap (Nominatim &amp; Overpass)</strong> — determines your city name and shows nearby mosques. See the <a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank">OpenStreetMap Foundation Privacy Policy</a>.</li>
+    <li><strong>Google AdMob</strong> — displays ads. See <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.</li>
+    <li><strong>Google Play Billing</strong> — processes the one-time "Remove Ads" purchase. We never see any payment details (card numbers, etc.) — these are handled entirely by Google.</li>
+  </ul>
+
+  <h2>Permissions Requested</h2>
+  <ul>
+    <li><strong>Location</strong> — to calculate prayer times and show nearby mosques. You may deny or revoke it anytime in phone settings; the app falls back to approximate times.</li>
+    <li><strong>Notifications</strong> — to send prayer reminders.</li>
+    <li><strong>Internet</strong> — to fetch prayer times, ads, and nearby mosques.</li>
+    <li><strong>Battery optimization exemption (optional)</strong> — to ensure reminders arrive on time; only requested with your explicit consent.</li>
+  </ul>
+
+  <h2>Children's Privacy</h2>
+  <p>The app's content is suitable for all ages (educational/religious), but it is not specifically directed at children under 13 and does not knowingly collect data targeting them.</p>
+
+  <h2>Your Rights</h2>
+  <ul>
+    <li>Disable location or notification permissions anytime in your phone settings.</li>
+    <li>Delete all local data by uninstalling the app.</li>
+    <li>Restore your purchases via your Google Play account from the in-app Settings screen.</li>
+  </ul>
+
+  <h2>Changes to This Policy</h2>
+  <p>We may update this page from time to time to reflect changes in the app. The last-updated date appears at the top of this page.</p>
+
+  <div class="contact-box">
+    <p><strong>Privacy contact:</strong></p>
+    <p>📧 Ezcare9@gmail.com</p>
+  </div>
+</section>
+
+</main>
+
+<footer>© 2026 Comptaflow — أقم / Aqim</footer>
+
+<script>
+  function showLang(lang){
+    document.getElementById('ar').classList.toggle('active', lang === 'ar');
+    document.getElementById('en').classList.toggle('active', lang === 'en');
+    document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    document.documentElement.lang = lang;
+  }
+</script>
+
+</body>
+</html>

@@ -1,31 +1,44 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- يحتاجها مكتبة google_fonts لتنزيل الخطوط (Amiri, Cairo, Tajawal) عند أول تشغيل -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <!-- يحتاجها google_mobile_ads للوصول لمعرّف الإعلانات على أندرويد 13+ -->
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
-    <!-- يحتاجها geolocator لحساب أوقات الصلاة الحقيقية بناءً على الموقع -->
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <!-- يحتاجها flutter_local_notifications لعرض تذكيرات الصلاة على أندرويد 13+ -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- تسمح بطلب استثناء التطبيق من توفير البطارية كي تصل التذكيرات فوقتها -->
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-    <!-- يحتاجها منبّه ما قبل الصلاة (يعمل حتى والهاتف مقفل، كمنبّه حقيقي) -->
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-    <!-- تحتاجها in_app_purchase للتواصل مع Google Play Billing -->
-    <uses-permission android:name="com.android.vending.BILLING" />
+
+    <!-- Internet -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- AdMob -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+
+    <!-- Location -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+
+    <!-- Notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- Exact alarms -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+
+    <!-- Restart notifications after reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
+    <!-- Battery optimization -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+
+    <!-- Full screen alarm -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+
+    <!-- Google Play Billing -->
+    <uses-permission android:name="com.android.vending.BILLING"/>
+
     <application
-        android:label="أقم"
         android:name="${applicationName}"
+        android:label="أقم"
         android:icon="@mipmap/ic_launcher">
-        <!--
-          معرّف تطبيق AdMob — هذا معرّف اختبار رسمي من Google (يعمل دائمًا،
-          بلا عائد حقيقي). استبدله بمعرّف تطبيقك الفعلي من حساب AdMob قبل
-          النشر (راجع lib/ads/ad_ids.dart لنفس الملاحظة على معرّفات البانر).
-        -->
+
+        <!-- AdMob App ID (استبدله بالمعرف الحقيقي قبل النشر) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -33,8 +46,49 @@
             android:theme="@style/LaunchTheme"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode">
+
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"/>
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+        </activity>
+
+        <!-- Flutter embedding -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2"/>
+
+        <!-- flutter_local_notifications -->
+
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false"/>
+
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:enabled="true"
+            android:exported="false">
+
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+
+        </receiver>
+
+    </application>
+
+</manifest>            android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"

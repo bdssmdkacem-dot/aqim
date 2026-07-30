@@ -16,69 +16,98 @@ class MosqueInfo {
   });
 
   String get distanceLabel {
-    if (distanceMeters < 1000) return '${distanceMeters.round()} م';
-    return '${(distanceMeters / 1000).toStringAsFixed(1)} كم';
+    if (distanceMeters < 1000) {
+      return "${distanceMeters.round()} م";
+    }
+    return "${(distanceMeters / 1000).toStringAsFixed(1)} كم";
   }
 }
 
-/// يجلب أقرب المساجد عبر Overpass API (بيانات OpenStreetMap مفتوحة
-/// المصدر، بلا حاجة لمفتاح API أو فوترة — بديل عملي لخرائط Google لهذا
-/// الاستعمال البسيط).
 class MosqueService {
-  static const _endpoint = 'https://overpass-api.de/api/interpreter';
+  static const String _endpoint =
+      "https://overpass-api.de/api/interpreter";
 
   static Future<List<MosqueInfo>?> fetchNearby({
     required double latitude,
     required double longitude,
     double radiusMeters = 3000,
   }) async {
-    final query = '''
-[out:json][timeout:15];
+    final query = """
+[out:json][timeout:25];
 (
-  node["amenity"="place_of_worship"]["religion"="muslim"](around:$radiusMeters,$latitude,$longitude);
-  way["amenity"="place_of_worship"]["religion"="muslim"](around:$radiusMeters,$latitude,$longitude);
+node["amenity"="place_of_worship"]["religion"="muslim"](around:$radiusMeters,$latitude,$longitude);
+way["amenity"="place_of_worship"]["religion"="muslim"](around:$radiusMeters,$latitude,$longitude);
+relation["amenity"="place_of_worship"]["religion"="muslim"](around:$radiusMeters,$latitude,$longitude);
 );
-out center 30;
-''';
+out center;
+""";
 
     try {
-      final res = await http
-          .post(Uri.parse(_endpoint), body: {'data': query})
-          .timeout(const Duration(seconds: 15));
-      if (res.statusCode != 200) return null;
+      final response = await http.post(
+        Uri.parse(_endpoint),
+        headers: {
+          "User-Agent": "Aqim/1.0",
+          "Accept": "application/json",
+        },
+        body: {"data": query},
+      ).timeout(const Duration(seconds: 25));
 
-      final json = jsonDecode(res.body) as Map<String, dynamic>;
-      final elements = json['elements'] as List<dynamic>?;
-      if (elements == null) return [];
-
-      final results = <MosqueInfo>[];
-      for (final el in elements) {
-        final map = el as Map<String, dynamic>;
-        double? lat = (map['lat'] as num?)?.toDouble();
-        double? lon = (map['lon'] as num?)?.toDouble();
-        // العناصر من نوع way ليس لها lat/lon مباشرة، بل center.
-        if (lat == null || lon == null) {
-          final center = map['center'] as Map<String, dynamic>?;
-          lat = (center?['lat'] as num?)?.toDouble();
-          lon = (center?['lon'] as num?)?.toDouble();
-        }
-        if (lat == null || lon == null) continue;
-
-        final tags = map['tags'] as Map<String, dynamic>?;
-        final name = (tags?['name'] as String?)?.trim();
-
-        final distance = Geolocator.distanceBetween(latitude, longitude, lat, lon);
-        results.add(MosqueInfo(
-          name: (name == null || name.isEmpty) ? 'مسجد' : name,
-          latitude: lat,
-          longitude: lon,
-          distanceMeters: distance,
-        ));
+      if (response.statusCode != 200) {
+        print(response.statusCode);
+        print(response.body);
+        return null;
       }
 
-      results.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
-      return results;
-    } catch (_) {
+      final json = jsonDecode(response.body);
+
+      final elements = json["elements"] as List?;
+
+      if (elements == null) {
+        return [];
+      }
+
+      List<MosqueInfo> mosques = [];
+
+      for (final e in elements) {
+        double? lat;
+        double? lon;
+
+        if (e["lat"] != null) {
+          lat = (e["lat"] as num).toDouble();
+          lon = (e["lon"] as num).toDouble();
+        } else if (e["center"] != null) {
+          lat = (e["center"]["lat"] as num).toDouble();
+          lon = (e["center"]["lon"] as num).toDouble();
+        }
+
+        if (lat == null || lon == null) continue;
+
+        final tags = e["tags"] ?? {};
+
+        final distance = Geolocator.distanceBetween(
+          latitude,
+          longitude,
+          lat,
+          lon,
+        );
+
+        mosques.add(
+          MosqueInfo(
+            name: tags["name"] ?? "مسجد",
+            latitude: lat,
+            longitude: lon,
+            distanceMeters: distance,
+          ),
+        );
+      }
+
+      mosques.sort(
+        (a, b) => a.distanceMeters.compareTo(b.distanceMeters),
+      );
+
+      return mosques;
+    } catch (e) {
+      print(e);
       return null;
     }
   }

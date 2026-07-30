@@ -1,4 +1,4 @@
-name: Build Aqim Release AAB
+name: Build Aqim Release
 
 on:
   push:
@@ -56,8 +56,17 @@ jobs:
       - name: Build Release AAB
         run: flutter build appbundle --release
 
+      - name: Build Release APK
+        run: flutter build apk --release
+
       - name: Upload Release AAB
         uses: actions/upload-artifact@v4
         with:
           name: aqim-release-aab
           path: build/app/outputs/bundle/release/app-release.aab
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqim-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

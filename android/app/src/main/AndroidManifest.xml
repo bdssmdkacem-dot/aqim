@@ -13,17 +13,17 @@
     <!-- Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
-    <!-- Exact alarms -->
+    <!-- Exact Alarm -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
 
-    <!-- Restart notifications after reboot -->
+    <!-- Receive boot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
-    <!-- Battery optimization -->
+    <!-- Ignore battery optimization -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
 
-    <!-- Full screen alarm -->
+    <!-- Full screen intent -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
 
     <!-- Google Play Billing -->
@@ -34,7 +34,7 @@
         android:label="أقم"
         android:icon="@mipmap/ic_launcher">
 
-        <!-- AdMob App ID (استبدله بالمعرف الحقيقي قبل النشر) -->
+        <!-- AdMob Test App ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713"/>
@@ -61,13 +61,31 @@
 
         </activity>
 
-        <!-- Flutter embedding -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2"/>
 
-        <!-- flutter_local_notifications -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false"/>
 
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:enabled="true"
+            android:exported="false">
+
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+
+        </receiver>
+
+    </application>
+
+</manifest>
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
             android:exported="false"/>

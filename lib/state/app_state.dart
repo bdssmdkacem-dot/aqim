@@ -332,10 +332,19 @@ class AppState extends ChangeNotifier {
   }
 
   void _recomputeUpcoming() {
-    var foundUpcoming = false;
+  final times = realTimes;
+
+  // إذا لم تكن أوقات الصلاة جاهزة نستعمل الترتيب القديم.
+  if (times == null) {
+    bool foundUpcoming = false;
+
     for (final p in activePrayers) {
       final s = todayStatus[p];
-      if (s == PrayerStatus.done || s == PrayerStatus.missed) continue;
+
+      if (s == PrayerStatus.done || s == PrayerStatus.missed) {
+        continue;
+      }
+
       if (!foundUpcoming) {
         todayStatus[p] = PrayerStatus.upcoming;
         foundUpcoming = true;
@@ -343,6 +352,42 @@ class AppState extends ChangeNotifier {
         todayStatus[p] = PrayerStatus.pending;
       }
     }
+
+    return;
+  }
+
+  final now = DateTime.now();
+
+  Prayer? next;
+
+  for (final prayer in activePrayers) {
+    final prayerTime = times[prayer];
+
+    if (prayerTime == null) continue;
+
+    if (prayerTime.isAfter(now)) {
+      next = prayer;
+      break;
+    }
+  }
+
+  // بعد العشاء نعتبر فجر الغد هو القادم
+  next ??= Prayer.fajr;
+
+  for (final prayer in activePrayers) {
+    final status = todayStatus[prayer];
+
+    if (status == PrayerStatus.done ||
+        status == PrayerStatus.missed) {
+      continue;
+    }
+
+    if (prayer == next) {
+      todayStatus[prayer] = PrayerStatus.upcoming;
+    } else {
+      todayStatus[prayer] = PrayerStatus.pending;
+    }
+  }
   }
 
   Future<void> completeOnboarding() async {

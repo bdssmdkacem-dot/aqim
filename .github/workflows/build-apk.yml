@@ -44,14 +44,14 @@ jobs:
           storePassword=${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
-          storeFile=../upload-keystore.jks
+          storeFile=upload-keystore.jks
           EOF
 
       - name: Verify signing files
         run: |
+          ls -lah android
           test -f android/upload-keystore.jks
           test -f android/key.properties
-          ls -lah android
 
       - name: Build Release AAB
         run: flutter build appbundle --release

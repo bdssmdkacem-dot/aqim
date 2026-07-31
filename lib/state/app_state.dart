@@ -162,7 +162,7 @@ class AppState extends ChangeNotifier {
       adhanEnabled: adhanEnabled,
     );
     await NotificationService.instance.scheduleWeeklySummary(_weeklySummaryText());
-
+debugPrint("Prayer notifications scheduled");
     timesLoading = false;
     notifyListeners();
   }

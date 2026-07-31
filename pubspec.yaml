@@ -39,6 +39,5 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/audio/before/
-    - assets/audio/after/    - assets/audio/before/
-    - assets/audio/after/
+  - assets/audio/before/
+  - assets/audio/after/

@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final next = state.nextPrayer;
-    final period = currentDayPeriod();
+    final period = currentPrayerDayPeriod();
 
     return Scaffold(
       body: Stack(
@@ -330,16 +330,16 @@ class _TitleBlock extends StatelessWidget {
 class _NextPrayerCard extends StatelessWidget {
   final AppState state;
   final Prayer next;
-  final DayPeriod period;
+  final PrayerDayPeriod period;
   final String? countdown;
 
   const _NextPrayerCard({
+    super.key,
     required this.state,
     required this.next,
     required this.period,
     required this.countdown,
   });
-
   @override
   Widget build(BuildContext context) {
     return InkWell(

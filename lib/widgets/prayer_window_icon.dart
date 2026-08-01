@@ -294,3 +294,24 @@ class _WindowPainter extends CustomPainter {
     return oldDelegate.period != period;
   }
 }
+PrayerDayPeriod currentDayPeriod() {
+  final hour = DateTime.now().hour;
+
+  if (hour >= 4 && hour < 7) {
+    return PrayerDayPeriod.dawn;
+  }
+
+  if (hour >= 7 && hour < 12) {
+    return PrayerDayPeriod.morning;
+  }
+
+  if (hour >= 12 && hour < 17) {
+    return PrayerDayPeriod.afternoon;
+  }
+
+  if (hour >= 17 && hour < 20) {
+    return PrayerDayPeriod.sunset;
+  }
+
+  return PrayerDayPeriod.night;
+}

@@ -86,7 +86,7 @@ class PrayerWindowIcon extends StatelessWidget {
 }
 
 class _WindowPainter extends CustomPainter {
-  final DayPeriod period;
+  final PrayerDayPeriod period;
   _WindowPainter({required this.period});
 
   bool get _isNight =>

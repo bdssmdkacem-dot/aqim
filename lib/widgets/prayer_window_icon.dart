@@ -2,23 +2,28 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-enum DayPeriod { dawn, day, sunset, night }
+enum PrayerDayPeriod {
+  dawn,
+  day,
+  sunset,
+  night,
+}
 
 /// يحدّد فترة اليوم الحالية من ساعة الجهاز، لتلوين الخلفية والأيقونة
 /// المصغّرة بما يناسب (فجر/نهار/غروب/ليل) — بلا حاجة لصور متعددة.
-DayPeriod currentDayPeriod([DateTime? now]) {
+PrayerDayPeriod currentDayPeriod([DateTime? now]) {
   final hour = (now ?? DateTime.now()).hour;
-  if (hour >= 5 && hour < 7) return DayPeriod.dawn;
-  if (hour >= 7 && hour < 17) return DayPeriod.day;
-  if (hour >= 17 && hour < 19) return DayPeriod.sunset;
-  return DayPeriod.night;
+  if (hour >= 5 && hour < 7) return PrayerDayPeriod.dawn;
+  if (hour >= 7 && hour < 17) return PrayerDayPeriod.day;
+  if (hour >= 17 && hour < 19) return PrayerDayPeriod.sunset;
+  return PrayerDayPeriod.night;
 }
 
 /// تدرّج شفاف يُوضَع فوق صورة المسجد ليعطي إحساس الفترة الزمنية
 /// الحالية (فجر/نهار/غروب/ليل) بلا الحاجة لعدّة صور خلفية.
-LinearGradient tintForPeriod(DayPeriod period) {
+LinearGradient tintForPeriod(PrayerDayPeriod period)
   switch (period) {
-    case DayPeriod.dawn:
+    case PrayerDayPeriod.dawn:
       return LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -28,7 +33,7 @@ LinearGradient tintForPeriod(DayPeriod period) {
           Colors.black.withOpacity(0.80),
         ],
       );
-    case DayPeriod.day:
+    case PrayerDayPeriod.day:
       return LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -38,7 +43,7 @@ LinearGradient tintForPeriod(DayPeriod period) {
           Colors.black.withOpacity(0.78),
         ],
       );
-    case DayPeriod.sunset:
+    case PrayerDayPeriod.sunset:
       return LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -48,7 +53,7 @@ LinearGradient tintForPeriod(DayPeriod period) {
           Colors.black.withOpacity(0.82),
         ],
       );
-    case DayPeriod.night:
+    case PrayerDayPeriod.night:
       return LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -64,7 +69,7 @@ LinearGradient tintForPeriod(DayPeriod period) {
 /// أيقونة مصغّرة داخل إطار مقوّس (محراب) — مسجد + هلال/نجوم ليلًا، أو
 /// مسجد + شمس نهارًا، مرسومة بالكامل بالكود (بلا صورة خارجية).
 class PrayerWindowIcon extends StatelessWidget {
-  final DayPeriod period;
+  final PrayerDayPeriod period;
   final double size;
 
   const PrayerWindowIcon({super.key, required this.period, this.size = 84});
@@ -82,7 +87,9 @@ class _WindowPainter extends CustomPainter {
   final DayPeriod period;
   _WindowPainter({required this.period});
 
-  bool get _isNight => period == DayPeriod.night || period == DayPeriod.dawn;
+  bool get _isNight =>
+    period == PrayerDayPeriod.night ||
+    period == PrayerDayPeriod.dawn;
 
   @override
   void paint(Canvas canvas, Size size) {

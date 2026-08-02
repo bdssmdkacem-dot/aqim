@@ -21,51 +21,53 @@ PrayerDayPeriod currentDayPeriod([DateTime? now]) {
 
 /// تدرّج شفاف يُوضَع فوق صورة المسجد ليعطي إحساس الفترة الزمنية
 /// الحالية (فجر/نهار/غروب/ليل) بلا الحاجة لعدّة صور خلفية.
-LinearGradient tintForPeriod(PrayerDayPeriod period)
+LinearGradient tintForPeriod(PrayerDayPeriod period) {
   switch (period) {
     case PrayerDayPeriod.dawn:
-      return LinearGradient(
+      return const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF3A2A4A).withOpacity(0.35),
-          const Color(0xFFB56B4A).withOpacity(0.25),
-          Colors.black.withOpacity(0.80),
+          Color(0xFF3A2A4A),
+          Color(0xFFB56B4A),
+          Colors.black,
         ],
       );
+
     case PrayerDayPeriod.day:
-      return LinearGradient(
+      return const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF1B3A52).withOpacity(0.20),
-          const Color(0xFF0F3D2E).withOpacity(0.30),
-          Colors.black.withOpacity(0.78),
+          Color(0xFF1B3A52),
+          Color(0xFF0F3D2E),
+          Colors.black,
         ],
       );
+
     case PrayerDayPeriod.sunset:
-      return LinearGradient(
+      return const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF7A3A2A).withOpacity(0.30),
-          const Color(0xFFB5654A).withOpacity(0.25),
-          Colors.black.withOpacity(0.82),
+          Color(0xFF7A3A2A),
+          Color(0xFFB5654A),
+          Colors.black,
         ],
       );
+
     case PrayerDayPeriod.night:
-      return LinearGradient(
+      return const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF0C1B33).withOpacity(0.55),
-          const Color(0xFF0C2E24).withOpacity(0.45),
-          Colors.black.withOpacity(0.85),
+          Color(0xFF0C1B33),
+          Color(0xFF0C2E24),
+          Colors.black,
         ],
       );
   }
 }
-
 /// أيقونة مصغّرة داخل إطار مقوّس (محراب) — مسجد + هلال/نجوم ليلًا، أو
 /// مسجد + شمس نهارًا، مرسومة بالكامل بالكود (بلا صورة خارجية).
 class PrayerWindowIcon extends StatelessWidget {

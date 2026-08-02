@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final next = state.nextPrayer;
-    final period = currentDayPeriod();
+    final PrayerDayPeriod period = currentDayPeriod();
 
     return Scaffold(
       body: Stack(

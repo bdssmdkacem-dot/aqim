@@ -398,6 +398,7 @@ class _NextPrayerCard extends StatelessWidget {
               width: 84,
               height: 84,
               child: Image.asset(
+               debugPrint("next.name = ${next.name}");
                 'assets/images/prayer_icons/${next.name}.png',
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => PrayerWindowIcon(period: period),

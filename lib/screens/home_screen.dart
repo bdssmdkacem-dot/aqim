@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final next = state.nextPrayer;
-    final PrayerDayPeriod period = currentDayPeriod();
+    final period = currentPrayerDayPeriod();
 
     return Scaffold(
       body: Stack(
@@ -394,7 +394,15 @@ class _NextPrayerCard extends StatelessWidget {
               color: AppColors.gold.withOpacity(0.3),
               margin: const EdgeInsets.symmetric(horizontal: 12),
             ),
-            PrayerWindowIcon(period: period),
+            SizedBox(
+              width: 84,
+              height: 84,
+              child: Image.asset(
+                'assets/images/prayer_icons/${next.name}.png',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => PrayerWindowIcon(period: period),
+              ),
+            ),
           ],
         ),
       ),

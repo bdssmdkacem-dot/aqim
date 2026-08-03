@@ -1,5 +1,102 @@
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
+enum PrayerDayPeriod { dawn, day, sunset, night }
 
+/// يحدّد فترة اليوم الحالية من ساعة الجهاز، لتلوين الخلفية والأيقونة
+/// المصغّرة بما يناسب (فجر/نهار/غروب/ليل) — بلا حاجة لصور متعددة.
+PrayerDayPeriod currentPrayerDayPeriod([DateTime? now]) {
+  final hour = (now ?? DateTime.now()).hour;
+  if (hour >= 5 && hour < 7) return PrayerDayPeriod.dawn;
+  if (hour >= 7 && hour < 17) return PrayerDayPeriod.day;
+  if (hour >= 17 && hour < 19) return PrayerDayPeriod.sunset;
+  return PrayerDayPeriod.night;
+}
+
+/// تدرّج شفاف يُوضَع فوق صورة المسجد ليعطي إحساس الفترة الزمنية
+/// الحالية (فجر/نهار/غروب/ليل) بلا الحاجة لعدّة صور خلفية.
+LinearGradient tintForPeriod(PrayerDayPeriod period) {
+  switch (period) {
+    case PrayerDayPeriod.dawn:
+      return LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFF3A2A4A).withOpacity(0.35),
+          const Color(0xFFB56B4A).withOpacity(0.25),
+          Colors.black.withOpacity(0.80),
+        ],
+      );
+    case PrayerDayPeriod.day:
+      return LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFF1B3A52).withOpacity(0.20),
+          const Color(0xFF0F3D2E).withOpacity(0.30),
+          Colors.black.withOpacity(0.78),
+        ],
+      );
+    case PrayerDayPeriod.sunset:
+      return LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFF7A3A2A).withOpacity(0.30),
+          const Color(0xFFB5654A).withOpacity(0.25),
+          Colors.black.withOpacity(0.82),
+        ],
+      );
+    case PrayerDayPeriod.night:
+      return LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFF0C1B33).withOpacity(0.55),
+          const Color(0xFF0C2E24).withOpacity(0.45),
+          Colors.black.withOpacity(0.85),
+        ],
+      );
+  }
+}
+
+/// أيقونة مصغّرة داخل إطار مقوّس (محراب) — مسجد + هلال/نجوم ليلًا، أو
+/// مسجد + شمس نهارًا، مرسومة بالكامل بالكود (بلا صورة خارجية).
+class PrayerWindowIcon extends StatelessWidget {
+  final PrayerDayPeriod period;
+  final double size;
+
+  const PrayerWindowIcon({super.key, required this.period, this.size = 84});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(size, size),
+      painter: _WindowPainter(period: period),
+    );
+  }
+}
+
+class _WindowPainter extends CustomPainter {
+  final PrayerDayPeriod period;
+  _WindowPainter({required this.period});
+
+  bool get _isNight => period == PrayerDayPeriod.night || period == PrayerDayPeriod.dawn;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final gold = Paint()
+      ..color = AppColors.gold
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round;
+    final goldFill = Paint()..color = AppColors.gold;
+
+    // إطار المحراب (قوس فوق مستطيل)
+    final archPath = Path();
     final archTop = h * 0.10;
     final sideMargin = w * 0.08;
     archPath.moveTo(sideMargin, h * 0.92);

@@ -342,17 +342,24 @@ class _NextPrayerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imagePath = 'assets/images/prayer_icons/${next.name}.png';
+    debugPrint('Loading prayer icon: $imagePath');
+
     return InkWell(
       borderRadius: BorderRadius.circular(20),
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => PrePrayerScreen(prayer: next)),
+        MaterialPageRoute(
+          builder: (_) => PrePrayerScreen(prayer: next),
+        ),
       ),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: AppColors.surfaceDark.withOpacity(0.85),
-          border: Border.all(color: AppColors.gold.withOpacity(0.45)),
+          border: Border.all(
+            color: AppColors.gold.withOpacity(0.45),
+          ),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -363,48 +370,70 @@ class _NextPrayerCard extends StatelessWidget {
                 children: [
                   const Text(
                     'الصلاة القادمة',
-                    style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     next.arabicName,
-                    style: GoogleFonts.amiri(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.goldSoft),
+                    style: GoogleFonts.amiri(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.goldSoft,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     state.displayTimeFor(next),
-                    style: GoogleFonts.tajawal(fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white),
+                    style: GoogleFonts.tajawal(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                   if (countdown != null) ...[
                     const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.hourglass_bottom,
+                          size: 13,
+                          color: AppColors.gold,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          countdown!,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.gold,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
             Container(
               width: 1,
               height: 70,
-              color: AppColors.gold.withOpacity(0.3),
               margin: const EdgeInsets.symmetric(horizontal: 12),
+              color: AppColors.gold.withOpacity(0.3),
             ),
             SizedBox(
               width: 84,
               height: 84,
-              child: Builder(
-                builder: (context) {
-                  final imagePath =
-                      'assets/images/prayer_icons/${next.name}.png';
-
-                  debugPrint('Loading prayer icon: $imagePath');
-
-                  return Image.asset(
-                    imagePath,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      debugPrint(
-                        'Failed to load prayer icon: $imagePath',
-                      );
-                      debugPrint(error.toString());
-
-                      return PrayerWindowIcon(period: period);
-                    },
-                  );
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  debugPrint('Failed to load: $imagePath');
+                  debugPrint(error.toString());
+                  return PrayerWindowIcon(period: period);
                 },
               ),
             ),
@@ -414,20 +443,6 @@ class _NextPrayerCard extends StatelessWidget {
     );
   }
 }
-
-class _PillButton extends StatelessWidget {
-  final String label;
-  final IconData? icon;
-  final VoidCallback? onTap;
-  final bool filled;
-
-  const _PillButton({
-    required this.label,
-    this.icon,
-    required this.onTap,
-    this.filled = true,
-  });
-
   @override
   Widget build(BuildContext context) {
     return InkWell(

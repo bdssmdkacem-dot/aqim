@@ -377,17 +377,6 @@ class _NextPrayerCard extends StatelessWidget {
                   ),
                   if (countdown != null) ...[
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.hourglass_bottom, size: 13, color: AppColors.gold),
-                        const SizedBox(width: 4),
-                        Text(countdown!, style: const TextStyle(fontSize: 12.5, color: AppColors.gold, fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
             Container(
               width: 1,
               height: 70,
@@ -397,11 +386,26 @@ class _NextPrayerCard extends StatelessWidget {
             SizedBox(
               width: 84,
               height: 84,
-              child: Image.asset(
-               debugPrint("next.name = ${next.name}");
-                'assets/images/prayer_icons/${next.name}.png',
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => PrayerWindowIcon(period: period),
+              child: Builder(
+                builder: (context) {
+                  final imagePath =
+                      'assets/images/prayer_icons/${next.name}.png';
+
+                  debugPrint('Loading prayer icon: $imagePath');
+
+                  return Image.asset(
+                    imagePath,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      debugPrint(
+                        'Failed to load prayer icon: $imagePath',
+                      );
+                      debugPrint(error.toString());
+
+                      return PrayerWindowIcon(period: period);
+                    },
+                  );
+                },
               ),
             ),
           ],
@@ -417,7 +421,12 @@ class _PillButton extends StatelessWidget {
   final VoidCallback? onTap;
   final bool filled;
 
-  const _PillButton({required this.label, this.icon, required this.onTap, this.filled = true});
+  const _PillButton({
+    required this.label,
+    this.icon,
+    required this.onTap,
+    this.filled = true,
+  });
 
   @override
   Widget build(BuildContext context) {

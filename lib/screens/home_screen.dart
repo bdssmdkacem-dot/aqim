@@ -165,9 +165,11 @@ class _TopRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
-            borderRadius: BorderRadius.circular(20),
-          ),
+  border: Border.all(
+    color: AppColors.gold.withValues(alpha: 0.5),
+  ),
+  borderRadius: BorderRadius.circular(30),
+),
           child: Text(
             'سلسلة ${state.streak} 🔥',
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
@@ -283,10 +285,11 @@ class _TitleBlock extends StatelessWidget {
 class _MainCard extends StatelessWidget {
   final AppState state;
   final Prayer? next;
-  final PrayerDayperiod;
+  final PrayerDayPeriod period;
   final String? shortCountdown;
 
   const _MainCard({
+    super.key,
     required this.state,
     required this.next,
     required this.period,
@@ -363,9 +366,11 @@ class _AthanReminderBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        border: AppColors.gold.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(18),
-      ),
+  border: Border.all(
+    color: AppColors.gold.withValues(alpha: 0.4),
+  ),
+  borderRadius: BorderRadius.circular(18),
+),
       child: Row(
         children: [
           const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
@@ -403,7 +408,7 @@ class _AthanReminderBar extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.gold.withOpacity(0.5)),
+                border: Border.all(color: AppColors.gold.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(30),
               ),
               child: Row(

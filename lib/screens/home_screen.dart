@@ -9,7 +9,7 @@ import '../theme/app_theme.dart';
 import '../utils/gregorian_arabic.dart';
 import '../utils/hijri_date.dart';
 import '../widgets/day_arc.dart';
-import '../widgets/prayer_window_icon.dart';
+import '../widgets/prayer_window_icon.dart' as prayer_window;
 import 'nearby_mosques_screen.dart';
 import 'pre_prayer_screen.dart';
 import 'settings_screen.dart';

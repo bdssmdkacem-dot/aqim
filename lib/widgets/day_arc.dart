@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/prayer.dart';
 import '../theme/app_theme.dart';
-import 'prayer_window_icon.dart' show DayPeriod;
+import 'prayer_window_icon.dart' show PrayerDayPeriod;
 
 /// "قوس اليوم": يمثل الصلوات الخمس كنقاط على مسار مقوّس يشبه مسار الشمس،
 /// كل نقطة تُلوَّن بحسب حالتها (تمت / القادمة / لم يحن وقتها / فائتة لم

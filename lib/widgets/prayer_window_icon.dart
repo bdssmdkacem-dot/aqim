@@ -88,6 +88,18 @@ class PrayerWindowIcon extends StatelessWidget {
     this.size = 84,
   });
 
+  /// Convenience constructor that automatically uses the current time.
+  factory PrayerWindowIcon.current({
+    Key? key,
+    double size = 84,
+  }) {
+    return PrayerWindowIcon(
+      key: key,
+      period: currentPrayerDayPeriod(),
+      size: size,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return CustomPaint(

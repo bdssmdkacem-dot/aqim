@@ -116,11 +116,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 @override
 Widget build(BuildContext context) {
-  final state = context.watch<AppState>();
-
+  final AppState state = context.watch<AppState>();
   final Prayer? next = state.nextPrayer;
-
-  // Use the function that actually exists in prayer_window_icon.dart
   final PrayerDayPeriod period = currentPrayerDayPeriod();
 
   return Scaffold(

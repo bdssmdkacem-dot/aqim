@@ -121,7 +121,7 @@ Widget build(BuildContext context) {
   final Prayer? next = state.nextPrayer;
 
   // Use the function that actually exists in prayer_window_icon.dart
-  final period = currentDayPeriod();
+  final period = currentPrayerDayPeriod();
 
   return Scaffold(
     backgroundColor: AppColors.ink,
@@ -194,6 +194,7 @@ Widget build(BuildContext context) {
     ),
   );
 }
+} 
 class _TopRow extends StatelessWidget {
   final AppState state;
 

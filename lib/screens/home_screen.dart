@@ -90,8 +90,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final next = state.nextPrayer;
-    final period = currentDayPeriod();
+final next = state.nextPrayer;
+final period = currentPrayerDayPeriod();
 
     return Scaffold(
       backgroundColor: AppColors.ink,
@@ -165,7 +165,7 @@ class _TopRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.gold.withOpacity(0.5)),
+            border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -283,7 +283,7 @@ class _TitleBlock extends StatelessWidget {
 class _MainCard extends StatelessWidget {
   final AppState state;
   final Prayer? next;
-  final DayPeriod period;
+  final PrayerDayperiod;
   final String? shortCountdown;
 
   const _MainCard({
@@ -298,7 +298,9 @@ class _MainCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
-        border: Border.all(color: AppColors.gold.withOpacity(0.5)),
+        border: Border.all(
+          color: AppColors.gold.withValues(alpha: 0.5),
+        ),
         borderRadius: BorderRadius.circular(26),
       ),
       padding: const EdgeInsets.fromLTRB(0, 0, 0, 14),
@@ -336,7 +338,11 @@ class _MainCard extends StatelessWidget {
             const SizedBox(height: 4),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: _AthanReminderBar(state: state, next: next!, countdown: shortCountdown),
+              child: _AthanReminderBar(
+                state: state,
+                next: next!,
+                countdown: shortCountdown,
+              ),
             ),
           ],
         ],
@@ -357,7 +363,7 @@ class _AthanReminderBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.gold.withOpacity(0.4)),
+        border: AppColors.gold.withValues(alpha: 0.4)),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(

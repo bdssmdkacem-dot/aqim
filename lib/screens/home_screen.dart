@@ -121,7 +121,7 @@ Widget build(BuildContext context) {
   final Prayer? next = state.nextPrayer;
 
   // Use the function that actually exists in prayer_window_icon.dart
-  final period = currentPrayerDayPeriod();
+  final PrayerDayPeriod period = currentPrayerDayPeriod();
 
   return Scaffold(
     backgroundColor: AppColors.ink,

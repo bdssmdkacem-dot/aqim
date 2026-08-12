@@ -15,14 +15,14 @@ class DayArc extends StatelessWidget {
   final List<Prayer> prayers;
   final Map<Prayer, PrayerStatus> status;
   final String Function(Prayer)? timeLabelFor;
-  final DayPeriod period;
+  final PrayerDayPeriod period;
 
   const DayArc({
     super.key,
     required this.prayers,
     required this.status,
     this.timeLabelFor,
-    this.period = DayPeriod.day,
+    this.period = PrayerDayPeriod.day,
   });
 
   @override
@@ -46,7 +46,7 @@ class _DayArcPainter extends CustomPainter {
   final List<Prayer> prayers;
   final Map<Prayer, PrayerStatus> status;
   final String Function(Prayer)? timeLabelFor;
-  final DayPeriod period;
+  final PrayerDayPeriod period;
 
   _DayArcPainter({
     required this.prayers,
@@ -56,17 +56,20 @@ class _DayArcPainter extends CustomPainter {
   });
 
   Color _colorFor(PrayerStatus s) {
-    switch (s) {
-      case PrayerStatus.done:
-        return AppColors.sage;
-      case PrayerStatus.upcoming:
-        return AppColors.gold;
-      case PrayerStatus.missed:
-        return AppColors.ember;
-      case PrayerStatus.pending:
-        return Colors.white.withOpacity(0.55);
-    }
+  switch (s) {
+    case PrayerStatus.done:
+      return AppColors.sage;
+
+    case PrayerStatus.upcoming:
+      return AppColors.gold;
+
+    case PrayerStatus.missed:
+      return AppColors.ember;
+
+    case PrayerStatus.pending:
+      return Colors.white.withValues(alpha: 0.55);
   }
+}
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -91,7 +94,7 @@ class _DayArcPainter extends CustomPainter {
     final linePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..color = AppColors.gold.withOpacity(0.45);
+      ..color = AppColors.gold.withValues(alpha: 0.45);
     canvas.drawPath(path, linePaint);
 
     for (var i = 0; i < n; i++) {
@@ -107,7 +110,7 @@ class _DayArcPainter extends CustomPainter {
         _drawCallout(canvas, center, radius);
 
         final glow = Paint()
-          ..color = AppColors.gold.withOpacity(0.22)
+          ..color = AppColors.gold.withValues(alpha: 0.22)
           ..style = PaintingStyle.fill;
         canvas.drawCircle(center, radius + 10, glow);
       }
@@ -163,14 +166,15 @@ class _DayArcPainter extends CustomPainter {
         timeText,
         center.dx,
         center.dy + radius + (isUpcoming ? 30 : 26),
-        (s == PrayerStatus.missed ? AppColors.ember : Colors.white).withOpacity(0.85),
+        (s == PrayerStatus.missed ? AppColors.ember : Colors.white)
+    .withValues(alpha: 0.85),
         11,
       );
     }
   }
 
   void _drawSunOrMoon(Canvas canvas, Offset center, double r) {
-    final isNight = period == DayPeriod.night || period == DayPeriod.dawn;
+    final isNight = period == PrayerDayPeriod.night || period == PrayerDayPeriod.dawn;
     final iconPaint = Paint()..color = AppColors.ink;
     if (isNight) {
       canvas.saveLayer(Rect.fromCircle(center: center, radius: r + 2), Paint());
@@ -216,7 +220,7 @@ class _DayArcPainter extends CustomPainter {
     final strokePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2
-      ..color = AppColors.gold.withOpacity(0.7);
+      ..color = AppColors.gold.withValues(alpha: 0.7);
     canvas.drawRRect(rrect, fillPaint);
     canvas.drawRRect(rrect, strokePaint);
 

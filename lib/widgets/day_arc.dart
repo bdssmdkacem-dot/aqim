@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/prayer.dart';
 import '../theme/app_theme.dart';
-import 'prayer_window_icon.dart' show DayPeriod;
+import 'prayer_window_icon.dart'
+    show PrayerDayPeriod;
 
 /// "قوس اليوم": يمثل الصلوات الخمس كنقاط على مسار مقوّس يشبه مسار الشمس،
 /// كل نقطة تُلوَّن بحسب حالتها (تمت / القادمة / لم يحن وقتها / فائتة لم
@@ -22,7 +23,7 @@ class DayArc extends StatelessWidget {
     required this.prayers,
     required this.status,
     this.timeLabelFor,
-    this.period = DayPeriod.day,
+    this.period = PrayerDayPeriod.day,
   });
 
   @override
@@ -64,7 +65,7 @@ class _DayArcPainter extends CustomPainter {
       case PrayerStatus.missed:
         return AppColors.ember;
       case PrayerStatus.pending:
-        return Colors.white.withOpacity(0.55);
+       return Colors.white.withValues(alpha: 0.55);
     }
   }
 
@@ -91,7 +92,7 @@ class _DayArcPainter extends CustomPainter {
     final linePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..color = AppColors.gold.withOpacity(0.45);
+      ..color = AppColors.gold.withValues(alpha: 0.45);
     canvas.drawPath(path, linePaint);
 
     for (var i = 0; i < n; i++) {
@@ -107,7 +108,7 @@ class _DayArcPainter extends CustomPainter {
         _drawCallout(canvas, center, radius);
 
         final glow = Paint()
-          ..color = AppColors.gold.withOpacity(0.22)
+          ..color = AppColors.gold.withValues(alpha: 0.22);
           ..style = PaintingStyle.fill;
         canvas.drawCircle(center, radius + 10, glow);
       }
@@ -163,14 +164,17 @@ class _DayArcPainter extends CustomPainter {
         timeText,
         center.dx,
         center.dy + radius + (isUpcoming ? 30 : 26),
-        (s == PrayerStatus.missed ? AppColors.ember : Colors.white).withOpacity(0.85),
+        (s == PrayerStatus.missed ? AppColors.ember : Colors.white)
+    .withValues(alpha: 0.85),
         11,
       );
     }
   }
 
   void _drawSunOrMoon(Canvas canvas, Offset center, double r) {
-    final isNight = period == DayPeriod.night || period == DayPeriod.dawn;
+    final isNight =
+    period == PrayerDayPeriod.night ||
+    period == PrayerDayPeriod.dawn;
     final iconPaint = Paint()..color = AppColors.ink;
     if (isNight) {
       canvas.saveLayer(Rect.fromCircle(center: center, radius: r + 2), Paint());
@@ -216,7 +220,7 @@ class _DayArcPainter extends CustomPainter {
     final strokePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2
-      ..color = AppColors.gold.withOpacity(0.7);
+      ..color = AppColors.gold.withValues(alpha: 0.7);
     canvas.drawRRect(rrect, fillPaint);
     canvas.drawRRect(rrect, strokePaint);
 

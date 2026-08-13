@@ -34,7 +34,7 @@ class PrayerArchHero extends StatefulWidget {
   final Prayer next;
   final DateTime? nextRealTime;
   final String timeLabel;
-  final DayPeriod period;
+  final PrayerDayPeriod  period;
 
   const PrayerArchHero({
     super.key,
@@ -270,7 +270,7 @@ class _ArchBorderPainter extends CustomPainter {
 /// رسمة بديلة (fallback) لمشهد مسجد عند الغروب/فترات اليوم المختلفة،
 /// تُستعمل تلقائيًا حين لا يوجد ملف assets/images/arch_hero.jpg.
 class _ArchScenePainter extends CustomPainter {
-  final DayPeriod period;
+  final PrayerDayPeriod  period;
   _ArchScenePainter({required this.period});
 
   @override
@@ -378,7 +378,7 @@ class _ArchScenePainter extends CustomPainter {
     canvas.restore();
   }
 
-  List<Color> _skyColorsFor(DayPeriod period) {
+  List<Color> _skyColorsFor(PrayerDayPeriod  period) {
     switch (period) {
       case DayPeriod.dawn:
         return const [Color(0xFF35304A), Color(0xFF8A5A5A), Color(0xFFD9A15C)];

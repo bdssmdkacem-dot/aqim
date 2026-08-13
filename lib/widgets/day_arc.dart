@@ -65,7 +65,7 @@ class _DayArcPainter extends CustomPainter {
       case PrayerStatus.missed:
         return AppColors.ember;
       case PrayerStatus.pending:
-       return Colors.white.withValues(alpha: 0.55);
+       return Colors.white.withOpacity(0.55);
     }
   }
 
@@ -92,7 +92,7 @@ class _DayArcPainter extends CustomPainter {
     final linePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..color = AppColors.gold.withValues(alpha: 0.45);
+      ..color = AppColors.gold.withOpacity(0.45);
     canvas.drawPath(path, linePaint);
 
     for (var i = 0; i < n; i++) {
@@ -103,16 +103,16 @@ class _DayArcPainter extends CustomPainter {
       final isUpcoming = s == PrayerStatus.upcoming;
       final radius = isUpcoming ? 20.0 : 12.0;
 
-      if (isUpcoming) {
-        // تلميح "الصلاة القادمة" فوق النقطة مباشرة.
-        _drawCallout(canvas, center, radius);
+     if (isUpcoming) {
+  // تلميح "الصلاة القادمة" فوق النقطة مباشرة.
+  _drawCallout(canvas, center, radius);
 
-        final glow = Paint()
-          ..color = AppColors.gold.withValues(alpha: 0.22);
-          ..style = PaintingStyle.fill;
-        canvas.drawCircle(center, radius + 10, glow);
-      }
+  final glow = Paint()
+    ..color = AppColors.gold.withOpacity(0.22)
+    ..style = PaintingStyle.fill;
 
+  canvas.drawCircle(center, radius + 10, glow);
+}
       final dot = Paint()..color = color;
       canvas.drawCircle(center, radius, dot);
 
@@ -165,7 +165,7 @@ class _DayArcPainter extends CustomPainter {
         center.dx,
         center.dy + radius + (isUpcoming ? 30 : 26),
         (s == PrayerStatus.missed ? AppColors.ember : Colors.white)
-    .withValues(alpha: 0.85),
+    .withOpacity(0.85),
         11,
       );
     }
@@ -220,7 +220,7 @@ class _DayArcPainter extends CustomPainter {
     final strokePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2
-      ..color = AppColors.gold.withValues(alpha: 0.7);
+      ..color = AppColors.gold.withOpacity(0.7);
     canvas.drawRRect(rrect, fillPaint);
     canvas.drawRRect(rrect, strokePaint);
 

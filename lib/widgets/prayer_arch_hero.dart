@@ -128,12 +128,12 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                         stops: const [0.0, 0.46, 0.62, 1.0],
-                        colors: [
-                          Colors.transparent,
-                          Colors.transparent,
-                          AppColors.ink.withValues(alpha: 0.55)
-                          AppColors.ink.withOpacity(0.92),
-                        ],
+                       colors: [
+  Colors.transparent,
+  Colors.transparent,
+  AppColors.ink.withValues(alpha: 0.55),
+  AppColors.ink.withValues(alpha: 0.92),
+],
                       ),
                     ),
                   ),
@@ -409,8 +409,6 @@ List<Color> _skyColorsFor(PrayerDayPeriod period) {
         Color(0xFF203A52),
       ];
   }
-
-  throw UnimplementedError();
 }
 
   @override

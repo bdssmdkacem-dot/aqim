@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/prayer.dart';
 import '../theme/app_theme.dart';
-import 'prayer_window_icon.dart' show DayPeriod;
+import 'prayer_window_icon.dart'
+    show PrayerDayPeriod;
 
 /// شكل "قوس المحراب" (مغربي/أندلسي — قوس حدوة حصان مدبَّب) الذي يظهر
 /// أعلى الصفحة الرئيسية، ويحتضن صورة/رسمة المسجد ومعلومات الصلاة القادمة.
@@ -130,7 +131,7 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
                         colors: [
                           Colors.transparent,
                           Colors.transparent,
-                          AppColors.ink.withOpacity(0.55),
+                          AppColors.ink.withValues(alpha: 0.55)
                           AppColors.ink.withOpacity(0.92),
                         ],
                       ),
@@ -294,7 +295,7 @@ class _ArchScenePainter extends CustomPainter {
 
     // الشمس/القمر
     final bodyCenter = Offset(w * 0.28, h * 0.32);
-    final isNight = period == DayPeriod.night;
+    final isNight = period == PrayerDayPeriod.night;
     if (isNight) {
       final moonR = w * 0.05;
       canvas.saveLayer(rect, Paint());
@@ -378,18 +379,39 @@ class _ArchScenePainter extends CustomPainter {
     canvas.restore();
   }
 
-  List<Color> _skyColorsFor(PrayerDayPeriod  period) {
-    switch (period) {
-      case DayPeriod.dawn:
-        return const [Color(0xFF35304A), Color(0xFF8A5A5A), Color(0xFFD9A15C)];
-      case DayPeriod.day:
-        return const [Color(0xFF4A87B0), Color(0xFF9CC3D9), Color(0xFFE8DDB8)];
-      case DayPeriod.sunset:
-        return const [Color(0xFF3B3350), Color(0xFFB06A45), Color(0xFFF0C36B)];
-      case DayPeriod.night:
-        return const [Color(0xFF0B1330), Color(0xFF16264A), Color(0xFF203A52)];
-    }
+List<Color> _skyColorsFor(PrayerDayPeriod period) {
+  switch (period) {
+    case PrayerDayPeriod.dawn:
+      return const [
+        Color(0xFF35304A),
+        Color(0xFF8A5A5A),
+        Color(0xFFD9A15C),
+      ];
+
+    case PrayerDayPeriod.day:
+      return const [
+        Color(0xFF4A87B0),
+        Color(0xFF9CC3D9),
+        Color(0xFFE8DDB8),
+      ];
+
+    case PrayerDayPeriod.sunset:
+      return const [
+        Color(0xFF3B3350),
+        Color(0xFFB06A45),
+        Color(0xFFF0C36B),
+      ];
+
+    case PrayerDayPeriod.night:
+      return const [
+        Color(0xFF0B1330),
+        Color(0xFF16264A),
+        Color(0xFF203A52),
+      ];
   }
+
+  throw UnimplementedError();
+}
 
   @override
   bool shouldRepaint(covariant _ArchScenePainter oldDelegate) => oldDelegate.period != period;

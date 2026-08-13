@@ -283,7 +283,7 @@ class _TitleBlock extends StatelessWidget {
 class _MainCard extends StatelessWidget {
   final AppState state;
   final Prayer? next;
-  final DayPeriod period;
+  final PrayerDayPeriod  period;
   final String? shortCountdown;
 
   const _MainCard({

@@ -78,9 +78,9 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        // Match the reference: the mihrab is the dominant visual element,
-        // roughly the width of the phone before the quick-action cards.
-        final height = math.min(width * 0.98, 510.0);
+        // The reference hero is tall and dominant: keep the mihrab close to
+        // a portrait composition instead of collapsing it into a short card.
+        final height = math.min(width * 0.87, 780.0);
 
         return SizedBox(
           width: width,
@@ -94,6 +94,7 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
                   child: Image.asset(
                     'assets/images/arch_hero.jpg',
                     fit: BoxFit.cover,
+                    alignment: Alignment.center,
                     errorBuilder: (context, error, stackTrace) => CustomPaint(
                       painter: _ArchScenePainter(period: widget.period),
                     ),
@@ -143,13 +144,19 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
                   ),
                 ),
               ),
+              // The prayer information is deliberately centered on the
+              // mihrab, matching the supplied reference instead of being
+              // anchored to the right edge.
               Positioned(
-                top: height * 0.20,
-                right: width * 0.12,
-                child: _HeroPrayerInfo(
-                  prayerName: widget.next.arabicName,
-                  timeLabel: widget.timeLabel,
-                  countdownText: _countdownText,
+                top: height * 0.18,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: _HeroPrayerInfo(
+                    prayerName: widget.next.arabicName,
+                    timeLabel: widget.timeLabel,
+                    countdownText: _countdownText,
+                  ),
                 ),
               ),
               Positioned.fill(
@@ -177,32 +184,36 @@ class _HeroPrayerInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           'الصلاة القادمة',
+          textAlign: TextAlign.center,
           style: GoogleFonts.cairo(
-            fontSize: 15,
+            fontSize: 17,
             fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 6),
         Text(
           prayerName,
+          textAlign: TextAlign.center,
           style: GoogleFonts.amiri(
-            fontSize: 42,
+            fontSize: 48,
             height: .95,
             fontWeight: FontWeight.w700,
             color: AppColors.gold,
             shadows: const [Shadow(color: Colors.black54, blurRadius: 6)],
           ),
         ),
-        const SizedBox(height: 13),
+        const SizedBox(height: 16),
         Text(
           timeLabel,
+          textAlign: TextAlign.center,
           style: GoogleFonts.tajawal(
-            fontSize: 34,
+            fontSize: 38,
             fontWeight: FontWeight.w800,
             color: Colors.white,
             fontFeatures: const [FontFeature.tabularFigures()],
@@ -210,23 +221,24 @@ class _HeroPrayerInfo extends StatelessWidget {
           ),
         ),
         if (countdownText != null) ...[
-          const SizedBox(height: 7),
-          Text('بعد', style: GoogleFonts.cairo(fontSize: 15, color: Colors.white)),
-          const SizedBox(height: 2),
+          const SizedBox(height: 10),
+          Text('بعد', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 16, color: Colors.white)),
+          const SizedBox(height: 3),
           Text(
             countdownText!,
+            textAlign: TextAlign.center,
             style: GoogleFonts.tajawal(
-              fontSize: 27,
+              fontSize: 31,
               fontWeight: FontWeight.w800,
               color: AppColors.gold,
               fontFeatures: const [FontFeature.tabularFigures()],
               shadows: const [Shadow(color: Colors.black87, blurRadius: 6)],
             ),
           ),
-          const SizedBox(height: 10),
-          Container(width: 112, height: 1, color: AppColors.gold.withValues(alpha: .75)),
-          const SizedBox(height: 8),
-          Text('إن شاء الله', style: GoogleFonts.cairo(fontSize: 12, color: AppColors.goldSoft, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          Container(width: 150, height: 1, color: AppColors.gold.withValues(alpha: .75)),
+          const SizedBox(height: 9),
+          Text('إن شاء الله', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 14, color: AppColors.goldSoft, fontWeight: FontWeight.w600)),
         ],
       ],
     );

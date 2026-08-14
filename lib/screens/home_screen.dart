@@ -15,6 +15,7 @@ import '../widgets/prayer_window_icon.dart' show PrayerDayPeriod, currentPrayerD
 
 import 'missed_prayer_response_screen.dart';
 import 'nearby_mosques_screen.dart';
+import 'qibla_screen.dart';
 import 'settings_screen.dart';
 import 'week_report_screen.dart';
 
@@ -91,6 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
               _HeroCard(state: state, next: next, period: period),
               const SizedBox(height: 8),
               const _QuickActions(),
+              const SizedBox(height: 8),
+              const _QiblaQuickAction(),
               const SizedBox(height: 2),
               if (next != null) DayArc(prayers: state.activePrayers, status: state.todayStatus, timeLabelFor: state.displayTimeFor, period: period),
               const SizedBox(height: 2),
@@ -257,6 +260,36 @@ class _QuickActions extends StatelessWidget {
     const SizedBox(width: 8),
     Expanded(child: _QuickActionCard(icon: Icons.bar_chart_rounded, title: 'التقرير الأسبوعي', subtitle: 'متابعة التقدم الأسبوعي', button: 'عرض التقرير', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WeekReportScreen())))),
   ]);
+}
+
+class _QiblaQuickAction extends StatelessWidget {
+  const _QiblaQuickAction();
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QiblaScreen())),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(begin: Alignment.centerRight, end: Alignment.centerLeft, colors: [AppColors.surface, AppColors.surfaceDark]),
+          border: Border.all(color: AppColors.gold.withOpacity(.30)),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(children: [
+          Container(width: 42, height: 42, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.gold.withOpacity(.10), border: Border.all(color: AppColors.gold.withOpacity(.45))), child: const Icon(Icons.explore_rounded, color: AppColors.goldSoft, size: 24)),
+          const SizedBox(width: 11),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('تحديد القبلة', style: GoogleFonts.amiri(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.ivory)),
+            Text('بوصلة حية باتجاه الكعبة من موقعك', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft)),
+          ])),
+          const Icon(Icons.chevron_left_rounded, color: AppColors.gold, size: 28),
+        ]),
+      ),
+    ),
+  );
 }
 
 class _QuickActionCard extends StatelessWidget {

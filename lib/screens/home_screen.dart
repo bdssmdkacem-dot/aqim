@@ -50,19 +50,11 @@ class _HomeScreenState extends State<HomeScreen> {
         surfaceTintColor: Colors.transparent,
         title: Text(
           'لضمان وصول تذكيراتك فوقتها',
-          style: GoogleFonts.amiri(
-            color: AppColors.ivory,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
+          style: GoogleFonts.amiri(color: AppColors.ivory, fontSize: 20, fontWeight: FontWeight.w700),
         ),
         content: Text(
           'بعض الهواتف (خصوصًا Xiaomi وHuawei وOppo) توقف التطبيقات في الخلفية تلقائيًا. فعّل السماح لأقم بالعمل في الخلفية والتشغيل التلقائي حتى تصلك تذكيرات الصلاة في وقتها.',
-          style: GoogleFonts.cairo(
-            color: AppColors.inkSoft,
-            height: 1.7,
-            fontSize: 13.5,
-          ),
+          style: GoogleFonts.cairo(color: AppColors.inkSoft, height: 1.7, fontSize: 13.5),
         ),
         actions: [
           TextButton(
@@ -80,9 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (openSettings == true) {
       await BatteryService.openSettings();
       final granted = await BatteryService.isFullyExempted();
-      if (granted && mounted) {
-        await state.markBatteryPromptShown();
-      }
+      if (granted && mounted) await state.markBatteryPromptShown();
     }
   }
 
@@ -132,9 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _PillButton(
                       icon: Icons.mosque_outlined,
                       label: 'أقرب مسجد',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const NearbyMosquesScreen()),
-                      ),
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NearbyMosquesScreen())),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -142,9 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _PillButton(
                       icon: Icons.bar_chart_rounded,
                       label: 'التقرير الأسبوعي',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const WeekReportScreen()),
-                      ),
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WeekReportScreen())),
                     ),
                   ),
                 ],
@@ -171,55 +157,28 @@ class _TopRow extends StatelessWidget {
       children: [
         _CircleIconButton(
           icon: Icons.settings_outlined,
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const SettingsScreen()),
-          ),
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
         ),
         const SizedBox(width: 9),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.surfaceElevated,
-                AppColors.surfaceDark,
-              ],
-            ),
+            gradient: const LinearGradient(colors: [AppColors.surfaceElevated, AppColors.surfaceDark]),
             border: Border.all(color: AppColors.gold.withOpacity(0.38)),
             borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.gold.withOpacity(0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            boxShadow: [BoxShadow(color: AppColors.gold.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4))],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.local_fire_department_rounded, size: 15, color: AppColors.goldSoft),
               const SizedBox(width: 5),
-              Text(
-                'سلسلة ${state.streak}',
-                style: GoogleFonts.tajawal(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ivory,
-                ),
-              ),
+              Text('سلسلة ${state.streak}', style: GoogleFonts.tajawal(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppColors.ivory)),
             ],
           ),
         ),
         const Spacer(),
-        Text(
-          'أَقِم',
-          style: GoogleFonts.amiri(
-            fontSize: 19,
-            fontWeight: FontWeight.w700,
-            color: AppColors.goldSoft,
-          ),
-        ),
+        Text('أَقِم', style: GoogleFonts.amiri(fontSize: 19, fontWeight: FontWeight.w700, color: AppColors.goldSoft)),
       ],
     );
   }
@@ -244,15 +203,9 @@ class _CircleIconButton extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.gold.withOpacity(0.42)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.18),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 8, offset: const Offset(0, 3))],
           ),
-          child: const Icon(Icons.settings_outlined, size: 19, color: AppColors.ivory),
+          child: Icon(icon, size: 19, color: AppColors.ivory),
         ),
       ),
     );
@@ -280,24 +233,9 @@ class _TitleBlock extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'أقم',
-                  style: GoogleFonts.amiri(
-                    fontSize: 35,
-                    height: 1,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.goldSoft,
-                  ),
-                ),
+                Text('أقم', style: GoogleFonts.amiri(fontSize: 35, height: 1, fontWeight: FontWeight.w700, color: AppColors.goldSoft)),
                 const SizedBox(height: 5),
-                Text(
-                  'لأجل صلاة في وقتها',
-                  style: GoogleFonts.cairo(
-                    fontSize: 11.5,
-                    color: AppColors.inkSoft,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text('لأجل صلاة في وقتها', style: GoogleFonts.cairo(fontSize: 11.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -305,45 +243,21 @@ class _TitleBlock extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                GregorianArabic.format(DateTime.now()),
-                style: GoogleFonts.cairo(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ivory,
-                ),
-                textAlign: TextAlign.end,
-              ),
+              Text(GregorianArabic.format(DateTime.now()), style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.ivory), textAlign: TextAlign.end),
               const SizedBox(height: 2),
-              Text(
-                HijriDate.fromGregorian(DateTime.now()).formatted,
-                style: GoogleFonts.cairo(fontSize: 10, color: AppColors.inkSoft),
-              ),
+              Text(HijriDate.fromGregorian(DateTime.now()).formatted, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.inkSoft)),
               const SizedBox(height: 5),
               InkWell(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                ),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        state.notificationsActive ? Icons.location_on_outlined : Icons.error_outline,
-                        size: 12,
-                        color: state.notificationsActive ? AppColors.gold : AppColors.goldSoft,
-                      ),
+                      Icon(state.notificationsActive ? Icons.location_on_outlined : Icons.error_outline, size: 12, color: state.notificationsActive ? AppColors.gold : AppColors.goldSoft),
                       const SizedBox(width: 4),
-                      Text(
-                        locationLabel,
-                        style: GoogleFonts.cairo(
-                          fontSize: 10,
-                          color: state.notificationsActive ? AppColors.inkSoft : AppColors.goldSoft,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      Text(locationLabel, style: GoogleFonts.cairo(fontSize: 10, color: state.notificationsActive ? AppColors.inkSoft : AppColors.goldSoft, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
@@ -362,12 +276,7 @@ class _MainCard extends StatefulWidget {
   final PrayerDayPeriod period;
   final Duration? remaining;
 
-  const _MainCard({
-    required this.state,
-    required this.next,
-    required this.period,
-    required this.remaining,
-  });
+  const _MainCard({required this.state, required this.next, required this.period, required this.remaining});
 
   @override
   State<_MainCard> createState() => _MainCardState();
@@ -379,21 +288,11 @@ class _MainCardState extends State<_MainCard> {
   @override
   void didUpdateWidget(covariant _MainCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.next != _dismissedPrayer) {
-      _dismissedPrayer = null;
-    }
+    if (widget.next != _dismissedPrayer) _dismissedPrayer = null;
   }
 
   void _openAdhkar() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const AdhkarFlowScreen(
-          title: 'أذكار ما بين الأذان والإقامة',
-          items: beforePrayerAdhkar,
-          audioCategory: 'before',
-        ),
-      ),
-    );
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AdhkarFlowScreen(title: 'أذكار ما بين الأذان والإقامة', items: beforePrayerAdhkar, audioCategory: 'before')));
   }
 
   @override
@@ -402,27 +301,12 @@ class _MainCardState extends State<_MainCard> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppColors.surfaceElevated,
-            AppColors.surfaceDark,
-          ],
-        ),
+        gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.surfaceElevated, AppColors.surfaceDark]),
         border: Border.all(color: AppColors.gold.withOpacity(0.46)),
         borderRadius: BorderRadius.circular(26),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 22,
-            offset: const Offset(0, 9),
-          ),
-          BoxShadow(
-            color: AppColors.gold.withOpacity(0.035),
-            blurRadius: 28,
-            spreadRadius: 1,
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 22, offset: const Offset(0, 9)),
+          BoxShadow(color: AppColors.gold.withOpacity(0.035), blurRadius: 28, spreadRadius: 1),
         ],
       ),
       padding: const EdgeInsets.fromLTRB(0, 0, 0, 14),
@@ -430,29 +314,13 @@ class _MainCardState extends State<_MainCard> {
         children: [
           if (next != null)
             ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(25),
-                topRight: Radius.circular(25),
-              ),
-              child: PrayerArchHero(
-                next: next,
-                nextRealTime: widget.state.realTimes?[next],
-                timeLabel: widget.state.displayTimeFor(next),
-                period: widget.period,
-              ),
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25)),
+              child: PrayerArchHero(next: next, nextRealTime: widget.state.realTimes?[next], timeLabel: widget.state.displayTimeFor(next), period: widget.period),
             )
           else
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 24, 18, 8),
-              child: Text(
-                'أتممت صلوات اليوم المستهدفة 🎉',
-                style: GoogleFonts.amiri(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.goldSoft,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              child: Text('أتممت صلوات اليوم المستهدفة 🎉', style: GoogleFonts.amiri(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.goldSoft), textAlign: TextAlign.center),
             ),
           if (next != null && _dismissedPrayer != next)
             Padding(
@@ -467,12 +335,7 @@ class _MainCardState extends State<_MainCard> {
               ),
             ),
           const SizedBox(height: 4),
-          DayArc(
-            prayers: widget.state.activePrayers,
-            status: widget.state.todayStatus,
-            timeLabelFor: widget.state.displayTimeFor,
-            period: widget.period,
-          ),
+          DayArc(prayers: widget.state.activePrayers, status: widget.state.todayStatus, timeLabelFor: widget.state.displayTimeFor, period: widget.period),
         ],
       ),
     );
@@ -485,12 +348,7 @@ class _PillButton extends StatelessWidget {
   final VoidCallback? onTap;
   final bool filled;
 
-  const _PillButton({
-    required this.label,
-    this.icon,
-    required this.onTap,
-    this.filled = true,
-  });
+  const _PillButton({required this.label, this.icon, required this.onTap, this.filled = true});
 
   @override
   Widget build(BuildContext context) {
@@ -503,13 +361,7 @@ class _PillButton extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
           decoration: BoxDecoration(
-            gradient: filled
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.surface, AppColors.surfaceDark],
-                  )
-                : null,
+            gradient: filled ? const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surface, AppColors.surfaceDark]) : null,
             color: filled ? null : Colors.transparent,
             border: Border.all(color: AppColors.gold.withOpacity(0.34)),
             borderRadius: BorderRadius.circular(18),
@@ -522,17 +374,7 @@ class _PillButton extends StatelessWidget {
                 const SizedBox(width: 8),
               ],
               Flexible(
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.amiri(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ivory,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                child: Text(label, textAlign: TextAlign.center, style: GoogleFonts.amiri(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ivory), maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
             ],
           ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../ads/app_banner_ad.dart';
 import '../models/prayer.dart';
 import '../services/battery_service.dart';
 import '../state/app_state.dart';
@@ -98,10 +97,6 @@ class _HomeScreenState extends State<HomeScreen> {
               if (next != null) DayArc(prayers: state.activePrayers, status: state.todayStatus, timeLabelFor: state.displayTimeFor, period: period),
               const SizedBox(height: 2),
               _WeeklyProgressCard(state: state),
-              if (!state.adsRemoved) ...[
-                const SizedBox(height: 12),
-                const AppBannerAd(),
-              ],
             ],
           ),
         ),

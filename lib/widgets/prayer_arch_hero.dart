@@ -18,24 +18,6 @@ import 'prayer_window_icon.dart' show PrayerDayPeriod;
 /// - Prayer time
 /// - Live countdown
 /// - Automatic fallback illustration if the image cannot be loaded
-class PrayerArchHero extends StatefulWidget {
-  final Prayer next;
-  final DateTime? nextRealTime;
-  final String timeLabel;
-  final PrayerDayPeriod period;
-
-  const PrayerArchHero({
-    super.key,
-    required this.next,
-    required this.nextRealTime,
-    required this.timeLabel,
-    required this.period,
-  });
-
-  @override
-  State<PrayerArchHero> createState() => _PrayerArchHeroState();
-}
-
 class _PrayerArchHeroState extends State<PrayerArchHero> {
   Timer? _ticker;
   Duration? _remaining;
@@ -43,6 +25,7 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
   @override
   void initState() {
     super.initState();
+
     _tick();
 
     _ticker = Timer.periodic(
@@ -66,7 +49,7 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
     final target = widget.nextRealTime;
 
     if (target == null) {
-      if (mounted) {
+      if (mounted && _remaining != null) {
         setState(() {
           _remaining = null;
         });
@@ -75,10 +58,11 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
     }
 
     final diff = target.difference(DateTime.now());
+    final newValue = diff.isNegative ? Duration.zero : diff;
 
-    if (mounted) {
+    if (mounted && _remaining != newValue) {
       setState(() {
-        _remaining = diff.isNegative ? Duration.zero : diff;
+        _remaining = newValue;
       });
     }
   }
@@ -87,6 +71,10 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
   void dispose() {
     _ticker?.cancel();
     super.dispose();
+  }
+
+  String _twoDigits(int value) {
+    return value.toString().padLeft(2, '0');
   }
 
   String _twoDigits(int value) {
@@ -107,38 +95,30 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
     return '$hours:$minutes:$seconds';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
+ @override
+Widget build(BuildContext context) {
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final width = constraints.maxWidth;
+      final height = math.min(width * 0.60, 340.0);
 
-        // Slightly taller than the previous version.
-        // This gives "الفجر 06:02" enough room without making
-        // the hero unnecessarily large.
-        final height = width * 0.64;
-
-        return SizedBox(
-          width: width,
-          height: height,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // ============================================================
-              // HERO IMAGE / FALLBACK
-              // ============================================================
-              ClipPath(
-                clipper: _ArchClipper(),
+      return SizedBox(
+        width: width,
+        height: height,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // ============================================================
+            // HERO IMAGE / FALLBACK
+            // ============================================================
+            ClipPath(
+              clipper: _ArchClipper(),
+              child: SizedBox.expand(
                 child: Image.asset(
                   'assets/images/arch_hero.jpg',
-                  width: width,
-                  height: height,
                   fit: BoxFit.cover,
-
-                  // If the image is missing, the application still works.
                   errorBuilder: (context, error, stackTrace) {
                     return CustomPaint(
-                      size: Size(width, height),
                       painter: _ArchScenePainter(
                         period: widget.period,
                       ),
@@ -146,39 +126,42 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
                   },
                 ),
               ),
+            ),
 
-              // ============================================================
-              // GLOBAL DARK OVERLAY
-              // ============================================================
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: ClipPath(
-                    clipper: _ArchClipper(),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          stops: const [
-                            0.00,
-                            0.48,
-                            0.68,
-                            1.00,
-                          ],
-                          colors: [
-                            Colors.black.withValues(alpha: 0.04),
-                            Colors.black.withValues(alpha: 0.08),
-                            AppColors.ink.withValues(alpha: 0.42),
-                            AppColors.ink.withValues(alpha: 0.86),
-                          ],
-                        ),
+            // ============================================================
+            // GLOBAL DARK OVERLAY
+            // ============================================================
+            Positioned.fill(
+              child: IgnorePointer(
+                child: ClipPath(
+                  clipper: _ArchClipper(),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        stops: const [
+                          0.00,
+                          0.48,
+                          0.68,
+                          1.00,
+                        ],
+                        colors: [
+                          Colors.black.withValues(alpha: 0.04),
+                          Colors.black.withValues(alpha: 0.08),
+                          AppColors.ink.withValues(alpha: 0.42),
+                          AppColors.ink.withValues(alpha: 0.86),
+                        ],
                       ),
                     ),
                   ),
                 ),
               ),
-
+            ),
               // ============================================================
+              // SUBTLE BOTTOM VIGNETTE
+              // ============================================================
+                           // ============================================================
               // SUBTLE BOTTOM VIGNETTE
               // ============================================================
               Positioned.fill(
@@ -210,20 +193,16 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
               // ============================================================
               // PRAYER INFORMATION
               // ============================================================
-            Positioned(
-  top: height * 0.17,
-  left: width * 0.12,
-  bottom: height * 0.11,
-  width: width * 0.40,
-  child: Align(
-    alignment: Alignment.center,
-    child: _PrayerInfoPanel(
-      prayerName: widget.next.arabicName,
-      timeLabel: widget.timeLabel,
-      countdownText: _countdownText,
-    ),
-  ),
-),
+              Positioned(
+                top: height * 0.15,
+                left: width * 0.08,
+                width: width * 0.40,
+                child: _PrayerInfoPanel(
+                  prayerName: widget.next.arabicName,
+                  timeLabel: widget.timeLabel,
+                  countdownText: _countdownText,
+                ),
+              ),
 
               // ============================================================
               // GOLD ARCH BORDER
@@ -253,6 +232,7 @@ class _PrayerInfoPanel extends StatelessWidget {
   final String? countdownText;
 
   const _PrayerInfoPanel({
+    super.key,
     required this.prayerName,
     required this.timeLabel,
     required this.countdownText,
@@ -260,10 +240,12 @@ class _PrayerInfoPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Container(
       constraints: const BoxConstraints(
-        minWidth: 140,
-        maxWidth: 230,
+        minWidth: 135,
+        maxWidth: 185,
       ),
       padding: const EdgeInsets.symmetric(
         horizontal: 16,
@@ -286,11 +268,6 @@ class _PrayerInfoPanel extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-
-          // -------------------------------
-          // Right aligned
-          // -------------------------------
-
           Align(
             alignment: Alignment.centerRight,
             child: Text(
@@ -312,7 +289,7 @@ class _PrayerInfoPanel extends StatelessWidget {
               prayerName,
               textAlign: TextAlign.right,
               style: GoogleFonts.amiri(
-                fontSize: 30,
+                fontSize: screenWidth < 350 ? 24 : 30,
                 fontWeight: FontWeight.bold,
                 color: AppColors.gold,
               ),
@@ -320,10 +297,6 @@ class _PrayerInfoPanel extends StatelessWidget {
           ),
 
           const SizedBox(height: 10),
-
-          // -------------------------------
-          // Center
-          // -------------------------------
 
           Center(
             child: Text(
@@ -343,11 +316,11 @@ class _PrayerInfoPanel extends StatelessWidget {
           if (countdownText != null) ...[
             const SizedBox(height: 8),
 
-            Center(
+            const Center(
               child: Text(
                 'متبقي',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   color: Colors.white60,
                   fontWeight: FontWeight.w600,
@@ -374,16 +347,12 @@ class _PrayerInfoPanel extends StatelessWidget {
 
             const SizedBox(height: 8),
 
-            // -------------------------------
-            // Left aligned
-            // -------------------------------
-
-            Align(
+            const Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'إن شاء الله',
                 textAlign: TextAlign.left,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   color: Colors.white54,
                   fontWeight: FontWeight.w500,
@@ -396,7 +365,6 @@ class _PrayerInfoPanel extends StatelessWidget {
     );
   }
 }
-
 // ==========================================================================
 // ARCH CLIPPER
 // ==========================================================================

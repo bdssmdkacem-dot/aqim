@@ -1,41 +1,28 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show FontFeature;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../models/prayer.dart';
 import '../theme/app_theme.dart';
-import 'prayer_window_icon.dart'
-    show PrayerDayPeriod;
+import 'prayer_window_icon.dart' show PrayerDayPeriod;
 
-/// شكل "قوس المحراب" (مغربي/أندلسي — قوس حدوة حصان مدبَّب) الذي يظهر
-/// أعلى الصفحة الرئيسية، ويحتضن صورة/رسمة المسجد ومعلومات الصلاة القادمة.
+/// Aqim — Moroccan / Andalusian Mihrab Hero.
 ///
-/// **بخصوص صورة الخلفية**: هذا الودجت يحاول أولًا تحميل صورة حقيقية من
-/// `assets/images/arch_hero.jpg`. إن لم يُضَف الملف بعد (أو فشل تحميله)،
-/// يعرض تلقائيًا رسمة بديلة مرسومة بالكامل بالكود (سماء + شمس/قمر +
-/// مسجد + انعكاس فـ الماء) بلا أي كراش — لذا التطبيق يعمل ويبدو جيدًا
-/// فورًا حتى بدون إضافة صورة.
-///
-/// **قياسات الصورة المطلوبة إن أردت استعمال صورة حقيقية بدل الرسمة**:
-/// - الملف: `assets/images/arch_hero.jpg` (أو .png/.webp — عدّل الامتداد
-///   فـ الكود إن غيّرت الصيغة).
-/// - المقاس الموصى به: **1600×960px** كحدّ أدنى (نسبة عرض:ارتفاع ≈ 5:3،
-///   أي 1.67)، ويُفضَّل **2400×1440px** لتغطية الشاشات عالية الكثافة
-///   بجودة جيدة (يُعرَض العنصر بعرض الشاشة الكامل تقريبًا).
-/// - المحتوى: ضع السماء/الأفق فـ النصف العلوي، والمسجد (قبة + مآذن)
-///   فـ الثلث الأوسط تقريبًا مُتمركزًا أفقيًا (لأن قمة القوس المدبّبة
-///   تقصّ أعلى المنتصف)، وأي انعكاس ماء أو أرض فـ الشُّريط السفلي.
-///   الجزء الأيمن من الصورة سيُغطّى جزئيًا بتدرّج داكن كي يبقى النص
-///   (اسم الصلاة والعدّاد) مقروءًا، فتجنّب وضع تفاصيل مهمة هناك.
-/// - الصيغة: JPG بجودة عالية (أو WEBP لحجم أصغر). لا حاجة لخلفية شفافة.
-/// - أضِف السطر التالي فـ `pubspec.yaml` تحت `flutter: assets:` إن لم
-///   يكن موجودًا: `- assets/images/`
+/// Displays:
+/// - Real image from assets/images/arch_hero.jpg
+/// - Moroccan pointed horseshoe / mihrab shape
+/// - Next prayer
+/// - Prayer time
+/// - Live countdown
+/// - Automatic fallback illustration if the image cannot be loaded
 class PrayerArchHero extends StatefulWidget {
   final Prayer next;
   final DateTime? nextRealTime;
   final String timeLabel;
-  final PrayerDayPeriod  period;
+  final PrayerDayPeriod period;
 
   const PrayerArchHero({
     super.key,
@@ -57,23 +44,43 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
   void initState() {
     super.initState();
     _tick();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+
+    _ticker = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _tick(),
+    );
   }
 
   @override
   void didUpdateWidget(covariant PrayerArchHero oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _tick();
+
+    if (oldWidget.nextRealTime != widget.nextRealTime ||
+        oldWidget.next != widget.next ||
+        oldWidget.timeLabel != widget.timeLabel) {
+      _tick();
+    }
   }
 
   void _tick() {
-    final real = widget.nextRealTime;
-    if (real == null) {
-      if (mounted) setState(() => _remaining = null);
+    final target = widget.nextRealTime;
+
+    if (target == null) {
+      if (mounted) {
+        setState(() {
+          _remaining = null;
+        });
+      }
       return;
     }
-    final diff = real.difference(DateTime.now());
-    if (mounted) setState(() => _remaining = diff.isNegative ? Duration.zero : diff);
+
+    final diff = target.difference(DateTime.now());
+
+    if (mounted) {
+      setState(() {
+        _remaining = diff.isNegative ? Duration.zero : diff;
+      });
+    }
   }
 
   @override
@@ -82,15 +89,22 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
     super.dispose();
   }
 
-  String _twoDigits(int n) => n.toString().padLeft(2, '0');
+  String _twoDigits(int value) {
+    return value.toString().padLeft(2, '0');
+  }
 
   String? get _countdownText {
-    final r = _remaining;
-    if (r == null) return null;
-    final h = _twoDigits(r.inHours);
-    final m = _twoDigits(r.inMinutes % 60);
-    final s = _twoDigits(r.inSeconds % 60);
-    return '$h:$m:$s';
+    final remaining = _remaining;
+
+    if (remaining == null) {
+      return null;
+    }
+
+    final hours = _twoDigits(remaining.inHours);
+    final minutes = _twoDigits(remaining.inMinutes % 60);
+    final seconds = _twoDigits(remaining.inSeconds % 60);
+
+    return '$hours:$minutes:$seconds';
   }
 
   @override
@@ -98,14 +112,21 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final height = width * 0.62;
-        return Container(
+
+        // Slightly taller than the previous version.
+        // This gives "الفجر 06:02" enough room without making
+        // the hero unnecessarily large.
+        final height = width * 0.64;
+
+        return SizedBox(
           width: width,
           height: height,
-          clipBehavior: Clip.none,
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              // الرسمة/الصورة داخل شكل القوس.
+              // ============================================================
+              // HERO IMAGE / FALLBACK
+              // ============================================================
               ClipPath(
                 clipper: _ArchClipper(),
                 child: Image.asset(
@@ -113,84 +134,105 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
                   width: width,
                   height: height,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stack) => CustomPaint(
-                    size: Size(width, height),
-                    painter: _ArchScenePainter(period: widget.period),
-                  ),
+
+                  // If the image is missing, the application still works.
+                  errorBuilder: (context, error, stackTrace) {
+                    return CustomPaint(
+                      size: Size(width, height),
+                      painter: _ArchScenePainter(
+                        period: widget.period,
+                      ),
+                    );
+                  },
                 ),
               ),
-              // تدرّج داكن يمينًا فقط، كي يبقى النص مقروءًا فوق الصورة.
+
+              // ============================================================
+              // GLOBAL DARK OVERLAY
+              // ============================================================
               Positioned.fill(
                 child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        stops: const [0.0, 0.46, 0.62, 1.0],
-                       colors: [
-  Colors.transparent,
-  Colors.transparent,
-  AppColors.ink.withValues(alpha: 0.55),
-  AppColors.ink.withValues(alpha: 0.92),
-],
+                  child: ClipPath(
+                    clipper: _ArchClipper(),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          stops: const [
+                            0.00,
+                            0.48,
+                            0.68,
+                            1.00,
+                          ],
+                          colors: [
+                            Colors.black.withValues(alpha: 0.04),
+                            Colors.black.withValues(alpha: 0.08),
+                            AppColors.ink.withValues(alpha: 0.42),
+                            AppColors.ink.withValues(alpha: 0.86),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-              // حدّ القوس الذهبي.
+
+              // ============================================================
+              // SUBTLE BOTTOM VIGNETTE
+              // ============================================================
               Positioned.fill(
-                child: CustomPaint(painter: _ArchBorderPainter()),
-              ),
-              // نص "الصلاة القادمة" + الاسم + العدّاد، فـ الجهة اليمنى.
-              Positioned(
-                top: height * 0.10,
-                bottom: 0,
-                right: width * 0.03,
-                left: width * 0.46,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'الصلاة القادمة',
-                      textAlign: TextAlign.right,
-                      style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.next.arabicName,
-                      textAlign: TextAlign.right,
-                      style: GoogleFonts.amiri(fontSize: 34, fontWeight: FontWeight.w700, color: AppColors.gold),
-                    ),
-                    const SizedBox(height: 10),
-                    if (_countdownText != null) ...[
-                      const Text(
-                        'بعد',
-                        style: TextStyle(fontSize: 12.5, color: Colors.white70, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _countdownText!,
-                        style: GoogleFonts.tajawal(
-                          fontSize: 25,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          fontFeatures: const [FontFeature.tabularFigures()],
+                child: IgnorePointer(
+                  child: ClipPath(
+                    clipper: _ArchClipper(),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          stops: const [
+                            0.55,
+                            0.78,
+                            1.00,
+                          ],
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.04),
+                            Colors.black.withValues(alpha: 0.30),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'إن شاء الله',
-                        style: TextStyle(fontSize: 11.5, color: Colors.white60, fontWeight: FontWeight.w500),
-                      ),
-                    ] else
-                      Text(
-                        widget.timeLabel,
-                        style: GoogleFonts.tajawal(fontSize: 25, fontWeight: FontWeight.w800, color: Colors.white),
-                      ),
-                  ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // ============================================================
+              // PRAYER INFORMATION
+              // ============================================================
+              Positioned(
+                top: height * 0.17,
+                right: width * 0.055,
+                bottom: height * 0.11,
+                width: width * 0.46,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: _PrayerInfoPanel(
+                    prayerName: widget.next.arabicName,
+                    timeLabel: widget.timeLabel,
+                    countdownText: _countdownText,
+                  ),
+                ),
+              ),
+
+              // ============================================================
+              // GOLD ARCH BORDER
+              // ============================================================
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: _ArchBorderPainter(),
+                  ),
                 ),
               ),
             ],
@@ -201,9 +243,196 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
   }
 }
 
-/// شكل قوس حدوة الحصان المدبَّب (مغربي/أندلسي) بدرجة صغيرة عند القاعدة
-/// اليسرى، مبنيّ كنسب مئوية من عرض/ارتفاع الصندوق كي يبقى متجاوبًا مع
-/// أي مقاس شاشة.
+// ==========================================================================
+// PRAYER INFORMATION PANEL
+// ==========================================================================
+
+class _PrayerInfoPanel extends StatelessWidget {
+  final String prayerName;
+  final String timeLabel;
+  final String? countdownText;
+
+  const _PrayerInfoPanel({
+    required this.prayerName,
+    required this.timeLabel,
+    required this.countdownText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: 120,
+        maxWidth: 220,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 13,
+        vertical: 11,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.ink.withValues(alpha: 0.38),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.gold.withValues(alpha: 0.28),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // --------------------------------------------------------------
+          // LABEL
+          // --------------------------------------------------------------
+          const Text(
+            'الصلاة القادمة',
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 11.5,
+              height: 1.1,
+              color: Colors.white70,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+
+          const SizedBox(height: 3),
+
+          // --------------------------------------------------------------
+          // PRAYER NAME
+          // --------------------------------------------------------------
+          SizedBox(
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                prayerName,
+                maxLines: 1,
+                textAlign: TextAlign.right,
+                style: GoogleFonts.amiri(
+                  fontSize: 30,
+                  height: 1.05,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.gold,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
+          // --------------------------------------------------------------
+          // PRAYER TIME
+          //
+          // Example:
+          // الفجر
+          // 06:02
+          //
+          // The time is intentionally prominent.
+          // --------------------------------------------------------------
+          SizedBox(
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                timeLabel,
+                maxLines: 1,
+                textAlign: TextAlign.right,
+                style: GoogleFonts.tajawal(
+                  fontSize: 23,
+                  height: 1.0,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  fontFeatures: const [
+                    FontFeature.tabularFigures(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          if (countdownText != null) ...[
+            const SizedBox(height: 7),
+
+            // ------------------------------------------------------------
+            // COUNTDOWN LABEL
+            // ------------------------------------------------------------
+            const Text(
+              'متبقي',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 10.5,
+                height: 1.0,
+                color: Colors.white60,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            const SizedBox(height: 2),
+
+            // ------------------------------------------------------------
+            // COUNTDOWN
+            // ------------------------------------------------------------
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  countdownText!,
+                  maxLines: 1,
+                  textAlign: TextAlign.right,
+                  style: GoogleFonts.tajawal(
+                    fontSize: 20,
+                    height: 1.0,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    fontFeatures: const [
+                      FontFeature.tabularFigures(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 3),
+
+            const Text(
+              'إن شاء الله',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 10,
+                height: 1.0,
+                color: Colors.white54,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================================================
+// ARCH CLIPPER
+// ==========================================================================
+
+/// Moroccan / Andalusian pointed horseshoe arch.
+///
+/// The important change here is that the apex is not simply a triangle.
+/// The sides transition smoothly from the pointed top into the wider
+/// horseshoe shoulders and then into the vertical walls.
+///
+/// This gives the hero a more architectural "mihrab" appearance.
 class _ArchClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
@@ -211,206 +440,712 @@ class _ArchClipper extends CustomClipper<Path> {
   }
 
   @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) {
+    return false;
+  }
 }
+
+// ==========================================================================
+// ARCH PATH
+// ==========================================================================
 
 Path _archPath(Size size) {
   final w = size.width;
   final h = size.height;
+
   final path = Path();
 
-  // نقطة القمة فـ منتصف القوس تقريبًا.
-  final apex = Offset(w * 0.50, 0);
-  // نقطة "عنق" القوس حيث ينتهي الانحناء ويبدأ الخط شبه العمودي.
-  final leftNeck = Offset(w * 0.055, h * 0.58);
-  final rightNeck = Offset(w * 0.945, h * 0.58);
-  // أقصى انتفاخ لقوس حدوة الحصان (يتجاوز عرض العنق قليلًا).
-  final leftBulge = Offset(w * 0.015, h * 0.42);
-  final rightBulge = Offset(w * 0.985, h * 0.42);
-  // درجة صغيرة زخرفية عند القاعدة اليسرى (كما فـ صور المحاريب المغربية).
-  final stepOuterX = w * 0.02;
-  final stepInnerX = w * 0.075;
-  final stepY1 = h * 0.62;
-  final stepY2 = h * 0.68;
+  // ------------------------------------------------------------------------
+  // Main geometry
+  // ------------------------------------------------------------------------
 
-  path.moveTo(apex.dx, apex.dy);
-  // من القمة إلى الانتفاخ الأيمن ثم إلى العنق الأيمن.
-  path.quadraticBezierTo(w * 0.92, h * 0.02, rightBulge.dx, rightBulge.dy);
-  path.quadraticBezierTo(w * 1.00, h * 0.52, rightNeck.dx, rightNeck.dy);
-  path.lineTo(w * 0.945, h);
-  path.lineTo(w * 0.02, h);
-  // القاعدة اليسرى مع الدرجة الزخرفية.
-  path.lineTo(stepInnerX, h);
-  path.lineTo(stepInnerX, stepY2);
-  path.lineTo(stepOuterX, stepY2);
-  path.lineTo(stepOuterX, stepY1);
-  path.lineTo(leftNeck.dx, leftNeck.dy);
-  // من العنق الأيسر إلى الانتفاخ الأيسر ثم إلى القمة.
-  path.quadraticBezierTo(w * 0.00, h * 0.52, leftBulge.dx, leftBulge.dy);
-  path.quadraticBezierTo(w * 0.08, h * 0.02, apex.dx, apex.dy);
+  // Slightly rounded pointed apex.
+  final apex = Offset(
+    w * 0.50,
+    h * 0.015,
+  );
+
+  // Upper shoulder region.
+  final leftShoulder = Offset(
+    w * 0.075,
+    h * 0.39,
+  );
+
+  final rightShoulder = Offset(
+    w * 0.925,
+    h * 0.39,
+  );
+
+  // Where the horseshoe becomes almost vertical.
+  final leftNeck = Offset(
+    w * 0.052,
+    h * 0.62,
+  );
+
+  final rightNeck = Offset(
+    w * 0.948,
+    h * 0.62,
+  );
+
+  // ------------------------------------------------------------------------
+  // Start at the apex
+  // ------------------------------------------------------------------------
+
+  path.moveTo(
+    apex.dx,
+    apex.dy,
+  );
+
+  // ------------------------------------------------------------------------
+  // RIGHT HALF
+  // ------------------------------------------------------------------------
+
+  // Point → upper right shoulder.
+  path.cubicTo(
+    w * 0.63,
+    h * 0.025,
+    w * 0.84,
+    h * 0.15,
+    rightShoulder.dx,
+    rightShoulder.dy,
+  );
+
+  // Shoulder → outer horseshoe curve.
+  path.cubicTo(
+    w * 0.985,
+    h * 0.45,
+    w * 0.985,
+    h * 0.54,
+    rightNeck.dx,
+    rightNeck.dy,
+  );
+
+  // Right vertical wall.
+  path.lineTo(
+    rightNeck.dx,
+    h,
+  );
+
+  // Bottom edge.
+  path.lineTo(
+    leftNeck.dx,
+    h,
+  );
+
+  // ------------------------------------------------------------------------
+  // LEFT HALF
+  // ------------------------------------------------------------------------
+
+  // Left vertical wall.
+  path.lineTo(
+    leftNeck.dx,
+    leftNeck.dy,
+  );
+
+  // Outer left horseshoe curve.
+  path.cubicTo(
+    w * 0.015,
+    h * 0.54,
+    w * 0.015,
+    h * 0.45,
+    leftShoulder.dx,
+    leftShoulder.dy,
+  );
+
+  // Left shoulder → pointed apex.
+  path.cubicTo(
+    w * 0.16,
+    h * 0.15,
+    w * 0.37,
+    h * 0.025,
+    apex.dx,
+    apex.dy,
+  );
+
   path.close();
+
   return path;
 }
+
+// ==========================================================================
+// ARCH BORDER
+// ==========================================================================
 
 class _ArchBorderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final path = _archPath(size);
-    final paint = Paint()
+
+    // Main gold border.
+    final borderPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = 2.4
       ..color = AppColors.gold
+      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawPath(
+      path,
+      borderPaint,
+    );
+
+    // Very subtle inner highlight.
+    final innerPath = _archPathInset(
+      size,
+      4.0,
+    );
+
+    final innerPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8
+      ..color = AppColors.gold.withValues(alpha: 0.28)
       ..strokeJoin = StrokeJoin.round;
-    canvas.drawPath(path, paint);
+
+    canvas.drawPath(
+      innerPath,
+      innerPaint,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _ArchBorderPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ArchBorderPainter oldDelegate) {
+    return false;
+  }
 }
 
-/// رسمة بديلة (fallback) لمشهد مسجد عند الغروب/فترات اليوم المختلفة،
-/// تُستعمل تلقائيًا حين لا يوجد ملف assets/images/arch_hero.jpg.
+// ==========================================================================
+// INNER ARCH PATH
+// ==========================================================================
+
+Path _archPathInset(
+  Size size,
+  double inset,
+) {
+  final w = size.width;
+  final h = size.height;
+
+  final path = Path();
+
+  final apex = Offset(
+    w * 0.50,
+    h * 0.015 + inset,
+  );
+
+  final leftShoulder = Offset(
+    w * 0.075 + inset,
+    h * 0.39 + inset * 0.2,
+  );
+
+  final rightShoulder = Offset(
+    w * 0.925 - inset,
+    h * 0.39 + inset * 0.2,
+  );
+
+  final leftNeck = Offset(
+    w * 0.052 + inset,
+    h * 0.62,
+  );
+
+  final rightNeck = Offset(
+    w * 0.948 - inset,
+    h * 0.62,
+  );
+
+  path.moveTo(
+    apex.dx,
+    apex.dy,
+  );
+
+  path.cubicTo(
+    w * 0.63,
+    h * 0.025,
+    w * 0.84,
+    h * 0.15,
+    rightShoulder.dx,
+    rightShoulder.dy,
+  );
+
+  path.cubicTo(
+    w * 0.985 - inset,
+    h * 0.45,
+    w * 0.985 - inset,
+    h * 0.54,
+    rightNeck.dx,
+    rightNeck.dy,
+  );
+
+  path.lineTo(
+    rightNeck.dx,
+    h - inset,
+  );
+
+  path.lineTo(
+    leftNeck.dx,
+    h - inset,
+  );
+
+  path.lineTo(
+    leftNeck.dx,
+    leftNeck.dy,
+  );
+
+  path.cubicTo(
+    w * 0.015 + inset,
+    h * 0.54,
+    w * 0.015 + inset,
+    h * 0.45,
+    leftShoulder.dx,
+    leftShoulder.dy,
+  );
+
+  path.cubicTo(
+    w * 0.16,
+    h * 0.15,
+    w * 0.37,
+    h * 0.025,
+    apex.dx,
+    apex.dy,
+  );
+
+  path.close();
+
+  return path;
+}
+
+// ==========================================================================
+// FALLBACK SCENE
+// ==========================================================================
+
+/// Fallback illustration used only when arch_hero.jpg cannot be loaded.
 class _ArchScenePainter extends CustomPainter {
-  final PrayerDayPeriod  period;
-  _ArchScenePainter({required this.period});
+  final PrayerDayPeriod period;
+
+  _ArchScenePainter({
+    required this.period,
+  });
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(
+    Canvas canvas,
+    Size size,
+  ) {
     final path = _archPath(size);
+
     canvas.save();
+
     canvas.clipPath(path);
 
     final w = size.width;
     final h = size.height;
-    final rect = Rect.fromLTWH(0, 0, w, h);
 
-    final skyColors = _skyColorsFor(period);
+    final rect = Rect.fromLTWH(
+      0,
+      0,
+      w,
+      h,
+    );
+
+    // ----------------------------------------------------------------------
+    // Sky
+    // ----------------------------------------------------------------------
+
     final skyPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: skyColors,
+        colors: _skyColorsFor(period),
       ).createShader(rect);
-    canvas.drawRect(rect, skyPaint);
 
-    // الشمس/القمر
-    final bodyCenter = Offset(w * 0.28, h * 0.32);
-    final isNight = period == PrayerDayPeriod.night;
-    if (isNight) {
-      final moonR = w * 0.05;
-      canvas.saveLayer(rect, Paint());
-      canvas.drawCircle(bodyCenter, moonR, Paint()..color = const Color(0xFFEFE6C8));
-      canvas.drawCircle(
-        Offset(bodyCenter.dx + moonR * 0.5, bodyCenter.dy - moonR * 0.3),
-        moonR * 0.85,
-        Paint()..blendMode = BlendMode.clear,
-      );
-      canvas.restore();
-      final starPaint = Paint()..color = Colors.white.withOpacity(0.8);
-      for (final o in [
-        Offset(w * 0.5, h * 0.12),
-        Offset(w * 0.62, h * 0.22),
-        Offset(w * 0.42, h * 0.20),
-        Offset(w * 0.58, h * 0.08),
-      ]) {
-        canvas.drawCircle(o, 1.6, starPaint);
-      }
-    } else {
-      final glow = Paint()
-        ..color = const Color(0xFFFFE9B0).withOpacity(0.55)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 30);
-      canvas.drawCircle(bodyCenter, w * 0.10, glow);
-      canvas.drawCircle(bodyCenter, w * 0.055, Paint()..color = const Color(0xFFFFF3D2));
-    }
-
-    // انعكاس الشمس/القمر على الماء
-    final reflectionPaint = Paint()
-      ..color = (isNight ? const Color(0xFFEFE6C8) : const Color(0xFFFFE9B0)).withOpacity(0.35);
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(bodyCenter.dx, h * 0.86), width: w * 0.10, height: h * 0.10),
-      reflectionPaint,
+    canvas.drawRect(
+      rect,
+      skyPaint,
     );
 
-    // خط الماء/الأفق السفلي
-    final waterPaint = Paint()..color = Colors.black.withOpacity(0.30);
-    canvas.drawRect(Rect.fromLTWH(0, h * 0.80, w, h * 0.20), waterPaint);
+    // ----------------------------------------------------------------------
+    // Moon / sun
+    // ----------------------------------------------------------------------
 
-    // ظلال المسجد (قبة كبيرة + قبتان صغيرتان + مآذن)
-    final silhouette = Paint()..color = Colors.black.withOpacity(0.55);
-    final baseY = h * 0.80;
+    final bodyCenter = Offset(
+      w * 0.25,
+      h * 0.29,
+    );
 
-    void minaret(double cx, double topY, double width) {
-      final rectPath = Path()
-        ..moveTo(cx - width / 2, baseY)
-        ..lineTo(cx - width / 2, topY + width * 1.4)
-        ..lineTo(cx, topY)
-        ..lineTo(cx + width / 2, topY + width * 1.4)
-        ..lineTo(cx + width / 2, baseY)
-        ..close();
-      canvas.drawPath(rectPath, silhouette);
-      canvas.drawCircle(Offset(cx, topY - width * 0.5), width * 0.28, silhouette);
+    final isNight = period == PrayerDayPeriod.night;
+
+    if (isNight) {
+      _drawMoon(
+        canvas,
+        bodyCenter,
+        w,
+        h,
+      );
+
+      _drawStars(
+        canvas,
+        w,
+        h,
+      );
+    } else {
+      _drawSun(
+        canvas,
+        bodyCenter,
+        w,
+      );
     }
 
-    void dome(double cx, double domeTop, double domeR) {
+    // ----------------------------------------------------------------------
+    // Horizon glow
+    // ----------------------------------------------------------------------
+
+    final horizonGlow = Paint()
+      ..color = const Color(0xFFFFE9B0).withValues(alpha: 0.10)
+      ..maskFilter = const MaskFilter.blur(
+        BlurStyle.normal,
+        24,
+      );
+
+    canvas.drawRect(
+      Rect.fromLTWH(
+        0,
+        h * 0.67,
+        w,
+        h * 0.18,
+      ),
+      horizonGlow,
+    );
+
+    // ----------------------------------------------------------------------
+    // Water / ground
+    // ----------------------------------------------------------------------
+
+    final waterPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.25);
+
+    canvas.drawRect(
+      Rect.fromLTWH(
+        0,
+        h * 0.79,
+        w,
+        h * 0.21,
+      ),
+      waterPaint,
+    );
+
+    // ----------------------------------------------------------------------
+    // Mosque silhouette
+    // ----------------------------------------------------------------------
+
+    _drawMosque(
+      canvas,
+      size,
+    );
+
+    canvas.restore();
+  }
+
+  // ------------------------------------------------------------------------
+  // SUN
+  // ------------------------------------------------------------------------
+
+  void _drawSun(
+    Canvas canvas,
+    Offset center,
+    double width,
+  ) {
+    final glow = Paint()
+      ..color = const Color(0xFFFFE9B0).withValues(alpha: 0.48)
+      ..maskFilter = const MaskFilter.blur(
+        BlurStyle.normal,
+        28,
+      );
+
+    canvas.drawCircle(
+      center,
+      width * 0.10,
+      glow,
+    );
+
+    final sunPaint = Paint()
+      ..color = const Color(0xFFFFF3D2);
+
+    canvas.drawCircle(
+      center,
+      width * 0.052,
+      sunPaint,
+    );
+  }
+
+  // ------------------------------------------------------------------------
+  // MOON
+  // ------------------------------------------------------------------------
+
+  void _drawMoon(
+    Canvas canvas,
+    Offset center,
+    double width,
+    double height,
+  ) {
+    final moonRadius = width * 0.052;
+
+    final moonPaint = Paint()
+      ..color = const Color(0xFFEFE6C8);
+
+    canvas.drawCircle(
+      center,
+      moonRadius,
+      moonPaint,
+    );
+
+    // Small dark cutout to create crescent.
+    final cutoutPaint = Paint()
+      ..color = const Color(0xFF101A38);
+
+    canvas.drawCircle(
+      Offset(
+        center.dx + moonRadius * 0.43,
+        center.dy - moonRadius * 0.25,
+      ),
+      moonRadius * 0.86,
+      cutoutPaint,
+    );
+  }
+
+  // ------------------------------------------------------------------------
+  // STARS
+  // ------------------------------------------------------------------------
+
+  void _drawStars(
+    Canvas canvas,
+    double width,
+    double height,
+  ) {
+    final starPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.75);
+
+    final stars = <Offset>[
+      Offset(width * 0.47, height * 0.12),
+      Offset(width * 0.59, height * 0.20),
+      Offset(width * 0.42, height * 0.23),
+      Offset(width * 0.67, height * 0.10),
+      Offset(width * 0.77, height * 0.24),
+      Offset(width * 0.34, height * 0.13),
+    ];
+
+    for (final star in stars) {
+      canvas.drawCircle(
+        star,
+        1.5,
+        starPaint,
+      );
+    }
+  }
+
+  // ------------------------------------------------------------------------
+  // MOSQUE
+  // ------------------------------------------------------------------------
+
+  void _drawMosque(
+    Canvas canvas,
+    Size size,
+  ) {
+    final w = size.width;
+    final h = size.height;
+
+    final baseY = h * 0.80;
+
+    final silhouette = Paint()
+      ..color = Colors.black.withValues(alpha: 0.58);
+
+    // ------------------------------------------------------------
+    // Minaret helper
+    // ------------------------------------------------------------
+
+    void minaret(
+      double centerX,
+      double topY,
+      double towerWidth,
+    ) {
+      final tower = Path();
+
+      tower.moveTo(
+        centerX - towerWidth / 2,
+        baseY,
+      );
+
+      tower.lineTo(
+        centerX - towerWidth / 2,
+        topY + towerWidth * 1.5,
+      );
+
+      tower.lineTo(
+        centerX,
+        topY,
+      );
+
+      tower.lineTo(
+        centerX + towerWidth / 2,
+        topY + towerWidth * 1.5,
+      );
+
+      tower.lineTo(
+        centerX + towerWidth / 2,
+        baseY,
+      );
+
+      tower.close();
+
+      canvas.drawPath(
+        tower,
+        silhouette,
+      );
+
+      canvas.drawCircle(
+        Offset(
+          centerX,
+          topY - towerWidth * 0.35,
+        ),
+        towerWidth * 0.22,
+        silhouette,
+      );
+    }
+
+    // ------------------------------------------------------------
+    // Dome helper
+    // ------------------------------------------------------------
+
+    void dome(
+      double centerX,
+      double domeTop,
+      double radius,
+    ) {
+      final domeRect = Rect.fromCircle(
+        center: Offset(
+          centerX,
+          domeTop + radius,
+        ),
+        radius: radius,
+      );
+
       canvas.drawArc(
-        Rect.fromCircle(center: Offset(cx, domeTop + domeR), radius: domeR),
+        domeRect,
         math.pi,
         math.pi,
         true,
         silhouette,
       );
+
       canvas.drawRect(
-        Rect.fromLTWH(cx - domeR * 0.9, domeTop + domeR, domeR * 1.8, baseY - (domeTop + domeR)),
+        Rect.fromLTWH(
+          centerX - radius * 0.90,
+          domeTop + radius,
+          radius * 1.80,
+          baseY - (domeTop + radius),
+        ),
         silhouette,
       );
     }
 
-    // مآذن جانبية بعيدة
-    minaret(w * 0.30, h * 0.42, w * 0.03);
-    minaret(w * 0.86, h * 0.40, w * 0.032);
-    // قباب صغيرة
-    dome(w * 0.72, h * 0.58, w * 0.06);
-    dome(w * 0.94, h * 0.62, w * 0.045);
-    // القبة الرئيسية الكبيرة + مئذنتاها
-    minaret(w * 0.50, h * 0.30, w * 0.035);
-    minaret(w * 0.66, h * 0.34, w * 0.03);
-    dome(w * 0.585, h * 0.44, w * 0.11);
+    // ------------------------------------------------------------
+    // Distant minarets
+    // ------------------------------------------------------------
 
-    canvas.restore();
+    minaret(
+      w * 0.23,
+      h * 0.43,
+      w * 0.025,
+    );
+
+    minaret(
+      w * 0.83,
+      h * 0.42,
+      w * 0.028,
+    );
+
+    // ------------------------------------------------------------
+    // Small domes
+    // ------------------------------------------------------------
+
+    dome(
+      w * 0.72,
+      h * 0.57,
+      w * 0.055,
+    );
+
+    dome(
+      w * 0.90,
+      h * 0.61,
+      w * 0.040,
+    );
+
+    // ------------------------------------------------------------
+    // Main minarets
+    // ------------------------------------------------------------
+
+    minaret(
+      w * 0.47,
+      h * 0.33,
+      w * 0.032,
+    );
+
+    minaret(
+      w * 0.66,
+      h * 0.36,
+      w * 0.027,
+    );
+
+    // ------------------------------------------------------------
+    // Main dome
+    // ------------------------------------------------------------
+
+    dome(
+      w * 0.57,
+      h * 0.43,
+      w * 0.105,
+    );
   }
 
-List<Color> _skyColorsFor(PrayerDayPeriod period) {
-  switch (period) {
-    case PrayerDayPeriod.dawn:
-      return const [
-        Color(0xFF35304A),
-        Color(0xFF8A5A5A),
-        Color(0xFFD9A15C),
-      ];
+  // ------------------------------------------------------------------------
+  // SKY COLORS
+  // ------------------------------------------------------------------------
 
-    case PrayerDayPeriod.day:
-      return const [
-        Color(0xFF4A87B0),
-        Color(0xFF9CC3D9),
-        Color(0xFFE8DDB8),
-      ];
+  List<Color> _skyColorsFor(
+    PrayerDayPeriod period,
+  ) {
+    switch (period) {
+      case PrayerDayPeriod.dawn:
+        return const [
+          Color(0xFF29263D),
+          Color(0xFF684B61),
+          Color(0xFFC58A5A),
+        ];
 
-    case PrayerDayPeriod.sunset:
-      return const [
-        Color(0xFF3B3350),
-        Color(0xFFB06A45),
-        Color(0xFFF0C36B),
-      ];
+      case PrayerDayPeriod.day:
+        return const [
+          Color(0xFF3F769C),
+          Color(0xFF85B4CC),
+          Color(0xFFE5D6AD),
+        ];
 
-    case PrayerDayPeriod.night:
-      return const [
-        Color(0xFF0B1330),
-        Color(0xFF16264A),
-        Color(0xFF203A52),
-      ];
+      case PrayerDayPeriod.sunset:
+        return const [
+          Color(0xFF302A45),
+          Color(0xFF955C50),
+          Color(0xFFE2A35B),
+        ];
+
+      case PrayerDayPeriod.night:
+        return const [
+          Color(0xFF080F28),
+          Color(0xFF111E3D),
+          Color(0xFF1D3450),
+        ];
+    }
   }
-}
 
   @override
-  bool shouldRepaint(covariant _ArchScenePainter oldDelegate) => oldDelegate.period != period;
+  bool shouldRepaint(
+    covariant _ArchScenePainter oldDelegate,
+  ) {
+    return oldDelegate.period != period;
+  }
 }

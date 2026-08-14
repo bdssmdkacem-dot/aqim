@@ -24,7 +24,7 @@ class DayArc extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 158,
+      height: 170,
       child: CustomPaint(
         painter: _DayArcPainter(
           prayers: prayers,
@@ -71,13 +71,14 @@ class _DayArcPainter extends CustomPainter {
 
     const margin = 34.0;
     final usableWidth = size.width - margin * 2;
-    const trackY = 48.0;
+    // Lower the arc so the upcoming badge is inside the paint bounds.
+    const trackY = 95.0;
     final points = <Offset>[];
 
     for (var i = 0; i < n; i++) {
       final t = n == 1 ? 0.5 : i / (n - 1);
       final x = margin + usableWidth * t;
-      final y = trackY - math.sin(t * math.pi) * 32;
+      final y = trackY - math.sin(t * math.pi) * 28;
       points.add(Offset(x, y));
     }
 
@@ -101,6 +102,7 @@ class _DayArcPainter extends CustomPainter {
 
       if (isUpcoming) {
         _drawCallout(canvas, center, radius);
+
         final glow = Paint()
           ..color = AppColors.gold.withValues(alpha: 0.22)
           ..style = PaintingStyle.fill;
@@ -222,8 +224,9 @@ class _DayArcPainter extends CustomPainter {
 
     final pillW = tp.width + 20;
     const pillH = 24.0;
-    // Move the badge upward by ~20 px so it clears the larger prayer marker.
-    final pillCenterY = dotCenter.dy - dotRadius - 48;
+    // Only a small gap: the badge should visually belong to the circle.
+    const gap = 7.0;
+    final pillCenterY = dotCenter.dy - dotRadius - gap - pillH / 2;
     final pillRect = Rect.fromCenter(
       center: Offset(dotCenter.dx, pillCenterY),
       width: pillW,

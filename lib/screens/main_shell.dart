@@ -6,10 +6,9 @@ import 'adhkar_home_screen.dart';
 import 'home_screen.dart';
 import 'more_screen.dart';
 import 'pre_prayer_screen.dart';
-import 'track_screen.dart';
+import 'quran_screen.dart';
 
-/// القشرة الرئيسية: 4 تبويبات ثابتة + زر مركزي مرتفع "استعد للصلاة"
-/// يفتح شاشة الصلاة القادمة مباشرة (ليس تبويبًا، بل إجراء سريع).
+/// القشرة الرئيسية: القرآن أصبح تبويبًا أساسيًا في الشريط السفلي.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -22,7 +21,7 @@ class _MainShellState extends State<MainShell> {
 
   static const _tabs = [
     HomeScreen(),
-    TrackScreen(),
+    QuranScreen(),
     AdhkarHomeScreen(),
     MoreScreen(),
   ];
@@ -67,35 +66,11 @@ class _BottomBar extends StatelessWidget {
           height: 66,
           child: Row(
             children: [
-              _NavItem(
-                icon: Icons.home_outlined,
-                selectedIcon: Icons.home,
-                label: 'الرئيسية',
-                selected: currentIndex == 0,
-                onTap: () => onTap(0),
-              ),
-              _NavItem(
-                icon: Icons.insert_chart_outlined_rounded,
-                selectedIcon: Icons.insert_chart_rounded,
-                label: 'تابع',
-                selected: currentIndex == 1,
-                onTap: () => onTap(1),
-              ),
+              _NavItem(icon: Icons.home_outlined, selectedIcon: Icons.home, label: 'الرئيسية', selected: currentIndex == 0, onTap: () => onTap(0)),
+              _NavItem(icon: Icons.menu_book_outlined, selectedIcon: Icons.menu_book, label: 'القرآن', selected: currentIndex == 1, onTap: () => onTap(1)),
               _CenterButton(onTap: onCenterTap),
-              _NavItem(
-                icon: Icons.menu_book_outlined,
-                selectedIcon: Icons.menu_book,
-                label: 'أذكار',
-                selected: currentIndex == 2,
-                onTap: () => onTap(2),
-              ),
-              _NavItem(
-                icon: Icons.more_horiz_rounded,
-                selectedIcon: Icons.more_horiz_rounded,
-                label: 'المزيد',
-                selected: currentIndex == 3,
-                onTap: () => onTap(3),
-              ),
+              _NavItem(icon: Icons.auto_awesome_outlined, selectedIcon: Icons.auto_awesome, label: 'أذكار', selected: currentIndex == 2, onTap: () => onTap(2)),
+              _NavItem(icon: Icons.more_horiz_rounded, selectedIcon: Icons.more_horiz_rounded, label: 'المزيد', selected: currentIndex == 3, onTap: () => onTap(3)),
             ],
           ),
         ),
@@ -111,13 +86,7 @@ class _NavItem extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _NavItem({
-    required this.icon,
-    required this.selectedIcon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+  const _NavItem({required this.icon, required this.selectedIcon, required this.label, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -159,9 +128,7 @@ class _CenterButton extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.gold,
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 10, offset: const Offset(0, 3)),
-                  ],
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 10, offset: const Offset(0, 3))],
                 ),
                 child: const Icon(Icons.timer_outlined, color: AppColors.ink, size: 26),
               ),

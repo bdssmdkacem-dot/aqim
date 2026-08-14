@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
+
 import '../theme/app_theme.dart';
 
 enum DayPeriod { dawn, day, sunset, night }
@@ -20,7 +20,7 @@ DayPeriod currentDayPeriod([DateTime? now]) {
 LinearGradient tintForPeriod(DayPeriod period) {
   switch (period) {
     case DayPeriod.dawn:
-=======
+
 
 import '../theme/app_theme.dart';
 
@@ -56,19 +56,19 @@ PrayerDayPeriod currentPrayerDayPeriod([DateTime? now]) {
 LinearGradient tintForPeriod(PrayerDayPeriod period) {
   switch (period) {
     case PrayerDayPeriod.dawn:
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
       return LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-<<<<<<< HEAD
+
           const Color(0xFF3A2A4A).withOpacity(0.35),
           const Color(0xFFB56B4A).withOpacity(0.25),
           Colors.black.withOpacity(0.80),
         ],
       );
     case DayPeriod.day:
-=======
+
           const Color(0xFF3A2A4A).withValues(alpha: 0.35),
           const Color(0xFFB56B4A).withValues(alpha: 0.25),
           Colors.black.withValues(alpha: 0.80),
@@ -76,19 +76,19 @@ LinearGradient tintForPeriod(PrayerDayPeriod period) {
       );
 
     case PrayerDayPeriod.day:
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
       return LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-<<<<<<< HEAD
+
           const Color(0xFF1B3A52).withOpacity(0.20),
           const Color(0xFF0F3D2E).withOpacity(0.30),
           Colors.black.withOpacity(0.78),
         ],
       );
     case DayPeriod.sunset:
-=======
+
           const Color(0xFF1B3A52).withValues(alpha: 0.20),
           const Color(0xFF0F3D2E).withValues(alpha: 0.30),
           Colors.black.withValues(alpha: 0.78),
@@ -96,19 +96,19 @@ LinearGradient tintForPeriod(PrayerDayPeriod period) {
       );
 
     case PrayerDayPeriod.sunset:
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
       return LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-<<<<<<< HEAD
+
           const Color(0xFF7A3A2A).withOpacity(0.30),
           const Color(0xFFB5654A).withOpacity(0.25),
           Colors.black.withOpacity(0.82),
         ],
       );
     case DayPeriod.night:
-=======
+
           const Color(0xFF7A3A2A).withValues(alpha: 0.30),
           const Color(0xFFB5654A).withValues(alpha: 0.25),
           Colors.black.withValues(alpha: 0.82),
@@ -116,26 +116,25 @@ LinearGradient tintForPeriod(PrayerDayPeriod period) {
       );
 
     case PrayerDayPeriod.night:
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
       return LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-<<<<<<< HEAD
           const Color(0xFF0C1B33).withOpacity(0.55),
           const Color(0xFF0C2E24).withOpacity(0.45),
           Colors.black.withOpacity(0.85),
-=======
+
           const Color(0xFF0C1B33).withValues(alpha: 0.55),
           const Color(0xFF0C2E24).withValues(alpha: 0.45),
           Colors.black.withValues(alpha: 0.85),
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
         ],
       );
   }
 }
 
-<<<<<<< HEAD
+
 /// أيقونة مصغّرة داخل إطار مقوّس (محراب) — مسجد + هلال/نجوم ليلًا، أو
 /// مسجد + شمس نهارًا، مرسومة بالكامل بالكود (بلا صورة خارجية).
 class PrayerWindowIcon extends StatelessWidget {
@@ -143,7 +142,7 @@ class PrayerWindowIcon extends StatelessWidget {
   final double size;
 
   const PrayerWindowIcon({super.key, required this.period, this.size = 84});
-=======
+
 class PrayerWindowIcon extends StatelessWidget {
   final PrayerDayPeriod period;
   final double size;
@@ -153,7 +152,7 @@ class PrayerWindowIcon extends StatelessWidget {
     required this.period,
     this.size = 84,
   });
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
 
   @override
   Widget build(BuildContext context) {
@@ -165,12 +164,12 @@ class PrayerWindowIcon extends StatelessWidget {
 }
 
 class _WindowPainter extends CustomPainter {
-<<<<<<< HEAD
+
   final DayPeriod period;
   _WindowPainter({required this.period});
 
   bool get _isNight => period == DayPeriod.night || period == DayPeriod.dawn;
-=======
+
   final PrayerDayPeriod period;
 
   const _WindowPainter({
@@ -180,22 +179,22 @@ class _WindowPainter extends CustomPainter {
   bool get _isNight =>
       period == PrayerDayPeriod.night ||
       period == PrayerDayPeriod.dawn;
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-<<<<<<< HEAD
-=======
 
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
+
+
     final gold = Paint()
       ..color = AppColors.gold
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.round;
-<<<<<<< HEAD
+
     final goldFill = Paint()..color = AppColors.gold;
 
     // إطار المحراب (قوس فوق مستطيل)
@@ -233,7 +232,7 @@ class _WindowPainter extends CustomPainter {
     } else {
       final sunCenter = Offset(w * 0.5, archTop + h * 0.08);
       canvas.drawCircle(sunCenter, w * 0.075, goldFill);
-=======
+
 
     final goldFill = Paint()
       ..color = AppColors.gold;
@@ -331,12 +330,12 @@ class _WindowPainter extends CustomPainter {
         goldFill,
       );
 
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
       final rayPaint = Paint()
         ..color = AppColors.gold
         ..strokeWidth = 1.2
         ..strokeCap = StrokeCap.round;
-<<<<<<< HEAD
+
       for (var i = 0; i < 8; i++) {
         final angle = (i / 8) * 2 * math.pi;
         final inner = Offset(
@@ -357,7 +356,7 @@ class _WindowPainter extends CustomPainter {
     final domeR = w * 0.14;
     canvas.drawArc(
       Rect.fromCircle(center: domeCenter, radius: domeR),
-=======
+
 
       for (int i = 0; i < 8; i++) {
         final angle = i / 8 * 2 * math.pi;
@@ -398,13 +397,13 @@ class _WindowPainter extends CustomPainter {
         center: domeCenter,
         radius: domeRadius,
       ),
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
       math.pi,
       math.pi,
       false,
       gold,
     );
-<<<<<<< HEAD
+
     canvas.drawLine(Offset(domeCenter.dx - domeR, domeCenter.dy), Offset(domeCenter.dx - domeR, baseY), gold);
     canvas.drawLine(Offset(domeCenter.dx + domeR, domeCenter.dy), Offset(domeCenter.dx + domeR, baseY), gold);
     canvas.drawLine(Offset(domeCenter.dx - domeR, baseY), Offset(domeCenter.dx + domeR, baseY), gold);
@@ -422,7 +421,7 @@ class _WindowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WindowPainter oldDelegate) => oldDelegate.period != period;
-=======
+
 
     canvas.drawLine(
       Offset(domeCenter.dx - domeRadius, domeCenter.dy),
@@ -471,5 +470,5 @@ class _WindowPainter extends CustomPainter {
   bool shouldRepaint(covariant _WindowPainter oldDelegate) {
     return oldDelegate.period != period;
   }
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
 }

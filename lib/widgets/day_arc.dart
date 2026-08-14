@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/prayer.dart';
 import '../theme/app_theme.dart';
-<<<<<<< HEAD
+
 import 'prayer_window_icon.dart' show DayPeriod;
-=======
+
 import 'prayer_window_icon.dart'
     show PrayerDayPeriod;
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
 
 /// "قوس اليوم": يمثل الصلوات الخمس كنقاط على مسار مقوّس يشبه مسار الشمس،
 /// كل نقطة تُلوَّن بحسب حالتها (تمت / القادمة / لم يحن وقتها / فائتة لم
@@ -20,22 +20,22 @@ class DayArc extends StatelessWidget {
   final List<Prayer> prayers;
   final Map<Prayer, PrayerStatus> status;
   final String Function(Prayer)? timeLabelFor;
-<<<<<<< HEAD
+
   final DayPeriod period;
-=======
+
   final PrayerDayPeriod  period;
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
 
   const DayArc({
     super.key,
     required this.prayers,
     required this.status,
     this.timeLabelFor,
-<<<<<<< HEAD
+
     this.period = DayPeriod.day,
-=======
+
     this.period = PrayerDayPeriod.day,
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
   });
 
   @override
@@ -59,11 +59,11 @@ class _DayArcPainter extends CustomPainter {
   final List<Prayer> prayers;
   final Map<Prayer, PrayerStatus> status;
   final String Function(Prayer)? timeLabelFor;
-<<<<<<< HEAD
+
   final DayPeriod period;
-=======
+
   final PrayerDayPeriod  period;
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
 
   _DayArcPainter({
     required this.prayers,
@@ -81,11 +81,11 @@ class _DayArcPainter extends CustomPainter {
       case PrayerStatus.missed:
         return AppColors.ember;
       case PrayerStatus.pending:
-<<<<<<< HEAD
+
         return Colors.white.withOpacity(0.55);
-=======
+
        return Colors.white.withOpacity(0.55);
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
     }
   }
 
@@ -123,7 +123,7 @@ class _DayArcPainter extends CustomPainter {
       final isUpcoming = s == PrayerStatus.upcoming;
       final radius = isUpcoming ? 20.0 : 12.0;
 
-<<<<<<< HEAD
+
       if (isUpcoming) {
         // تلميح "الصلاة القادمة" فوق النقطة مباشرة.
         _drawCallout(canvas, center, radius);
@@ -134,7 +134,7 @@ class _DayArcPainter extends CustomPainter {
         canvas.drawCircle(center, radius + 10, glow);
       }
 
-=======
+
      if (isUpcoming) {
   // تلميح "الصلاة القادمة" فوق النقطة مباشرة.
   _drawCallout(canvas, center, radius);
@@ -145,7 +145,7 @@ class _DayArcPainter extends CustomPainter {
 
   canvas.drawCircle(center, radius + 10, glow);
 }
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
       final dot = Paint()..color = color;
       canvas.drawCircle(center, radius, dot);
 
@@ -197,25 +197,25 @@ class _DayArcPainter extends CustomPainter {
         timeText,
         center.dx,
         center.dy + radius + (isUpcoming ? 30 : 26),
-<<<<<<< HEAD
+
         (s == PrayerStatus.missed ? AppColors.ember : Colors.white).withOpacity(0.85),
-=======
+
         (s == PrayerStatus.missed ? AppColors.ember : Colors.white)
     .withOpacity(0.85),
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
         11,
       );
     }
   }
 
   void _drawSunOrMoon(Canvas canvas, Offset center, double r) {
-<<<<<<< HEAD
+
     final isNight = period == DayPeriod.night || period == DayPeriod.dawn;
-=======
+
     final isNight =
     period == PrayerDayPeriod.night ||
     period == PrayerDayPeriod.dawn;
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
     final iconPaint = Paint()..color = AppColors.ink;
     if (isNight) {
       canvas.saveLayer(Rect.fromCircle(center: center, radius: r + 2), Paint());

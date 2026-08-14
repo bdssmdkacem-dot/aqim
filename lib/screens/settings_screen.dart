@@ -7,8 +7,43 @@ import '../theme/app_theme.dart';
 const _beforeOptions = [5, 10, 15, 20, 30];
 const _afterOptions = [10, 15, 20, 30, 45];
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
+  bool _batteryReady = false;
+  bool _checkingBattery = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkBattery();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _checkBattery();
+  }
+
+  Future<void> _checkBattery() async {
+    if (mounted) setState(() => _checkingBattery = true);
+    final ready = await BatteryService.isFullyExempted();
+    if (mounted) setState(() {
+      _batteryReady = ready;
+      _checkingBattery = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,10 +53,10 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('الإعدادات')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
           children: [
             _StatusCard(state: state),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Text('توقيت التذكيرات', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
             Card(
@@ -41,16 +76,13 @@ class SettingsScreen extends StatelessWidget {
                           label: Text('$m دقيقة'),
                           selected: selected,
                           onSelected: (_) => state.updateReminderTiming(before: m),
-                          selectedColor: AppColors.gold.withOpacity(0.25),
-                          labelStyle: TextStyle(
-                            color: selected ? AppColors.ink : AppColors.inkSoft,
-                            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                          ),
+                          selectedColor: AppColors.gold.withOpacity(.25),
+                          labelStyle: TextStyle(color: selected ? AppColors.ink : AppColors.inkSoft, fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 20),
-                    const Text('تذكير "هل صليت؟" بعد الصلاة', style: TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 18),
+                    const Text('تذكير «هل صليت؟» بعد الصلاة', style: TextStyle(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -61,11 +93,8 @@ class SettingsScreen extends StatelessWidget {
                           label: Text('$m دقيقة'),
                           selected: selected,
                           onSelected: (_) => state.updateReminderTiming(after: m),
-                          selectedColor: AppColors.gold.withOpacity(0.25),
-                          labelStyle: TextStyle(
-                            color: selected ? AppColors.ink : AppColors.inkSoft,
-                            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                          ),
+                          selectedColor: AppColors.gold.withOpacity(.25),
+                          labelStyle: TextStyle(color: selected ? AppColors.ink : AppColors.inkSoft, fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
                         );
                       }).toList(),
                     ),
@@ -73,38 +102,119 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Text('الأذان', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
             Card(
               child: SwitchListTile(
                 title: const Text('صوت الأذان عند وقت كل صلاة'),
-                subtitle: const Text(
-                  'إشعار بصوت الأذان لحظة دخول الوقت',
-                  style: TextStyle(fontSize: 12),
-                ),
+                subtitle: const Text('إشعار بصوت الأذان لحظة دخول الوقت', style: TextStyle(fontSize: 12)),
                 value: state.adhanEnabled,
                 onChanged: state.setAdhanEnabled,
               ),
             ),
-            const SizedBox(height: 24),
-            Text('البطارية', style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(height: 20),
+            Text('التشغيل في الخلفية', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
-            const Card(
-              child: ListTile(
-                leading: Icon(Icons.battery_charging_full, color: AppColors.gold),
-                title: Text('تحسين إعدادات البطارية'),
-                subtitle: Text(
-                  'مهم على هواتف Xiaomi وHuawei وOppo كي تصل التذكيرات فوقتها',
-                  style: TextStyle(fontSize: 12),
-                ),
-                onTap: BatteryService.openSettings,
-              ),
+            _BatteryCard(
+              ready: _batteryReady,
+              checking: _checkingBattery,
+              onCheck: _checkBattery,
+              onOpenAll: () async {
+                await BatteryService.openSettings();
+                await _checkBattery();
+              },
+              onOpenAutoStart: () async {
+                await BatteryService.openAutoStartSettings();
+                await _checkBattery();
+              },
+              onOpenManufacturer: () async {
+                await BatteryService.openManufacturerSettings();
+                await _checkBattery();
+              },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Text('الإعلانات', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
             _RemoveAdsCard(state: state),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BatteryCard extends StatelessWidget {
+  final bool ready;
+  final bool checking;
+  final VoidCallback onCheck;
+  final VoidCallback onOpenAll;
+  final VoidCallback onOpenAutoStart;
+  final VoidCallback onOpenManufacturer;
+
+  const _BatteryCard({
+    required this.ready,
+    required this.checking,
+    required this.onCheck,
+    required this.onOpenAll,
+    required this.onOpenAutoStart,
+    required this.onOpenManufacturer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ok = ready && !checking;
+    return Card(
+      color: ok ? AppColors.sage.withOpacity(.07) : AppColors.ember.withOpacity(.07),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(ok ? Icons.verified_user_rounded : Icons.battery_alert_rounded, color: ok ? AppColors.sage : AppColors.gold),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    checking ? 'جارٍ فحص إعدادات البطارية...' : (ok ? 'التشغيل في الخلفية مفعّل' : 'السماح لأقم بالعمل في الخلفية'),
+                    style: TextStyle(fontWeight: FontWeight.w800, color: ok ? AppColors.sage : AppColors.gold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              ok
+                  ? 'يمكن لأقم متابعة تذكيرات الصلاة حتى عند إغلاق الشاشة.'
+                  : 'إذا كان هاتفك يقيّد التطبيق، قد تتأخر التذكيرات. فعّل السماح الكامل ثم ارجع إلى أقم للتحقق مرة أخرى.',
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted, height: 1.5),
+            ),
+            if (!ok) ...[
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: checking ? null : onOpenAll,
+                icon: const Icon(Icons.battery_saver_rounded),
+                label: const Text('السماح بالتشغيل الكامل'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: onOpenAutoStart,
+                icon: const Icon(Icons.autorenew_rounded),
+                label: const Text('تفعيل التشغيل التلقائي'),
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: onOpenManufacturer,
+                icon: const Icon(Icons.settings_suggest_rounded, size: 18),
+                label: const Text('إعدادات الشركة المصنّعة'),
+              ),
+            ],
+            TextButton.icon(
+              onPressed: onCheck,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('فحص الحالة الآن'),
+            ),
           ],
         ),
       ),
@@ -120,7 +230,7 @@ class _RemoveAdsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (state.adsRemoved) {
       return Card(
-        color: AppColors.sage.withOpacity(0.08),
+        color: AppColors.sage.withOpacity(.08),
         child: const ListTile(
           leading: Icon(Icons.check_circle, color: AppColors.sage),
           title: Text('الإعلانات مُزالة'),
@@ -133,20 +243,24 @@ class _RemoveAdsCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('إزالة الإعلانات نهائيًا', style: TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 6),
-            Text(
-              'دفعة واحدة، بلا اشتراك — تختفي كل الإعلانات من التطبيق مدى الحياة.',
-              style: Theme.of(context).textTheme.bodyMedium,
+            Row(
+              children: [
+                const Icon(Icons.workspace_premium_rounded, color: AppColors.gold),
+                const SizedBox(width: 10),
+                const Expanded(child: Text('إزالة الإعلانات نهائيًا', style: TextStyle(fontWeight: FontWeight.w800))),
+                Text(state.removeAdsPriceLabel, style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w900)),
+              ],
             ),
-            const SizedBox(height: 14),
-            ElevatedButton(
+            const SizedBox(height: 7),
+            const Text('دفعة واحدة بلا اشتراك — تختفي الإعلانات من التطبيق مدى الحياة.', style: TextStyle(fontSize: 12, color: AppColors.textMuted, height: 1.5)),
+            const SizedBox(height: 13),
+            ElevatedButton.icon(
               onPressed: () => state.buyRemoveAds(),
-              child: Text('شراء — ${state.removeAdsPriceLabel}'),
+              icon: const Icon(Icons.remove_circle_outline_rounded),
+              label: Text('إزالة الإعلانات — ${state.removeAdsPriceLabel}'),
             ),
-            const SizedBox(height: 8),
             TextButton(
               onPressed: () => state.restorePurchases(),
               child: const Text('استعادة المشتريات'),
@@ -168,7 +282,7 @@ class _StatusCard extends StatelessWidget {
     final loading = state.timesLoading;
 
     return Card(
-      color: active ? AppColors.sage.withOpacity(0.08) : AppColors.ember.withOpacity(0.08),
+      color: active ? AppColors.sage.withOpacity(.08) : AppColors.ember.withOpacity(.08),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -176,58 +290,33 @@ class _StatusCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  active ? Icons.check_circle : Icons.error_outline,
-                  color: active ? AppColors.sage : AppColors.ember,
-                  size: 20,
-                ),
+                Icon(active ? Icons.check_circle : Icons.error_outline, color: active ? AppColors.sage : AppColors.ember, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     active ? 'الإشعارات مفعّلة' : 'الإشعارات غير مفعّلة',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: active ? AppColors.sage : AppColors.ember,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w700, color: active ? AppColors.sage : AppColors.ember),
                   ),
                 ),
               ],
             ),
             if (state.cityName != null) ...[
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textMuted),
-                  const SizedBox(width: 4),
-                  Text(state.cityName!, style: Theme.of(context).textTheme.bodyMedium),
-                ],
-              ),
+              Row(children: [const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textMuted), const SizedBox(width: 4), Text(state.cityName!, style: Theme.of(context).textTheme.bodyMedium)]),
             ],
             if (active && state.usingOfflineTimes) ...[
               const SizedBox(height: 8),
-              Text(
-                'الأوقات محسوبة محليًا (بلا إنترنت) — قد تختلف بضع دقائق عن الطريقة الرسمية.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text('الأوقات محسوبة محليًا (بلا إنترنت) — قد تختلف بضع دقائق عن الطريقة الرسمية.', style: Theme.of(context).textTheme.bodyMedium),
             ],
             if (!active) ...[
               const SizedBox(height: 8),
-              Text(
-                state.notificationIssue ?? 'تعذّر تفعيل الإشعارات لسبب غير معروف.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text(state.notificationIssue ?? 'تعذّر تفعيل الإشعارات لسبب غير معروف.', style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: loading ? null : () => state.loadPrayerTimes(),
-                  icon: loading
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh, size: 18),
+                  icon: loading ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh, size: 18),
                   label: Text(loading ? 'جارٍ المحاولة...' : 'إعادة المحاولة'),
                 ),
               ),

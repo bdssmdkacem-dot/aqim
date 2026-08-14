@@ -38,12 +38,23 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
   }
 
   void _tick() {
-    final target = widget.nextRealTime;
-    if (target == null) {
+    final originalTarget = widget.nextRealTime;
+    if (originalTarget == null) {
       if (mounted && _remaining != null) setState(() => _remaining = null);
       return;
     }
-    final diff = target.difference(DateTime.now());
+
+    final now = DateTime.now();
+    var target = originalTarget;
+
+    // AppState keeps today's prayer times. After Isha, the next prayer is
+    // Fajr, but that Fajr belongs to tomorrow. Without this adjustment the
+    // countdown was stuck at 00:00:00 all night.
+    if (!target.isAfter(now) && widget.next == Prayer.fajr && now.difference(target) > const Duration(minutes: 1)) {
+      target = target.add(const Duration(days: 1));
+    }
+
+    final diff = target.difference(now);
     final value = diff.isNegative ? Duration.zero : diff;
     if (mounted && _remaining != value) setState(() => _remaining = value);
   }

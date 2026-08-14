@@ -33,8 +33,7 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
-    final androidImpl = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidImpl = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await androidImpl?.requestNotificationsPermission();
 
     _initialized = true;
@@ -80,8 +79,7 @@ class NotificationService {
     return null;
   }
 
-  int _idFor(Prayer p, int typeOffset) =>
-      Prayer.values.indexOf(p) * 10 + typeOffset;
+  int _idFor(Prayer p, int typeOffset) => Prayer.values.indexOf(p) * 10 + typeOffset;
 
   /// اسم صوت منبّه الاستعداد.
   /// الجمعة حالة خاصة: Dhuhr يبقى Prayer.dhuhr داخليًا، لكن إذا كان
@@ -122,8 +120,7 @@ class NotificationService {
 
       final alarmTime = prayerTime.subtract(Duration(minutes: beforeMinutes));
       final checkInTime = prayerTime.add(Duration(minutes: afterMinutes));
-      final isJumuah =
-          prayer == Prayer.dhuhr && prayerTime.weekday == DateTime.friday;
+      final isJumuah = prayer == Prayer.dhuhr && prayerTime.weekday == DateTime.friday;
 
       if (prayer == Prayer.fajr) {
         await _scheduleFajrWakeAlarms(
@@ -134,9 +131,7 @@ class NotificationService {
       } else if (alarmTime.isAfter(now)) {
         await _scheduleWakeAlarm(
           id: _idFor(prayer, 0),
-          title: isJumuah
-              ? 'استعد لصلاة الجمعة'
-              : 'استعد لصلاة ${prayer.arabicName}',
+          title: isJumuah ? 'استعد لصلاة الجمعة' : 'استعد لصلاة ${prayer.arabicName}',
           body: isJumuah
               ? 'تبقّى $beforeMinutes ${beforeMinutes == 1 ? "دقيقة" : "دقائق"} على صلاة الجمعة.'
               : 'تبقّى $beforeMinutes ${beforeMinutes == 1 ? "دقيقة" : "دقائق"} على ${prayer.arabicName}.',
@@ -149,9 +144,7 @@ class NotificationService {
       if (adhanEnabled && prayerTime.isAfter(now)) {
         await _scheduleAdhan(
           id: _idFor(prayer, 2),
-          title: isJumuah
-              ? 'حان وقت صلاة الجمعة'
-              : 'حان وقت ${prayer.arabicName}',
+          title: isJumuah ? 'حان وقت صلاة الجمعة' : 'حان وقت ${prayer.arabicName}',
           body: 'حيّ على الصلاة، حيّ على الفلاح.',
           scheduledDate: prayerTime,
           payload: prayer.name,
@@ -175,7 +168,8 @@ class NotificationService {
   Future<void> scheduleWeeklySummary(String text) async {
     if (!_initialized) return;
 
-    await _plugin.cancel(_weeklySummaryId);
+    // flutter_local_notifications 21.x exposes cancel using a named id.
+    await _plugin.cancel(id: _weeklySummaryId);
 
     final now = tz.TZDateTime.now(tz.local);
     var first = tz.TZDateTime(
@@ -279,8 +273,7 @@ class NotificationService {
     ];
 
     for (final stage in stages) {
-      final scheduledDate =
-          finalAlarmTime.subtract(Duration(minutes: stage.offsetMinutes));
+      final scheduledDate = finalAlarmTime.subtract(Duration(minutes: stage.offsetMinutes));
       if (!scheduledDate.isAfter(now)) continue;
 
       await _scheduleWakeAlarm(
@@ -344,7 +337,7 @@ class NotificationService {
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
           playSound: true,
-        ),
+      ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       payload: payload,

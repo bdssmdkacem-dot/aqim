@@ -132,7 +132,13 @@ class _DayArcPainter extends CustomPainter {
   }
 
   void _callout(Canvas canvas, Offset center, double radius) {
-    final tp = TextPainter(text: const TextSpan(text: 'الصلاة القادمة', style: TextStyle(fontSize: 13, color: AppColors.goldSoft, fontWeight: FontWeight.w700)), textDirection: TextDirection.rtl)..layout();
+    final tp = TextPainter(
+      text: const TextSpan(
+        text: 'الصلاة القادمة',
+        style: TextStyle(fontSize: 13, color: AppColors.goldSoft, fontWeight: FontWeight.w700),
+      ),
+      textDirection: TextDirection.rtl,
+    )..layout();
     const height = 30.0;
     final rect = Rect.fromCenter(center: Offset(center.dx, center.dy - radius - 4 - height / 2), width: tp.width + 24, height: height);
     final rr = RRect.fromRectAndRadius(rect, const Radius.circular(16));
@@ -145,7 +151,17 @@ class _DayArcPainter extends CustomPainter {
   }
 
   void _label(Canvas canvas, String text, double x, double y, Color color, double size, {bool bold = false}) {
-    final tp = TextPainter(text: TextSpan(text: text, style: GoogleFonts.tajawal(fontSize: size, color: color, fontWeight: bold ? FontWeight.w800 : FontWeight.w500, shadows: const [Shadow(color: Colors.black87, blurRadius: 4, offset: Offset(0, 1))]), textDirection: TextDirection.rtl, textAlign: TextAlign.center)..layout();
+    final style = GoogleFonts.tajawal(
+      fontSize: size,
+      color: color,
+      fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+      shadows: const [Shadow(color: Colors.black87, blurRadius: 4, offset: Offset(0, 1))],
+    );
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.rtl,
+      textAlign: TextAlign.center,
+    )..layout();
     tp.paint(canvas, Offset(x - tp.width / 2, y));
   }
 

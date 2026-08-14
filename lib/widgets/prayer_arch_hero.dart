@@ -67,7 +67,11 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
       final width = constraints.maxWidth;
-      final height = math.min(width * 0.84, 780.0);
+      // Target the reference screenshot: the arch is substantial, but no
+      // longer consumes almost the entire screen. Keep the full content
+      // inside the arch so Arabic labels never get clipped.
+      final height = math.min(width * 0.63, 540.0);
+
       return SizedBox(
         width: width,
         height: height,
@@ -120,10 +124,17 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
               ),
             ),
             Positioned(
-              top: height * 0.18,
-              left: 0,
-              right: 0,
-              child: Center(child: _HeroPrayerInfo(prayerName: widget.next.arabicName, timeLabel: widget.timeLabel, countdownText: _countdownText)),
+              top: height * 0.105,
+              left: width * 0.08,
+              right: width * 0.08,
+              bottom: height * 0.055,
+              child: Center(
+                child: _HeroPrayerInfo(
+                  prayerName: widget.next.arabicName,
+                  timeLabel: widget.timeLabel,
+                  countdownText: _countdownText,
+                ),
+              ),
             ),
             Positioned.fill(child: IgnorePointer(child: CustomPaint(painter: _ArchBorderPainter()))),
           ],
@@ -140,29 +151,66 @@ class _HeroPrayerInfo extends StatelessWidget {
 
   const _HeroPrayerInfo({required this.prayerName, required this.timeLabel, required this.countdownText});
 
+  Widget _fitText({
+    required String text,
+    required TextStyle style,
+    double minScale = .65,
+  }) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.center,
+      child: Text(text, textAlign: TextAlign.center, maxLines: 1, softWrap: false, style: style),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text('الصلاة القادمة', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white)),
-        const SizedBox(height: 6),
-        Text(prayerName, textAlign: TextAlign.center, style: GoogleFonts.amiri(fontSize: 48, height: .95, fontWeight: FontWeight.w700, color: AppColors.gold, shadows: const [Shadow(color: Colors.black54, blurRadius: 6)])),
-        const SizedBox(height: 16),
-        Text(timeLabel, textAlign: TextAlign.center, style: GoogleFonts.tajawal(fontSize: 38, fontWeight: FontWeight.w800, color: Colors.white, fontFeatures: const [FontFeature.tabularFigures()], shadows: const [Shadow(color: Colors.black87, blurRadius: 6)])),
-        if (countdownText != null) ...[
-          const SizedBox(height: 10),
-          Text('بعد', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 16, color: Colors.white)),
+    return LayoutBuilder(builder: (context, constraints) {
+      final available = constraints.maxWidth;
+      final nameSize = math.min(48.0, math.max(34.0, available * .12));
+      final timeSize = math.min(38.0, math.max(29.0, available * .095));
+      final countdownSize = math.min(31.0, math.max(24.0, available * .078));
+
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _fitText(
+            text: 'الصلاة القادمة',
+            style: GoogleFonts.cairo(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white),
+          ),
           const SizedBox(height: 3),
-          Text(countdownText!, textAlign: TextAlign.center, style: GoogleFonts.tajawal(fontSize: 31, fontWeight: FontWeight.w800, color: AppColors.gold, fontFeatures: const [FontFeature.tabularFigures()], shadows: const [Shadow(color: Colors.black87, blurRadius: 6)])),
-          const SizedBox(height: 12),
-          Container(width: 150, height: 1, color: AppColors.gold.withValues(alpha: .75)),
-          const SizedBox(height: 9),
-          Text('إن شاء الله', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 14, color: AppColors.goldSoft, fontWeight: FontWeight.w600)),
+          _fitText(
+            text: prayerName,
+            style: GoogleFonts.amiri(fontSize: nameSize, height: .95, fontWeight: FontWeight.w700, color: AppColors.gold, shadows: const [Shadow(color: Colors.black54, blurRadius: 6)]),
+          ),
+          const SizedBox(height: 8),
+          _fitText(
+            text: timeLabel,
+            style: GoogleFonts.tajawal(fontSize: timeSize, fontWeight: FontWeight.w800, color: Colors.white, fontFeatures: const [FontFeature.tabularFigures()], shadows: const [Shadow(color: Colors.black87, blurRadius: 6)]),
+          ),
+          if (countdownText != null) ...[
+            const SizedBox(height: 5),
+            _fitText(
+              text: 'بعد',
+              style: GoogleFonts.cairo(fontSize: 15, color: Colors.white),
+            ),
+            const SizedBox(height: 1),
+            _fitText(
+              text: countdownText!,
+              style: GoogleFonts.tajawal(fontSize: countdownSize, fontWeight: FontWeight.w800, color: AppColors.gold, fontFeatures: const [FontFeature.tabularFigures()], shadows: const [Shadow(color: Colors.black87, blurRadius: 6)]),
+            ),
+            const SizedBox(height: 5),
+            Container(width: math.min(150.0, available * .48), height: 1, color: AppColors.gold.withValues(alpha: .75)),
+            const SizedBox(height: 4),
+            _fitText(
+              text: 'إن شاء الله',
+              style: GoogleFonts.cairo(fontSize: 14, color: AppColors.goldSoft, fontWeight: FontWeight.w600),
+            ),
+          ],
         ],
-      ],
-    );
+      );
+    });
   }
 }
 

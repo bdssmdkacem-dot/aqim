@@ -52,7 +52,7 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
   void _tap() {
     if (count >= current.repeat) return;
     setState(() => count++);
-    if (count + 1 >= current.repeat) {
+    if (count >= current.repeat) {
       Future.delayed(const Duration(milliseconds: 260), () {
         if (mounted) _next();
       });

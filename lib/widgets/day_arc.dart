@@ -21,9 +21,9 @@ class DayArc extends StatelessWidget {
   final Map<Prayer, PrayerStatus> status;
   final String Function(Prayer)? timeLabelFor;
 
-  final DayPeriod period;
-
   final PrayerDayPeriod  period;
+
+
 
 
   const DayArc({
@@ -60,7 +60,7 @@ class _DayArcPainter extends CustomPainter {
   final Map<Prayer, PrayerStatus> status;
   final String Function(Prayer)? timeLabelFor;
 
-  final DayPeriod period;
+
 
   final PrayerDayPeriod  period;
 

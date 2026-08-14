@@ -7,7 +7,8 @@ import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import 'reason_screen.dart';
 
-/// شاشة مباشرة من إشعار الصلاة الفائتة: يجيب المستخدم فورًا هل صلاها أم لا.
+/// شاشة مباشرة من إشعار الصلاة الفائتة: قرار واحد فقط، ثم يتم تحديث السجل
+/// وإلغاء إشعار الصلاة الفائتة عند اختيار «صليتها».
 class MissedPrayerResponseScreen extends StatelessWidget {
   final Prayer prayer;
 
@@ -23,67 +24,125 @@ class MissedPrayerResponseScreen extends StatelessWidget {
         title: Text('صلاة ${prayer.arabicName}', style: GoogleFonts.amiri(fontWeight: FontWeight.w700)),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(18, 22, 18, 22),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceDark,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.ember.withOpacity(.75), width: 1.2),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 74,
-                      height: 74,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.ember.withOpacity(.13),
-                        border: Border.all(color: AppColors.ember.withOpacity(.75)),
-                      ),
-                      child: const Icon(Icons.notifications_active_rounded, color: AppColors.ember, size: 38),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceDark,
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(color: AppColors.ember.withOpacity(.65), width: 1.2),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.ember.withOpacity(.12),
+                      border: Border.all(color: AppColors.ember.withOpacity(.7)),
                     ),
-                    const SizedBox(height: 18),
-                    Text('فاتتك صلاة ${prayer.arabicName}', textAlign: TextAlign.center, style: GoogleFonts.amiri(fontSize: 25, fontWeight: FontWeight.w700, color: AppColors.ivory)),
-                    const SizedBox(height: 8),
-                    Text('هل أديت هذه الصلاة بالفعل؟', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 14, color: AppColors.inkSoft)),
+                    child: const Icon(Icons.notifications_active_rounded, color: AppColors.ember, size: 36),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('فاتتك صلاة ${prayer.arabicName}', textAlign: TextAlign.center, style: GoogleFonts.amiri(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.ivory)),
+                  const SizedBox(height: 7),
+                  Text('اختر حالتها مرة واحدة ليُحدَّث سجل أقم.', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 12.5, color: AppColors.inkSoft)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text('ماذا حدث؟', style: GoogleFonts.cairo(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            _ChoiceButton(
+              icon: Icons.check_circle_rounded,
+              title: 'صليت',
+              subtitle: 'تمت الصلاة — سيُغلق تذكيرها الفائت.',
+              color: AppColors.sage,
+              onTap: () async {
+                await state.markDone(prayer);
+                if (context.mounted) Navigator.of(context).pop();
+              },
+            ),
+            const SizedBox(height: 10),
+            _ChoiceButton(
+              icon: Icons.schedule_rounded,
+              title: 'لم أصلِّ بعد',
+              subtitle: 'سجّل سبب التأخير واختر الخطوة التالية.',
+              color: AppColors.ember,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ReasonScreen(prayer: prayer)),
+                );
+              },
+            ),
+            const SizedBox(height: 22),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.paper.withOpacity(.035),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.paperLine),
+              ),
+              child: Text(
+                'لن يظهر لك زوج آخر من أزرار «صليت / لم أصلِّ بعد» في نفس الشاشة.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.textMuted, height: 1.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChoiceButton extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ChoiceButton({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceDark,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: color.withOpacity(.45)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 30),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: GoogleFonts.cairo(fontSize: 17, color: AppColors.ivory, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.textMuted)),
                   ],
                 ),
               ),
-              const SizedBox(height: 22),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.check_rounded),
-                label: Text('نعم، صليتها', style: GoogleFonts.cairo(fontWeight: FontWeight.w800)),
-                onPressed: () async {
-                  await state.markQada(prayer);
-                  if (context.mounted) Navigator.of(context).pop();
-                },
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.close_rounded),
-                label: Text('لا، لم أصلها بعد', style: GoogleFonts.cairo(fontWeight: FontWeight.w800)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.ember,
-                  side: BorderSide(color: AppColors.ember.withOpacity(.75)),
-                  minimumSize: const Size.fromHeight(50),
-                ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => ReasonScreen(prayer: prayer)),
-                  );
-                },
-              ),
-              const Spacer(),
-              Text(
-                'اختيارك يُحدّث سجل الصلاة ويلغي تذكيرها الفائت.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.cairo(fontSize: 11.5, color: AppColors.textMuted),
-              ),
+              Icon(Icons.arrow_back_ios_new_rounded, color: color.withOpacity(.75), size: 15),
             ],
           ),
         ),

@@ -73,7 +73,7 @@ LinearGradient tintForPeriod(PrayerDayPeriod period) {
           const Color(0xFFB56B4A).withValues(alpha: 0.25),
           Colors.black.withValues(alpha: 0.80),
         ],
-      ) {}
+      );
 
     case PrayerDayPeriod.day:
 
@@ -93,7 +93,7 @@ LinearGradient tintForPeriod(PrayerDayPeriod period) {
           const Color(0xFF0F3D2E).withValues(alpha: 0.30),
           Colors.black.withValues(alpha: 0.78),
         ],
-      ) {}
+      );
 
     case PrayerDayPeriod.sunset:
 
@@ -113,7 +113,7 @@ LinearGradient tintForPeriod(PrayerDayPeriod period) {
           const Color(0xFFB5654A).withValues(alpha: 0.25),
           Colors.black.withValues(alpha: 0.82),
         ],
-      ) {}
+      );
 
     case PrayerDayPeriod.night:
 
@@ -168,7 +168,7 @@ class _WindowPainter extends CustomPainter {
   final DayPeriod period;
   _WindowPainter({required this.period});
 
-  bool get isNight => period == DayPeriod.night || period == DayPeriod.dawn;
+  bool get _isNight => period == DayPeriod.night || period == DayPeriod.dawn;
 
   final PrayerDayPeriod period;
 
@@ -176,7 +176,7 @@ class _WindowPainter extends CustomPainter {
     required this.period,
   });
 
-  bool get isNight =>
+  bool get _isNight =>
       period == PrayerDayPeriod.night ||
       period == PrayerDayPeriod.dawn;
 
@@ -213,7 +213,7 @@ class _WindowPainter extends CustomPainter {
     canvas.drawLine(Offset(sideMargin, h * 0.92), Offset(w - sideMargin, h * 0.92), gold);
 
     // هلال ونجوم ليلًا/فجرًا، أو شمس مشعّة نهارًا/عند الغروب
-    if (isNight) {
+    if (_isNight) {
       final moonCenter = Offset(w * 0.42, archTop + h * 0.10);
       final moonR = w * 0.09;
       canvas.saveLayer(Rect.fromCircle(center: moonCenter, radius: moonR + 2), Paint());
@@ -265,7 +265,7 @@ class _WindowPainter extends CustomPainter {
     // Sky
     //---------------------------------------
 
-    if (isNight) {
+    if (_isNight) {
       final moonCenter = Offset(
         w * .42,
         archTop + h * .10,
@@ -420,7 +420,7 @@ class _WindowPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_WindowPainter oldDelegate) => oldDelegate.period != period;
+  bool shouldRepaint(covariant _WindowPainter oldDelegate) => oldDelegate.period != period;
 
 
     canvas.drawLine(
@@ -467,7 +467,7 @@ class _WindowPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_WindowPainter oldDelegate) {
+  bool shouldRepaint(covariant _WindowPainter oldDelegate) {
     return oldDelegate.period != period;
   }
 

@@ -505,7 +505,7 @@ class _PillButton extends StatelessWidget {
   final VoidCallback? onTap;
   final bool filled;
 
-  const _PillButton({required this.label, this.icon, required this.onTap});
+  const _PillButton({required this.label, this.icon, required this.onTap, this.filled = true});
 
   @override
   Widget build(BuildContext context) {

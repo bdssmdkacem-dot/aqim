@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'dart:ui' show FontFeature;
 
 import 'package:flutter/material.dart';
@@ -67,80 +66,68 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
       final width = constraints.maxWidth;
-      // Target the reference screenshot: the arch is substantial, but no
-      // longer consumes almost the entire screen. Keep the full content
-      // inside the arch so Arabic labels never get clipped.
-      final height = math.min(width * 0.63, 540.0);
+      final height = (width * .56).clamp(300.0, 430.0);
 
       return SizedBox(
         width: width,
         height: height,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            ClipPath(
-              clipper: _ArchClipper(),
-              child: SizedBox.expand(
-                child: Image.asset(
-                  'assets/images/arch_hero.jpg',
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                  errorBuilder: (context, error, stackTrace) => CustomPaint(painter: _ArchScenePainter(period: widget.period)),
-                ),
-              ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: ClipPath(
-                  clipper: _ArchClipper(),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        stops: const [0.00, 0.48, 0.68, 1.00],
-                        colors: [Colors.black.withValues(alpha: 0.04), Colors.black.withValues(alpha: 0.08), AppColors.ink.withValues(alpha: 0.42), AppColors.ink.withValues(alpha: 0.86)],
-                      ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(
+                'assets/images/arch_hero.jpg',
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                errorBuilder: (_, __, ___) => DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: _fallbackColors(widget.period),
                     ),
                   ),
                 ),
               ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: ClipPath(
-                  clipper: _ArchClipper(),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        stops: const [0.55, 0.78, 1.00],
-                        colors: [Colors.transparent, AppColors.ink.withValues(alpha: 0.16), AppColors.ink.withValues(alpha: 0.72)],
-                      ),
-                    ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.black.withValues(alpha: .18), Colors.black.withValues(alpha: .28), AppColors.ink.withValues(alpha: .78)],
+                    stops: const [.0, .52, 1.0],
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              top: height * 0.105,
-              left: width * 0.08,
-              right: width * 0.08,
-              bottom: height * 0.055,
-              child: Center(
-                child: _HeroPrayerInfo(
-                  prayerName: widget.next.arabicName,
-                  timeLabel: widget.timeLabel,
-                  countdownText: _countdownText,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
+                child: Center(
+                  child: _HeroPrayerInfo(
+                    prayerName: widget.next.arabicName,
+                    timeLabel: widget.timeLabel,
+                    countdownText: _countdownText,
+                  ),
                 ),
               ),
-            ),
-            Positioned.fill(child: IgnorePointer(child: CustomPaint(painter: _ArchBorderPainter()))),
-          ],
+            ],
+          ),
         ),
       );
     });
+  }
+
+  List<Color> _fallbackColors(PrayerDayPeriod period) {
+    switch (period) {
+      case PrayerDayPeriod.dawn:
+        return const [Color(0xFF352D46), Color(0xFF9A685C), Color(0xFF17241F)];
+      case PrayerDayPeriod.day:
+        return const [Color(0xFF315A61), Color(0xFF547E74), Color(0xFF0A2820)];
+      case PrayerDayPeriod.sunset:
+        return const [Color(0xFF3A2B42), Color(0xFF9A644F), Color(0xFF11251F)];
+      case PrayerDayPeriod.night:
+        return const [Color(0xFF08132C), Color(0xFF14243C), Color(0xFF071E18)];
+    }
   }
 }
 
@@ -151,131 +138,40 @@ class _HeroPrayerInfo extends StatelessWidget {
 
   const _HeroPrayerInfo({required this.prayerName, required this.timeLabel, required this.countdownText});
 
-  Widget _fitText({
-    required String text,
-    required TextStyle style,
-    double minScale = .65,
-  }) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      alignment: Alignment.center,
-      child: Text(text, textAlign: TextAlign.center, maxLines: 1, softWrap: false, style: style),
-    );
-  }
+  Widget _fitText(String text, TextStyle style) => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.center,
+        child: Text(text, textAlign: TextAlign.center, maxLines: 1, softWrap: false, style: style),
+      );
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
       final available = constraints.maxWidth;
-      final nameSize = math.min(48.0, math.max(34.0, available * .12));
-      final timeSize = math.min(38.0, math.max(29.0, available * .095));
-      final countdownSize = math.min(31.0, math.max(24.0, available * .078));
+      final nameSize = (available * .115).clamp(34.0, 50.0);
+      final timeSize = (available * .095).clamp(30.0, 42.0);
+      final countdownSize = (available * .072).clamp(24.0, 34.0);
 
       return Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _fitText(
-            text: 'الصلاة القادمة',
-            style: GoogleFonts.cairo(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white),
-          ),
-          const SizedBox(height: 3),
-          _fitText(
-            text: prayerName,
-            style: GoogleFonts.amiri(fontSize: nameSize, height: .95, fontWeight: FontWeight.w700, color: AppColors.gold, shadows: const [Shadow(color: Colors.black54, blurRadius: 6)]),
-          ),
-          const SizedBox(height: 8),
-          _fitText(
-            text: timeLabel,
-            style: GoogleFonts.tajawal(fontSize: timeSize, fontWeight: FontWeight.w800, color: Colors.white, fontFeatures: const [FontFeature.tabularFigures()], shadows: const [Shadow(color: Colors.black87, blurRadius: 6)]),
-          ),
+          _fitText('الصلاة القادمة', GoogleFonts.cairo(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
+          const SizedBox(height: 2),
+          _fitText(prayerName, GoogleFonts.amiri(fontSize: nameSize, height: 1, fontWeight: FontWeight.w700, color: AppColors.gold, shadows: const [Shadow(color: Colors.black87, blurRadius: 7)])),
+          const SizedBox(height: 5),
+          _fitText(timeLabel, GoogleFonts.tajawal(fontSize: timeSize, fontWeight: FontWeight.w900, color: Colors.white, fontFeatures: const [FontFeature.tabularFigures()], shadows: const [Shadow(color: Colors.black87, blurRadius: 7)])),
           if (countdownText != null) ...[
-            const SizedBox(height: 5),
-            _fitText(
-              text: 'بعد',
-              style: GoogleFonts.cairo(fontSize: 15, color: Colors.white),
-            ),
-            const SizedBox(height: 1),
-            _fitText(
-              text: countdownText!,
-              style: GoogleFonts.tajawal(fontSize: countdownSize, fontWeight: FontWeight.w800, color: AppColors.gold, fontFeatures: const [FontFeature.tabularFigures()], shadows: const [Shadow(color: Colors.black87, blurRadius: 6)]),
-            ),
-            const SizedBox(height: 5),
-            Container(width: math.min(150.0, available * .48), height: 1, color: AppColors.gold.withValues(alpha: .75)),
             const SizedBox(height: 4),
-            _fitText(
-              text: 'إن شاء الله',
-              style: GoogleFonts.cairo(fontSize: 14, color: AppColors.goldSoft, fontWeight: FontWeight.w600),
-            ),
+            _fitText('بعد', GoogleFonts.cairo(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 1),
+            _fitText(countdownText!, GoogleFonts.tajawal(fontSize: countdownSize, fontWeight: FontWeight.w900, color: AppColors.gold, fontFeatures: const [FontFeature.tabularFigures()], shadows: const [Shadow(color: Colors.black87, blurRadius: 7)])),
+            const SizedBox(height: 6),
+            Container(width: available * .45, height: 1.2, color: AppColors.gold.withValues(alpha: .82)),
+            const SizedBox(height: 5),
+            _fitText('إن شاء الله', GoogleFonts.cairo(fontSize: 15, color: AppColors.goldSoft, fontWeight: FontWeight.w700)),
           ],
         ],
       );
     });
   }
-}
-
-class _ArchClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) => _archPath(size);
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
-}
-
-Path _archPath(Size size) {
-  final w = size.width;
-  final h = size.height;
-  final path = Path();
-  final apex = Offset(w * .50, h * .015);
-  final leftShoulder = Offset(w * .075, h * .39);
-  final rightShoulder = Offset(w * .925, h * .39);
-  final leftNeck = Offset(w * .052, h * .62);
-  final rightNeck = Offset(w * .948, h * .62);
-  path.moveTo(apex.dx, apex.dy);
-  path.cubicTo(w * .63, h * .025, w * .84, h * .15, rightShoulder.dx, rightShoulder.dy);
-  path.cubicTo(w * .985, h * .45, w * .985, h * .54, rightNeck.dx, rightNeck.dy);
-  path.lineTo(rightNeck.dx, h);
-  path.lineTo(leftNeck.dx, h);
-  path.lineTo(leftNeck.dx, leftNeck.dy);
-  path.cubicTo(w * .015, h * .54, w * .015, h * .45, leftShoulder.dx, leftShoulder.dy);
-  path.cubicTo(w * .16, h * .15, w * .37, h * .025, apex.dx, apex.dy);
-  path.close();
-  return path;
-}
-
-class _ArchBorderPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawPath(_archPath(size), Paint()..style = PaintingStyle.stroke..strokeWidth = 2.4..color = AppColors.gold..strokeJoin = StrokeJoin.round..strokeCap = StrokeCap.round);
-  }
-  @override
-  bool shouldRepaint(covariant _ArchBorderPainter oldDelegate) => false;
-}
-
-class _ArchScenePainter extends CustomPainter {
-  final PrayerDayPeriod period;
-  _ArchScenePainter({required this.period});
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = _archPath(size);
-    canvas.save();
-    canvas.clipPath(path);
-    final w = size.width;
-    final h = size.height;
-    final rect = Rect.fromLTWH(0, 0, w, h);
-    canvas.drawRect(rect, Paint()..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: _skyColorsFor(period)).createShader(rect));
-    canvas.drawCircle(Offset(w * .25, h * .29), w * .10, Paint()..color = const Color(0xFFFFE9B0).withValues(alpha: .20));
-    canvas.drawCircle(Offset(w * .25, h * .29), w * .052, Paint()..color = const Color(0xFFFFF3D2));
-    canvas.drawRect(Rect.fromLTWH(0, h * .79, w, h * .21), Paint()..color = Colors.black.withValues(alpha: .25));
-    canvas.restore();
-  }
-  List<Color> _skyColorsFor(PrayerDayPeriod period) {
-    switch (period) {
-      case PrayerDayPeriod.dawn: return const [Color(0xFF29263D), Color(0xFF684B61), Color(0xFFC58A5A)];
-      case PrayerDayPeriod.day: return const [Color(0xFF3F769C), Color(0xFF85B4CC), Color(0xFFE5D6AD)];
-      case PrayerDayPeriod.sunset: return const [Color(0xFF302A45), Color(0xFF955C50), Color(0xFFE2A35B)];
-      case PrayerDayPeriod.night: return const [Color(0xFF080F28), Color(0xFF111E3D), Color(0xFF1D3450)];
-    }
-  }
-  @override
-  bool shouldRepaint(covariant _ArchScenePainter oldDelegate) => oldDelegate.period != period;
 }

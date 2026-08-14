@@ -45,15 +45,14 @@ class AppState extends ChangeNotifier {
   /// شاشة "تتبع" (التقويم الشهري). يبدأ فارغًا ويتراكم يومًا بيوم.
   final Map<String, int> dailyHistory = {};
 
-<<<<<<< HEAD
-=======
+
   /// سجل يومي مفصّل لكل صلاة: تاريخ ("yyyy-MM-dd") → حالة كل صلاة
   /// (تمّت/فائتة/إلخ) — أساس تفاصيل اليوم عند الضغط على تاريخ فـ تقويم
   /// شاشة "تتبع". يُسجَّل تلقائيًا عند انتقال اليوم (rollover)، قبل
   /// تصفير todayStatus لليوم الجديد.
   final Map<String, Map<Prayer, PrayerStatus>> dailyPrayerHistory = {};
 
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
   /// أطول سلسلة أيام متتالية مُتمَّة بالكامل، سُجِّلت يومًا ما (قد تكون
   /// أكبر من streak الحالي إن انقطعت السلسلة).
   int longestStreak = 0;
@@ -278,8 +277,7 @@ debugPrint("Prayer notifications scheduled");
         if (pct != null) dailyHistory[date] = pct;
       }
     }
-<<<<<<< HEAD
-=======
+
     final savedDailyPrayers = _prefs.getStringList('daily_prayer_history');
     if (savedDailyPrayers != null) {
       for (final entry in savedDailyPrayers) {
@@ -309,7 +307,7 @@ debugPrint("Prayer notifications scheduled");
         if (statuses.isNotEmpty) dailyPrayerHistory[date] = statuses;
       }
     }
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
     longestStreak = _prefs.getInt('longest_streak') ?? 0;
     beforeMinutes = _prefs.getInt('before_minutes') ?? 10;
     afterMinutes = _prefs.getInt('after_minutes') ?? 20;
@@ -392,24 +390,24 @@ debugPrint("Prayer notifications scheduled");
       return;
     }
     if (lastOpenDate != today) {
-<<<<<<< HEAD
+
       // أغلق يوم الأمس: احسب نسبة الإنجاز وادفعها إلى السجل الأسبوعي واليومي.
-=======
+
       // أغلق يوم الأمس: احسب نسبة الإنجاز وادفعها إلى السجل الأسبوعي واليومي،
       // واحفظ حالة كل صلاة على حدة لعرضها لاحقًا فـ تفاصيل اليوم بالتقويم.
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
       final active = activePrayers;
       final doneCount = active.where((p) => todayStatus[p] == PrayerStatus.done).length;
       final pct = active.isEmpty ? 0 : ((doneCount / active.length) * 100).round();
       weekHistory = [...weekHistory.skip(1), pct];
       dailyHistory[lastOpenDate!] = pct;
-<<<<<<< HEAD
+
       _persistDailyHistory();
-=======
+
       dailyPrayerHistory[lastOpenDate!] = Map.of(todayStatus);
       _persistDailyHistory();
       _persistDailyPrayerHistory();
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
 
       final allDone = doneCount == active.length && active.isNotEmpty;
       if (allDone) {
@@ -437,7 +435,7 @@ debugPrint("Prayer notifications scheduled");
     }
   }
 
-<<<<<<< HEAD
+
   void _recomputeUpcoming() {
   final times = realTimes;
 
@@ -505,7 +503,7 @@ debugPrint("Prayer notifications scheduled");
     }
   }
   }
-=======
+
   /// وقت صلاة معيّنة لأغراض حساب "هل فات وقتها؟": الوقت الحقيقي إن
   /// توفّر، وإلا وقت Prayer.mockTime محسوبًا على تاريخ اليوم — حتى يعمل
   /// كشف الفوات التلقائي حتى بلا موقع/إنترنت.
@@ -593,7 +591,7 @@ debugPrint("Prayer notifications scheduled");
   /// يسجّل الصلاة كمقضيّة (أداء متأخر لصلاة كانت مصنّفة فائتة) — تُزال
   /// فورًا من قائمة "غير المؤداة" وتُحتسب ضمن صلوات اليوم المكتملة.
   Future<void> markQada(Prayer p) => markDone(p);
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
 
   Future<void> completeOnboarding() async {
     onboardingComplete = true;
@@ -609,11 +607,11 @@ debugPrint("Prayer notifications scheduled");
   }
 
   Future<void> markMissed(Prayer p, String reason) async {
-<<<<<<< HEAD
+
     todayStatus[p] = PrayerStatus.missed;
     todayReasons[p] = reason;
     missTally[p] = (missTally[p] ?? 0) + 1;
-=======
+
     // إن كانت مصنّفة فائتة تلقائيًا مسبقًا لا نزيد العدّاد مرة ثانية —
     // فقط نُسجّل السبب الذي اختاره المستخدم.
     final alreadyMissed = todayStatus[p] == PrayerStatus.missed;
@@ -622,7 +620,7 @@ debugPrint("Prayer notifications scheduled");
     if (!alreadyMissed) {
       missTally[p] = (missTally[p] ?? 0) + 1;
     }
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
     _recomputeUpcoming();
     await _persist();
     await _persistMissTally();
@@ -667,8 +665,7 @@ debugPrint("Prayer notifications scheduled");
     return dailyHistory[key];
   }
 
-<<<<<<< HEAD
-=======
+
   /// حالة كل صلاة فـ يوم معيّن (لبطاقة تفاصيل اليوم عند الضغط على تاريخ
   /// فـ التقويم): تُرجع todayStatus الحيّة لليوم الحالي، أو السجل
   /// المحفوظ لأي يوم سابق، أو null إن لم يُسجَّل شيء لذلك اليوم بعد
@@ -680,7 +677,6 @@ debugPrint("Prayer notifications scheduled");
     return dailyPrayerHistory[key];
   }
 
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
   Future<void> _persistMissTally() async {
     await _prefs.setStringList(
       'miss_tally',
@@ -695,8 +691,7 @@ debugPrint("Prayer notifications scheduled");
     );
   }
 
-<<<<<<< HEAD
-=======
+
   Future<void> _persistDailyPrayerHistory() async {
     await _prefs.setStringList(
       'daily_prayer_history',
@@ -707,7 +702,7 @@ debugPrint("Prayer notifications scheduled");
     );
   }
 
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
   Future<void> _persist() async {
     await _prefs.setInt('week', currentWeek);
     await _prefs.setInt('week_days_completed', weekDaysCompleted);

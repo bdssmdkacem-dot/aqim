@@ -26,17 +26,13 @@ class DayArc extends StatelessWidget {
 
 
 
-  const DayArc({
-    super.key,
-    required this.prayers,
-    required this.status,
-    this.timeLabelFor,
-
-    this.period = DayPeriod.day,
-
-    this.period = PrayerDayPeriod.day,
-
-  });
+ const DayArc({
+  super.key,
+  required this.prayers,
+  required this.status,
+  this.timeLabelFor,
+  this.period = PrayerDayPeriod.day,
+});
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +80,7 @@ class _DayArcPainter extends CustomPainter {
 
         return Colors.white.withOpacity(0.55);
 
-       return Colors.white.withOpacity(0.55);
+     
 
     }
   }
@@ -124,15 +120,7 @@ class _DayArcPainter extends CustomPainter {
       final radius = isUpcoming ? 20.0 : 12.0;
 
 
-      if (isUpcoming) {
-        // تلميح "الصلاة القادمة" فوق النقطة مباشرة.
-        _drawCallout(canvas, center, radius);
-
-        final glow = Paint()
-          ..color = AppColors.gold.withOpacity(0.22)
-          ..style = PaintingStyle.fill;
-        canvas.drawCircle(center, radius + 10, glow);
-      }
+    
 
 
      if (isUpcoming) {
@@ -198,9 +186,9 @@ class _DayArcPainter extends CustomPainter {
         center.dx,
         center.dy + radius + (isUpcoming ? 30 : 26),
 
-        (s == PrayerStatus.missed ? AppColors.ember : Colors.white).withOpacity(0.85),
-
-        (s == PrayerStatus.missed ? AppColors.ember : Colors.white)
+        (s == PrayerStatus.missed
+    ? AppColors.ember
+    : Colors.white)
     .withOpacity(0.85),
 
         11,
@@ -210,9 +198,7 @@ class _DayArcPainter extends CustomPainter {
 
   void _drawSunOrMoon(Canvas canvas, Offset center, double r) {
 
-    final isNight = period == DayPeriod.night || period == DayPeriod.dawn;
-
-    final isNight =
+   final isNight =
     period == PrayerDayPeriod.night ||
     period == PrayerDayPeriod.dawn;
 

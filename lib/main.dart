@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart' hide AppState;
 import 'package:provider/provider.dart';
 import 'navigation/nav_key.dart';
 import 'screens/main_shell.dart';
@@ -11,7 +10,6 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await MobileAds.instance.initialize();
   await NotificationService.instance.init();
   runApp(const AqimApp());
 }
@@ -35,19 +33,13 @@ class AqimApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        builder: (context, child) {
-          return Directionality(
-            textDirection: TextDirection.rtl,
-            child: child ?? const SizedBox.shrink(),
-          );
-        },
+        builder: (context, child) => Directionality(textDirection: TextDirection.rtl, child: child ?? const SizedBox.shrink()),
         home: const _Gate(),
       ),
     );
   }
 }
 
-/// يقرر ما إذا كان يعرض شاشة الاستقبال (لأول مرة) أو الشاشة الرئيسية.
 class _Gate extends StatelessWidget {
   const _Gate();
 
@@ -55,12 +47,7 @@ class _Gate extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     if (!state.ready) {
-      return const Scaffold(
-        backgroundColor: AppColors.ink,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.gold),
-        ),
-      );
+      return const Scaffold(backgroundColor: AppColors.ink, body: Center(child: CircularProgressIndicator(color: AppColors.gold)));
     }
     return state.onboardingComplete ? const MainShell() : const OnboardingScreen();
   }

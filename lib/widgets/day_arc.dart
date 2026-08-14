@@ -1,170 +1,152 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/prayer.dart';
 import '../theme/app_theme.dart';
-import 'prayer_window_icon.dart' show PrayerDayPeriod;
 
 class DayArc extends StatelessWidget {
   final List<Prayer> prayers;
   final Map<Prayer, PrayerStatus> status;
   final String Function(Prayer)? timeLabelFor;
-  final PrayerDayPeriod period;
+  final dynamic period;
 
-  const DayArc({super.key, required this.prayers, required this.status, this.timeLabelFor, this.period = PrayerDayPeriod.day});
+  const DayArc({super.key, required this.prayers, required this.status, this.timeLabelFor, this.period});
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        height: 190,
-        width: double.infinity,
-        child: CustomPaint(painter: _DayArcPainter(prayers: prayers, status: status, timeLabelFor: timeLabelFor, period: period)),
-      );
+  Widget build(BuildContext context) {
+    if (prayers.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      height: 178,
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 30, 10, 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark.withOpacity(.82),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.gold.withOpacity(.42)),
+      ),
+      child: Row(
+        textDirection: TextDirection.ltr,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: prayers.map((prayer) {
+          final s = status[prayer] ?? PrayerStatus.pending;
+          final upcoming = s == PrayerStatus.upcoming;
+          return Expanded(
+            child: _PrayerTile(
+              prayer: prayer,
+              status: s,
+              upcoming: upcoming,
+              time: timeLabelFor?.call(prayer) ?? prayer.mockTime,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
 }
 
-class _DayArcPainter extends CustomPainter {
-  final List<Prayer> prayers;
-  final Map<Prayer, PrayerStatus> status;
-  final String Function(Prayer)? timeLabelFor;
-  final PrayerDayPeriod period;
+class _PrayerTile extends StatelessWidget {
+  final Prayer prayer;
+  final PrayerStatus status;
+  final bool upcoming;
+  final String time;
 
-  _DayArcPainter({required this.prayers, required this.status, required this.period, this.timeLabelFor});
+  const _PrayerTile({required this.prayer, required this.status, required this.upcoming, required this.time});
 
-  Color _color(PrayerStatus s) => switch (s) {
-        PrayerStatus.done => AppColors.sage,
-        PrayerStatus.upcoming => AppColors.gold,
-        PrayerStatus.missed => AppColors.ember,
-        PrayerStatus.pending => Colors.white.withValues(alpha: .55),
-      };
+  Color get _statusColor {
+    switch (status) {
+      case PrayerStatus.done:
+        return AppColors.sage;
+      case PrayerStatus.missed:
+        return AppColors.ember;
+      case PrayerStatus.upcoming:
+        return AppColors.gold;
+      case PrayerStatus.pending:
+        return Colors.white.withOpacity(.82);
+    }
+  }
 
   @override
-  void paint(Canvas canvas, Size size) {
-    if (prayers.isEmpty) return;
-    final horizontalPadding = math.max(27.0, size.width * .055);
-    final baseY = size.height * .64;
-    final rise = math.min(31.0, size.height * .18);
-    final usableWidth = math.max(1.0, size.width - horizontalPadding * 2);
-    final points = <Offset>[];
-    for (var i = 0; i < prayers.length; i++) {
-      final t = prayers.length == 1 ? .5 : i / (prayers.length - 1);
-      points.add(Offset(horizontalPadding + usableWidth * t, baseY - math.sin(t * math.pi) * rise));
-    }
-
-    final arc = Path()..moveTo(points.first.dx, points.first.dy);
-    for (var i = 0; i < points.length - 1; i++) {
-      final a = points[i];
-      final b = points[i + 1];
-      arc.quadraticBezierTo((a.dx + b.dx) / 2, math.min(a.dy, b.dy) - 4, b.dx, b.dy);
-    }
-    canvas.drawPath(arc, Paint()..style = PaintingStyle.stroke..strokeWidth = 2.3..strokeCap = StrokeCap.round..color = AppColors.gold.withValues(alpha: .65));
-
-    for (var i = 0; i < prayers.length; i++) {
-      final prayer = prayers[i];
-      final s = status[prayer] ?? PrayerStatus.pending;
-      final center = points[i];
-      final upcoming = s == PrayerStatus.upcoming;
-      final missed = s == PrayerStatus.missed;
-      final radius = upcoming ? 31.0 : 14.0;
-
-      if (upcoming) {
-        canvas.drawCircle(center, radius + 13, Paint()..color = AppColors.gold.withValues(alpha: .11));
-        canvas.drawCircle(center, radius + 7, Paint()..color = AppColors.gold.withValues(alpha: .17));
-        _callout(canvas, center, radius);
-      }
-
-      canvas.drawCircle(center, radius, Paint()..color = _color(s));
-      canvas.drawCircle(center, radius, Paint()..style = PaintingStyle.stroke..strokeWidth = upcoming ? 2.2 : 1.4..color = upcoming ? AppColors.goldSoft : (missed ? AppColors.ember : AppColors.gold.withValues(alpha: .45)));
-
-      if (s == PrayerStatus.done) {
-        _checkIcon(canvas, center, radius * .65);
-      } else if (missed) {
-        _xIcon(canvas, center, radius * .62);
-      } else {
-        _celestialIcon(canvas, center, radius * (upcoming ? .62 : .48), prayer);
-      }
-
-      final labelY = center.dy + radius + 8;
-      final timeY = labelY + (upcoming ? 25 : 21);
-      final labelColor = upcoming ? AppColors.gold : missed ? AppColors.ember : Colors.white;
-      _label(canvas, prayer.arabicName, center.dx, labelY, labelColor, upcoming ? 16.5 : 12.8, bold: upcoming || missed);
-      final time = timeLabelFor?.call(prayer) ?? prayer.mockTime;
-      _label(canvas, time, center.dx, timeY, missed ? AppColors.ember : Colors.white.withValues(alpha: .92), upcoming ? 13.5 : 11.5, bold: missed || upcoming);
-    }
-  }
-
-  bool _isNightPrayer(Prayer prayer) => prayer == Prayer.maghrib || prayer == Prayer.isha;
-
-  void _celestialIcon(Canvas canvas, Offset center, double r, Prayer prayer) {
-    if (_isNightPrayer(prayer)) {
-      canvas.drawCircle(center, r, Paint()..color = AppColors.ink);
-      canvas.drawCircle(Offset(center.dx + r * .40, center.dy - r * .20), r * .82, Paint()..color = AppColors.gold);
-      canvas.drawCircle(Offset(center.dx + r * .14, center.dy - r * .34), r * .72, Paint()..color = _color(PrayerStatus.pending));
-      _star(canvas, Offset(center.dx + r * .55, center.dy - r * .55), r * .16);
-      return;
-    }
-    canvas.drawCircle(center, r * .48, Paint()..color = AppColors.ink);
-    for (var i = 0; i < 8; i++) {
-      final a = i / 8 * 2 * math.pi;
-      canvas.drawLine(Offset(center.dx + r * .66 * math.cos(a), center.dy + r * .66 * math.sin(a)), Offset(center.dx + r * .98 * math.cos(a), center.dy + r * .98 * math.sin(a)), Paint()..color = AppColors.ink..strokeWidth = 1.5..strokeCap = StrokeCap.round);
-    }
-  }
-
-  void _star(Canvas canvas, Offset center, double r) {
-    final path = Path();
-    for (var i = 0; i < 10; i++) {
-      final a = -math.pi / 2 + i * math.pi / 5;
-      final rr = i.isEven ? r : r * .4;
-      final p = Offset(center.dx + math.cos(a) * rr, center.dy + math.sin(a) * rr);
-      if (i == 0) path.moveTo(p.dx, p.dy); else path.lineTo(p.dx, p.dy);
-    }
-    path.close();
-    canvas.drawPath(path, Paint()..color = Colors.white.withValues(alpha: .9));
-  }
-
-  void _checkIcon(Canvas canvas, Offset center, double r) {
-    final path = Path()..moveTo(center.dx - r * .55, center.dy)..lineTo(center.dx - r * .12, center.dy + r * .42)..lineTo(center.dx + r * .62, center.dy - r * .48);
-    canvas.drawPath(path, Paint()..style = PaintingStyle.stroke..strokeWidth = 2.7..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round..color = Colors.white);
-  }
-
-  void _xIcon(Canvas canvas, Offset center, double r) {
-    final p = Paint()..color = Colors.white..strokeWidth = 2.7..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(center.dx - r * .48, center.dy - r * .48), Offset(center.dx + r * .48, center.dy + r * .48), p);
-    canvas.drawLine(Offset(center.dx + r * .48, center.dy - r * .48), Offset(center.dx - r * .48, center.dy + r * .48), p);
-  }
-
-  void _callout(Canvas canvas, Offset center, double radius) {
-    final tp = TextPainter(
-      text: const TextSpan(
-        text: 'الصلاة القادمة',
-        style: TextStyle(fontSize: 13, color: AppColors.goldSoft, fontWeight: FontWeight.w700),
-      ),
-      textDirection: TextDirection.rtl,
-    )..layout();
-    const height = 30.0;
-    final rect = Rect.fromCenter(center: Offset(center.dx, center.dy - radius - 4 - height / 2), width: tp.width + 24, height: height);
-    final rr = RRect.fromRectAndRadius(rect, const Radius.circular(16));
-    canvas.drawRRect(rr, Paint()..color = AppColors.surfaceDark);
-    canvas.drawRRect(rr, Paint()..style = PaintingStyle.stroke..strokeWidth = 1.5..color = AppColors.gold.withValues(alpha: .9));
-    final arrow = Path()..moveTo(center.dx - 7, rect.bottom)..lineTo(center.dx + 7, rect.bottom)..lineTo(center.dx, rect.bottom + 7)..close();
-    canvas.drawPath(arrow, Paint()..color = AppColors.surfaceDark);
-    canvas.drawPath(arrow, Paint()..style = PaintingStyle.stroke..strokeWidth = 1.5..color = AppColors.gold.withValues(alpha: .9));
-    tp.paint(canvas, Offset(rect.center.dx - tp.width / 2, rect.center.dy - tp.height / 2));
-  }
-
-  void _label(Canvas canvas, String text, double x, double y, Color color, double size, {bool bold = false}) {
-    final style = GoogleFonts.tajawal(
-      fontSize: size,
-      color: color,
-      fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
-      shadows: const [Shadow(color: Colors.black87, blurRadius: 4, offset: Offset(0, 1))],
+  Widget build(BuildContext context) {
+    final size = upcoming ? 60.0 : 45.0;
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        if (upcoming)
+          Positioned(
+            top: -22,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceDark,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.gold, width: 1.3),
+              ),
+              child: Text('الصلاة القادمة', style: GoogleFonts.cairo(fontSize: 10, color: AppColors.goldSoft, fontWeight: FontWeight.w800)),
+            ),
+          ),
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: _statusColor.withOpacity(upcoming ? .95 : .7), width: upcoming ? 2.0 : 1.2),
+            boxShadow: upcoming ? [BoxShadow(color: AppColors.gold.withOpacity(.25), blurRadius: 16, spreadRadius: 3)] : null,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset('assets/images/arch_hero.jpg', fit: BoxFit.cover, alignment: _alignmentForPrayer(prayer)),
+              ColoredBox(color: _statusColor.withOpacity(status == PrayerStatus.missed ? .42 : .18)),
+              Center(child: _PrayerGlyph(prayer: prayer, status: status, upcoming: upcoming)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: EdgeInsets.only(top: size + 7),
+          child: Column(
+            children: [
+              Text(prayer.arabicName, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: GoogleFonts.tajawal(fontSize: upcoming ? 13.5 : 11.5, fontWeight: FontWeight.w800, color: _statusColor)),
+              const SizedBox(height: 2),
+              Text(time, maxLines: 1, style: GoogleFonts.tajawal(fontSize: upcoming ? 12.5 : 10.5, fontWeight: FontWeight.w700, color: status == PrayerStatus.missed ? AppColors.ember : Colors.white.withOpacity(.92))),
+            ],
+          ),
+        ),
+      ],
     );
-    final tp = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: TextDirection.rtl,
-      textAlign: TextAlign.center,
-    )..layout();
-    tp.paint(canvas, Offset(x - tp.width / 2, y));
   }
 
+  Alignment _alignmentForPrayer(Prayer prayer) {
+    switch (prayer) {
+      case Prayer.fajr:
+        return const Alignment(-.65, -.2);
+      case Prayer.dhuhr:
+        return const Alignment(.0, -.25);
+      case Prayer.asr:
+        return const Alignment(.35, -.05);
+      case Prayer.maghrib:
+        return const Alignment(.65, .05);
+      case Prayer.isha:
+        return const Alignment(.15, .5);
+    }
+  }
+}
+
+class _PrayerGlyph extends StatelessWidget {
+  final Prayer prayer;
+  final PrayerStatus status;
+  final bool upcoming;
+
+  const _PrayerGlyph({required this.prayer, required this.status, required this.upcoming});
+
   @override
-  bool shouldRepaint(covariant _DayArcPainter oldDelegate) => oldDelegate.status != status || oldDelegate.prayers != prayers || oldDelegate.period != period || oldDelegate.timeLabelFor != timeLabelFor;
+  Widget build(BuildContext context) {
+    if (status == PrayerStatus.done) return const Icon(Icons.check_rounded, color: Colors.white, size: 29);
+    if (status == PrayerStatus.missed) return const Icon(Icons.close_rounded, color: Colors.white, size: 28);
+
+    final night = prayer == Prayer.maghrib || prayer == Prayer.isha || prayer == Prayer.fajr;
+    return Icon(night ? Icons.nightlight_round : Icons.wb_sunny_rounded, color: Colors.white, size: upcoming ? 31 : 23);
+  }
 }

@@ -18,6 +18,7 @@ class NotificationService {
   static const _snoozeActionId = 'snooze_15';
   static const _weeklySummaryId = 9000;
   static const _jumuahAlarmSound = 'alarm_jomoaa';
+  static const _missedPrefix = 'missed:';
 
   Future<void> init() async {
     if (_initialized) return;
@@ -41,19 +42,19 @@ class NotificationService {
       _snoozeCheckIn(payload);
       return;
     }
-    final prayer = _prayerFromId(payload);
-    if (prayer == null) return;
-    if (response.notificationResponseType == NotificationResponseType.selectedNotification) {
-      rootNavigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => MissedPrayerResponseScreen(prayer: prayer)));
-    } else {
-      rootNavigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => PrePrayerScreen(prayer: prayer)));
-    }
-  }
-
-  Future<void> _snoozeCheckIn(String prayerId) async {
+    final isMissed = payload.startsWith(_missedPrefix);
+    final prayerId = isMissed ? payload.substring(_missedPrefix.length) : payload;
     final prayer = _prayerFromId(prayerId);
     if (prayer == null) return;
-    await _scheduleCheckIn(id: _idFor(prayer, 1), title: 'فاتتك صلاة ${prayer.arabicName}', body: 'هل صليتها؟ اضغط هنا لتسجيل الإجابة.', scheduledDate: DateTime.now().add(const Duration(minutes: 15)), payload: prayerId);
+    final screen = isMissed ? MissedPrayerResponseScreen(prayer: prayer) : PrePrayerScreen(prayer: prayer);
+    rootNavigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => screen));
+  }
+
+  Future<void> _snoozeCheckIn(String payload) async {
+    final prayerId = payload.startsWith(_missedPrefix) ? payload.substring(_missedPrefix.length) : payload;
+    final prayer = _prayerFromId(prayerId);
+    if (prayer == null) return;
+    await _scheduleCheckIn(id: _idFor(prayer, 1), title: 'فاتتك صلاة ${prayer.arabicName}', body: 'هل صليتها؟ اضغط هنا لتسجيل الإجابة.', scheduledDate: DateTime.now().add(const Duration(minutes: 15)), payload: '$_missedPrefix$prayerId');
   }
 
   Prayer? _prayerFromId(String id) {
@@ -65,7 +66,6 @@ class NotificationService {
 
   int _idFor(Prayer p, int typeOffset) => Prayer.values.indexOf(p) * 10 + typeOffset;
 
-  /// إلغاء تنبيه الصلاة الفائتة فور تسجيل الصلاة كمؤداة.
   Future<void> cancelMissedPrayer(Prayer prayer) async {
     if (!_initialized) return;
     await _plugin.cancel(id: _idFor(prayer, 1));
@@ -102,7 +102,7 @@ class NotificationService {
         await _scheduleAdhan(id: _idFor(prayer, 2), title: isJumuah ? 'حان وقت صلاة الجمعة' : 'حان وقت ${prayer.arabicName}', body: 'حيّ على الصلاة، حيّ على الفلاح.', scheduledDate: prayerTime, payload: prayer.name);
       }
       if (missedTime.isAfter(now)) {
-        await _scheduleCheckIn(id: _idFor(prayer, 1), title: isJumuah ? 'فاتتك صلاة الجمعة' : 'فاتتك صلاة ${prayer.arabicName}', body: 'اضغط هنا لتجيب مباشرة: هل صليتها أم لا؟', scheduledDate: missedTime, payload: prayer.name);
+        await _scheduleCheckIn(id: _idFor(prayer, 1), title: isJumuah ? 'فاتتك صلاة الجمعة' : 'فاتتك صلاة ${prayer.arabicName}', body: 'اضغط هنا لتجيب مباشرة: هل صليتها أم لا؟', scheduledDate: missedTime, payload: '$_missedPrefix${prayer.name}');
       }
     }
   }

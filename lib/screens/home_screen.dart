@@ -10,6 +10,7 @@ import '../theme/app_theme.dart';
 import '../utils/gregorian_arabic.dart';
 import '../utils/hijri_date.dart';
 import '../widgets/day_arc.dart';
+import '../widgets/in_app_prayer_notification.dart';
 import '../widgets/missed_prayers_card.dart';
 import '../widgets/prayer_arch_hero.dart';
 import '../widgets/prayer_window_icon.dart';
@@ -74,8 +75,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return state.cityName ?? 'اضغط لتفعيل تحديد المدينة';
   }
 
-  /// نص العدّاد التنازلي المختصر (سّ:د) المُستعمَل فـ شريط الأذان أسفل
-  /// البطاقة؛ العدّاد الدقيق بالثواني يُحسب داخل PrayerArchHero نفسها.
   String? _shortCountdown(AppState state, Prayer next) {
     final real = state.realTimes?[next];
     if (real == null) return null;
@@ -85,6 +84,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final minutes = diff.inMinutes % 60;
     if (hours > 0) return '$hours س $minutes د';
     return '$minutes د';
+  }
+
+  Duration? _remaining(AppState state, Prayer next) {
+    final real = state.realTimes?[next];
+    if (real == null) return null;
+    final diff = real.difference(DateTime.now());
+    return diff.isNegative ? Duration.zero : diff;
   }
 
   @override
@@ -109,6 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 next: next,
                 period: period,
                 shortCountdown: next == null ? null : _shortCountdown(state, next),
+                remaining: next == null ? null : _remaining(state, next),
               ),
               const MissedPrayersCard(),
               const SizedBox(height: 14),
@@ -276,25 +283,52 @@ class _TitleBlock extends StatelessWidget {
   }
 }
 
-/// البطاقة الرئيسية الكبرى: تحتضن قوس المسجد (مع اسم الصلاة القادمة
-/// وعدّادها)، ثم قوس اليوم (نقاط الصلوات الخمس)، ثم شريط تذكير الأذان
-/// وزر "أذكار ما قبل الصلاة" — كلها داخل نفس الإطار الذهبي كما فـ
-/// التصميم المرجعي.
-class _MainCard extends StatelessWidget {
+class _MainCard extends StatefulWidget {
   final AppState state;
   final Prayer? next;
-  final PrayerDayPeriod  period;
+  final PrayerDayPeriod period;
   final String? shortCountdown;
+  final Duration? remaining;
 
   const _MainCard({
     required this.state,
     required this.next,
     required this.period,
     required this.shortCountdown,
+    required this.remaining,
   });
 
   @override
+  State<_MainCard> createState() => _MainCardState();
+}
+
+class _MainCardState extends State<_MainCard> {
+  Prayer? _dismissedPrayer;
+
+  @override
+  void didUpdateWidget(covariant _MainCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.next != _dismissedPrayer) {
+      _dismissedPrayer = null;
+    }
+  }
+
+  void _openAdhkar() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const AdhkarFlowScreen(
+          title: 'أذكار ما بين الأذان والإقامة',
+          items: beforePrayerAdhkar,
+          audioCategory: 'before',
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final next = widget.next;
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
@@ -311,10 +345,10 @@ class _MainCard extends StatelessWidget {
                 topRight: Radius.circular(25),
               ),
               child: PrayerArchHero(
-                next: next!,
-                nextRealTime: state.realTimes?[next!],
-                timeLabel: state.displayTimeFor(next!),
-                period: period,
+                next: next,
+                nextRealTime: widget.state.realTimes?[next],
+                timeLabel: widget.state.displayTimeFor(next),
+                period: widget.period,
               ),
             )
           else
@@ -326,92 +360,23 @@ class _MainCard extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ),
-          DayArc(
-            prayers: state.activePrayers,
-            status: state.todayStatus,
-            timeLabelFor: state.displayTimeFor,
-            period: period,
-          ),
-          if (next != null) ...[
-            const SizedBox(height: 4),
+          if (next != null && _dismissedPrayer != next)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: _AthanReminderBar(state: state, next: next!, countdown: shortCountdown),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _AthanReminderBar extends StatelessWidget {
-  final AppState state;
-  final Prayer next;
-  final String? countdown;
-
-  const _AthanReminderBar({required this.state, required this.next, required this.countdown});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.gold.withOpacity(0.4)),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'أذان ${next.arabicName}',
-                  style: const TextStyle(fontSize: 13.5, color: Colors.white, fontWeight: FontWeight.w700),
-                ),
-                if (countdown != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'بعد $countdown',
-                    style: const TextStyle(fontSize: 11.5, color: Colors.white60, fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          InkWell(
-            borderRadius: BorderRadius.circular(30),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const AdhkarFlowScreen(
-                  title: 'أذكار ما بين الأذان والإقامة',
-                  items: beforePrayerAdhkar,
-                  audioCategory: 'before',
-                ),
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+              child: InAppPrayerNotification(
+                prayer: next,
+                timeLabel: widget.state.displayTimeFor(next),
+                remaining: widget.remaining,
+                beforeMinutes: widget.state.beforeMinutes,
+                onDismiss: () => setState(() => _dismissedPrayer = next),
+                onOpenAdhkar: _openAdhkar,
               ),
             ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.gold.withOpacity(0.5)),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.menu_book_outlined, size: 15, color: AppColors.gold),
-                  const SizedBox(width: 6),
-                  Text(
-                    'أذكار ما قبل الصلاة',
-                    style: GoogleFonts.amiri(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.goldSoft),
-                  ),
-                ],
-              ),
-            ),
+          DayArc(
+            prayers: widget.state.activePrayers,
+            status: widget.state.todayStatus,
+            timeLabelFor: widget.state.displayTimeFor,
+            period: widget.period,
           ),
         ],
       ),

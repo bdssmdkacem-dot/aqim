@@ -8,12 +8,7 @@ import '../models/prayer.dart';
 import '../navigation/nav_key.dart';
 import '../screens/pre_prayer_screen.dart';
 
-/// يدير ثلاثة تنبيهات لكل صلاة:
-/// 1) منبّه الاستعداد قبل الوقت الحقيقي، بصوت خاص بكل صلاة.
-///    يوم الجمعة، صلاة الظهر المعروضة باسم «الجمعة» تستعمل صوت
-///    alarm_jomoaa بدل صوت الظهر العادي.
-/// 2) الأذان عند الوقت الحقيقي بالضبط.
-/// 3) هل صليت؟ بعد الوقت الحقيقي.
+/// يدير تنبيهات الصلاة وملخص التقدم الأسبوعي.
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -46,6 +41,7 @@ class NotificationService {
   }
 
   static const _snoozeActionId = 'snooze_15';
+  static const _weeklySummaryId = 9000;
 
   void _onNotificationTap(NotificationResponse response) {
     final payload = response.payload;
@@ -88,7 +84,6 @@ class NotificationService {
       Prayer.values.indexOf(p) * 10 + typeOffset;
 
   /// اسم صوت منبّه الاستعداد.
-  ///
   /// الجمعة حالة خاصة: Dhuhr يبقى Prayer.dhuhr داخليًا، لكن إذا كان
   /// موعده يوم الجمعة نستعمل alarm_jomoaa.
   String _wakeAlarmSoundFor(Prayer p, DateTime prayerTime) {
@@ -127,7 +122,6 @@ class NotificationService {
 
       final alarmTime = prayerTime.subtract(Duration(minutes: beforeMinutes));
       final checkInTime = prayerTime.add(Duration(minutes: afterMinutes));
-
       final isJumuah =
           prayer == Prayer.dhuhr && prayerTime.weekday == DateTime.friday;
 
@@ -140,7 +134,9 @@ class NotificationService {
       } else if (alarmTime.isAfter(now)) {
         await _scheduleWakeAlarm(
           id: _idFor(prayer, 0),
-          title: isJumuah ? 'استعد لصلاة الجمعة' : 'استعد لصلاة ${prayer.arabicName}',
+          title: isJumuah
+              ? 'استعد لصلاة الجمعة'
+              : 'استعد لصلاة ${prayer.arabicName}',
           body: isJumuah
               ? 'تبقّى $beforeMinutes ${beforeMinutes == 1 ? "دقيقة" : "دقائق"} على صلاة الجمعة.'
               : 'تبقّى $beforeMinutes ${beforeMinutes == 1 ? "دقيقة" : "دقائق"} على ${prayer.arabicName}.',
@@ -153,7 +149,9 @@ class NotificationService {
       if (adhanEnabled && prayerTime.isAfter(now)) {
         await _scheduleAdhan(
           id: _idFor(prayer, 2),
-          title: isJumuah ? 'حان وقت صلاة الجمعة' : 'حان وقت ${prayer.arabicName}',
+          title: isJumuah
+              ? 'حان وقت صلاة الجمعة'
+              : 'حان وقت ${prayer.arabicName}',
           body: 'حيّ على الصلاة، حيّ على الفلاح.',
           scheduledDate: prayerTime,
           payload: prayer.name,
@@ -172,8 +170,54 @@ class NotificationService {
     }
   }
 
-  /// منبّه الاستعداد قبل الصلاة — شاشة كاملة + صوت منبّه.
-  /// الصوت يجب أن يكون داخل android/app/src/main/res/raw/.
+  /// يعيد جدولة الملخص الأسبوعي كلما تغيّر سجل الصلاة.
+  /// الموعد الافتراضي: الجمعة 20:00 بالتوقيت المحلي.
+  Future<void> scheduleWeeklySummary(String text) async {
+    if (!_initialized) return;
+
+    await _plugin.cancel(_weeklySummaryId);
+
+    final now = tz.TZDateTime.now(tz.local);
+    var first = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      20,
+    );
+
+    while (first.weekday != DateTime.friday || !first.isAfter(now)) {
+      first = first.add(const Duration(days: 1));
+      first = tz.TZDateTime(
+        tz.local,
+        first.year,
+        first.month,
+        first.day,
+        20,
+      );
+    }
+
+    await _plugin.zonedSchedule(
+      id: _weeklySummaryId,
+      title: 'ملخص أسبوعك في أقيم 🌙',
+      body: text,
+      scheduledDate: first,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'aqim_weekly_summary',
+          'ملخص الأسبوع',
+          channelDescription: 'ملخص أسبوعي لتقدمك في الصلاة',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          playSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      payload: 'weekly_summary',
+    );
+  }
+
   Future<void> _scheduleWakeAlarm({
     required int id,
     required String title,

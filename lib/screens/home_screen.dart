@@ -11,7 +11,7 @@ import '../theme/app_theme.dart';
 import '../utils/gregorian_arabic.dart';
 import '../utils/hijri_date.dart';
 import '../widgets/day_arc.dart';
-import '../widgets/in_app_prayer_notification.dart';
+
 import '../widgets/missed_prayers_card.dart';
 import '../widgets/prayer_arch_hero.dart';
 import '../widgets/prayer_window_icon.dart'
@@ -260,7 +260,7 @@ class _TitleBlock extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(state.notificationsActive ? Icons.location_on_outlined : Icons.error_outline, size: 12, color: state.notificationsActive ? AppColors.gold : AppColors.goldSoft),
-                      const SizedBox(width: 4),
+                      const SizedBox(height: 2),
                       Text(locationLabel, style: GoogleFonts.cairo(fontSize: 10, color: state.notificationsActive ? AppColors.inkSoft : AppColors.goldSoft, fontWeight: FontWeight.w600)),
                     ],
                   ),
@@ -326,18 +326,7 @@ class _MainCardState extends State<_MainCard> {
               padding: const EdgeInsets.fromLTRB(18, 24, 18, 8),
               child: Text('أتممت صلوات اليوم المستهدفة 🎉', style: GoogleFonts.amiri(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.goldSoft), textAlign: TextAlign.center),
             ),
-          if (next != null && _dismissedPrayer != next)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 2, 14, 2),
-              child: InAppPrayerNotification(
-                prayer: next,
-                timeLabel: widget.state.displayTimeFor(next),
-                remaining: widget.remaining,
-                beforeMinutes: widget.state.beforeMinutes,
-                onDismiss: () => setState(() => _dismissedPrayer = next),
-                onOpenAdhkar: _openAdhkar,
-              ),
-            ),
+         
           const SizedBox(height: 4),
           DayArc(prayers: widget.state.activePrayers, status: widget.state.todayStatus, timeLabelFor: widget.state.displayTimeFor, period: widget.period),
         ],

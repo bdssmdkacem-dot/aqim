@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -8,8 +9,9 @@ import '../models/prayer.dart';
 import '../navigation/nav_key.dart';
 import '../screens/missed_prayer_response_screen.dart';
 import '../screens/pre_prayer_screen.dart';
+import '../screens/quran_screen.dart';
 
-/// يدير تنبيهات الصلاة وملخص التقدم الأسبوعي.
+/// يدير تنبيهات الصلاة والورد اليومي من القرآن وملخص التقدم الأسبوعي.
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -17,8 +19,10 @@ class NotificationService {
   bool _initialized = false;
   static const _snoozeActionId = 'snooze_15';
   static const _weeklySummaryId = 9000;
+  static const _quranDailyId = 9100;
   static const _jumuahAlarmSound = 'alarm_jomoaa';
   static const _missedPrefix = 'missed:';
+  static const _quranPrefix = 'quran:';
 
   Future<void> init() async {
     if (_initialized) return;
@@ -31,10 +35,10 @@ class NotificationService {
     const initSettings = InitializationSettings(android: androidInit);
     await _plugin.initialize(settings: initSettings, onDidReceiveNotificationResponse: _onNotificationTap);
     _initialized = true;
+    final prefs = await SharedPreferences.getInstance();
+    await scheduleQuranDaily(prefs.getInt('quran_next_page') ?? 1);
   }
 
-  /// يطلب صلاحية الإشعارات في شاشة الإعداد الأولي، بدل إظهار نافذة النظام
-  /// قبل أن يرى المستخدم سبب طلبها.
   Future<bool> requestNotificationsPermission() async {
     if (!_initialized) await init();
     final androidImpl = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
@@ -46,6 +50,11 @@ class NotificationService {
     if (payload == null) return;
     if (response.actionId == _snoozeActionId) {
       _snoozeCheckIn(payload);
+      return;
+    }
+    if (payload.startsWith(_quranPrefix)) {
+      final page = int.tryParse(payload.substring(_quranPrefix.length)) ?? 1;
+      rootNavigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => QuranScreen(initialPage: page)));
       return;
     }
     final isMissed = payload.startsWith(_missedPrefix);
@@ -111,6 +120,36 @@ class NotificationService {
         await _scheduleCheckIn(id: _idFor(prayer, 1), title: isJumuah ? 'فاتتك صلاة الجمعة' : 'فاتتك صلاة ${prayer.arabicName}', body: 'اضغط هنا لتجيب مباشرة: هل صليتها أم لا؟', scheduledDate: missedTime, payload: '$_missedPrefix${prayer.name}');
       }
     }
+    final prefs = await SharedPreferences.getInstance();
+    await scheduleQuranDaily(prefs.getInt('quran_next_page') ?? 1);
+  }
+
+  Future<void> scheduleQuranDaily(int page) async {
+    if (!_initialized) return;
+    final safePage = page.clamp(1, 604);
+    await _plugin.cancel(id: _quranDailyId);
+    final now = tz.TZDateTime.now(tz.local);
+    var first = tz.TZDateTime(tz.local, now.year, now.month, now.day, 20, 30);
+    if (!first.isAfter(now)) first = first.add(const Duration(days: 1));
+    await _plugin.zonedSchedule(
+      id: _quranDailyId,
+      title: 'وردك اليومي من القرآن 🌙',
+      body: 'صفحة $safePage — دقائق قليلة اليوم تقرّبك من ختم القرآن. اضغط للقراءة.',
+      scheduledDate: first,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'aqim_quran_daily',
+          'الورد اليومي من القرآن',
+          channelDescription: 'تذكير يومي لطيف لقراءة جزء من القرآن الكريم',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          playSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload: '$_quranPrefix$safePage',
+    );
   }
 
   Future<void> scheduleWeeklySummary(String text) async {

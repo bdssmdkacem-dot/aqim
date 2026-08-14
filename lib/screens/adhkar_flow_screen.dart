@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/adhkar.dart';
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
+import 'prayer_guide_screen.dart';
 
 class AdhkarFlowScreen extends StatefulWidget {
   final String title;
@@ -56,6 +57,12 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
         if (mounted) _next();
       });
     }
+  }
+
+  void _openPrayerGuide() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PrayerGuideScreen()),
+    );
   }
 
   @override
@@ -114,50 +121,59 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
                   child: Column(
                     children: [
                       const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 26),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topRight,
-                            end: Alignment.bottomLeft,
-                            colors: [AppColors.surfaceDark, AppColors.ink.withOpacity(.96)],
-                          ),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
                           borderRadius: BorderRadius.circular(28),
-                          border: Border.all(color: AppColors.gold.withOpacity(.32)),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 62,
-                              height: 62,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.gold.withOpacity(.09),
-                                border: Border.all(color: AppColors.gold.withOpacity(.5)),
+                          onTap: item.repeat > 1 && count < item.repeat ? _tap : _next,
+                          splashColor: AppColors.gold.withOpacity(.10),
+                          highlightColor: AppColors.gold.withOpacity(.05),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.fromLTRB(20, 24, 20, 26),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topRight,
+                                end: Alignment.bottomLeft,
+                                colors: [AppColors.surfaceDark, AppColors.ink.withOpacity(.96)],
                               ),
-                              child: const Icon(Icons.auto_awesome_rounded, color: AppColors.gold, size: 28),
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(color: AppColors.gold.withOpacity(.32)),
                             ),
-                            const SizedBox(height: 18),
-                            Text(
-                              item.text,
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.amiri(fontSize: 22, height: 2.0, color: AppColors.ivory, fontWeight: FontWeight.w600),
-                            ),
-                            if (item.note != null) ...[
-                              const SizedBox(height: 18),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: AppColors.paper.withOpacity(.035),
-                                  borderRadius: BorderRadius.circular(15),
-                                  border: Border.all(color: AppColors.paperLine),
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 62,
+                                  height: 62,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.gold.withOpacity(.09),
+                                    border: Border.all(color: AppColors.gold.withOpacity(.5)),
+                                  ),
+                                  child: const Icon(Icons.auto_awesome_rounded, color: AppColors.gold, size: 28),
                                 ),
-                                child: Text(item.note!, textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 11, height: 1.6, color: AppColors.inkSoft)),
-                              ),
-                            ],
-                          ],
+                                const SizedBox(height: 18),
+                                Text(
+                                  item.text,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.amiri(fontSize: 22, height: 2.0, color: AppColors.ivory, fontWeight: FontWeight.w600),
+                                ),
+                                if (item.note != null) ...[
+                                  const SizedBox(height: 18),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.paper.withOpacity(.035),
+                                      borderRadius: BorderRadius.circular(15),
+                                      border: Border.all(color: AppColors.paperLine),
+                                    ),
+                                    child: Text(item.note!, textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 11, height: 1.6, color: AppColors.inkSoft)),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -176,7 +192,13 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
                           ),
                         ),
                       ] else
-                        Text('تأمل الذكر ثم اضغط التالي', style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted)),
+                        Text('اضغط على البطاقة للمتابعة', style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted)),
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: _openPrayerGuide,
+                        icon: const Icon(Icons.menu_book_rounded, size: 18),
+                        label: const Text('كيف أقيم صلاتي؟ من الوضوء إلى التسليم'),
+                      ),
                     ],
                   ),
                 ),

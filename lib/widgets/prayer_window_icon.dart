@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-
+import '../widgets/prayer_window_icon.dart'
+    show PrayerDayPeriod, currentPrayerDayPeriod;
 import '../theme/app_theme.dart';
 
 /// فترة اليوم الخاصة بالتطبيق.

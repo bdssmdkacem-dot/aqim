@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../ads/app_banner_ad.dart';
-import '../models/adhkar.dart';
 import '../models/prayer.dart';
 import '../services/battery_service.dart';
 import '../state/app_state.dart';
@@ -11,13 +10,9 @@ import '../theme/app_theme.dart';
 import '../utils/gregorian_arabic.dart';
 import '../utils/hijri_date.dart';
 import '../widgets/day_arc.dart';
-
-import '../widgets/missed_prayers_card.dart';
 import '../widgets/prayer_arch_hero.dart';
-import '../widgets/prayer_window_icon.dart'
-    show PrayerDayPeriod, currentPrayerDayPeriod;
+import '../widgets/prayer_window_icon.dart' show PrayerDayPeriod, currentPrayerDayPeriod;
 
-import 'adhkar_flow_screen.dart';
 import 'nearby_mosques_screen.dart';
 import 'settings_screen.dart';
 import 'week_report_screen.dart';
@@ -39,40 +34,28 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _maybePromptBatterySettings() async {
     final state = context.read<AppState>();
     if (state.batteryPromptShown) return;
-
     final exempted = await BatteryService.isFullyExempted();
     if (exempted) {
       await state.markBatteryPromptShown();
       return;
     }
     if (!mounted) return;
-
     final openSettings = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
-        title: Text(
-          'لضمان وصول تذكيراتك فوقتها',
-          style: GoogleFonts.amiri(color: AppColors.ivory, fontSize: 20, fontWeight: FontWeight.w700),
-        ),
+        title: Text('لضمان وصول تذكيراتك فوقتها', style: GoogleFonts.amiri(color: AppColors.ivory, fontSize: 20, fontWeight: FontWeight.w700)),
         content: Text(
           'بعض الهواتف (خصوصًا Xiaomi وHuawei وOppo) توقف التطبيقات في الخلفية تلقائيًا. فعّل السماح لأقم بالعمل في الخلفية والتشغيل التلقائي حتى تصلك تذكيرات الصلاة في وقتها.',
           style: GoogleFonts.cairo(color: AppColors.inkSoft, height: 1.7, fontSize: 13.5),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text('لاحقًا', style: GoogleFonts.cairo(color: AppColors.inkSoft)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('تحسين البطارية'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text('لاحقًا', style: GoogleFonts.cairo(color: AppColors.inkSoft))),
+          ElevatedButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('تحسين البطارية')),
         ],
       ),
     );
-
     if (openSettings == true) {
       await BatteryService.openSettings();
       final granted = await BatteryService.isFullyExempted();
@@ -86,13 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return state.cityName ?? 'اضغط لتفعيل تحديد المدينة';
   }
 
-  Duration? _remaining(AppState state, Prayer next) {
-    final real = state.realTimes?[next];
-    if (real == null) return null;
-    final diff = real.difference(DateTime.now());
-    return diff.isNegative ? Duration.zero : diff;
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -104,43 +80,28 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          padding: const EdgeInsets.fromLTRB(14, 6, 14, 18),
           child: Column(
             children: [
               _TopRow(state: state),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               _TitleBlock(state: state, locationLabel: _locationLabel(state)),
-              const SizedBox(height: 16),
-              _MainCard(
-                state: state,
-                next: next,
-                period: period,
-                remaining: next == null ? null : _remaining(state, next),
-              ),
               const SizedBox(height: 12),
-              const MissedPrayersCard(),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: _PillButton(
-                      icon: Icons.mosque_outlined,
-                      label: 'أقرب مسجد',
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NearbyMosquesScreen())),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _PillButton(
-                      icon: Icons.bar_chart_rounded,
-                      label: 'التقرير الأسبوعي',
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WeekReportScreen())),
-                    ),
-                  ),
-                ],
-              ),
+              _HeroCard(state: state, next: next, period: period),
+              const SizedBox(height: 8),
+              const _QuickActions(),
+              const SizedBox(height: 2),
+              if (next != null)
+                DayArc(
+                  prayers: state.activePrayers,
+                  status: state.todayStatus,
+                  timeLabelFor: state.displayTimeFor,
+                  period: period,
+                ),
+              const SizedBox(height: 2),
+              _WeeklyProgressCard(state: state),
               if (!state.adsRemoved) ...[
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
                 const AppBannerAd(),
               ],
             ],
@@ -157,33 +118,35 @@ class _TopRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _CircleIconButton(
-          icon: Icons.settings_outlined,
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-        ),
-        const SizedBox(width: 9),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [AppColors.surfaceElevated, AppColors.surfaceDark]),
-            border: Border.all(color: AppColors.gold.withOpacity(0.38)),
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [BoxShadow(color: AppColors.gold.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4))],
+    return SizedBox(
+      height: 46,
+      child: Row(
+        children: [
+          Text('أَقِم', style: GoogleFonts.amiri(fontSize: 25, height: 1, fontWeight: FontWeight.w700, color: AppColors.goldSoft)),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [AppColors.surfaceElevated, AppColors.surfaceDark]),
+              border: Border.all(color: AppColors.gold.withOpacity(0.38)),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.local_fire_department_rounded, size: 15, color: AppColors.goldSoft),
+                const SizedBox(width: 5),
+                Text('سلسلة ${state.streak}', style: GoogleFonts.tajawal(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppColors.ivory)),
+              ],
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.local_fire_department_rounded, size: 15, color: AppColors.goldSoft),
-              const SizedBox(width: 5),
-              Text('سلسلة ${state.streak}', style: GoogleFonts.tajawal(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppColors.ivory)),
-            ],
+          const SizedBox(width: 10),
+          _CircleIconButton(
+            icon: Icons.settings_outlined,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
           ),
-        ),
-        const Spacer(),
-        Text('أَقِم', style: GoogleFonts.amiri(fontSize: 19, fontWeight: FontWeight.w700, color: AppColors.goldSoft)),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -204,11 +167,7 @@ class _CircleIconButton extends StatelessWidget {
         child: Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.gold.withOpacity(0.42)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 8, offset: const Offset(0, 3))],
-          ),
+          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.gold.withOpacity(0.42))),
           child: Icon(icon, size: 19, color: AppColors.ivory),
         ),
       ),
@@ -224,48 +183,47 @@ class _TitleBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      height: 104,
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 9),
       decoration: BoxDecoration(
         color: AppColors.surfaceDark.withOpacity(0.72),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.paperLine.withOpacity(0.8)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('أقم', style: GoogleFonts.amiri(fontSize: 35, height: 1, fontWeight: FontWeight.w700, color: AppColors.goldSoft)),
+                Text(GregorianArabic.format(DateTime.now()), style: GoogleFonts.cairo(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.ivory)),
                 const SizedBox(height: 5),
-                Text('لأجل صلاة في وقتها', style: GoogleFonts.cairo(fontSize: 11.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600)),
+                Text(HijriDate.fromGregorian(DateTime.now()).formatted, style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft)),
+                const Spacer(),
+                InkWell(
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(state.notificationsActive ? Icons.location_on_outlined : Icons.error_outline, size: 13, color: state.notificationsActive ? AppColors.gold : AppColors.goldSoft),
+                      const SizedBox(width: 4),
+                      Text(locationLabel, style: GoogleFonts.cairo(fontSize: 10, color: state.notificationsActive ? AppColors.inkSoft : AppColors.goldSoft, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(width: 12),
           Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(GregorianArabic.format(DateTime.now()), style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.ivory), textAlign: TextAlign.end),
-              const SizedBox(height: 2),
-              Text(HijriDate.fromGregorian(DateTime.now()).formatted, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.inkSoft)),
-              const SizedBox(height: 5),
-              InkWell(
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(state.notificationsActive ? Icons.location_on_outlined : Icons.error_outline, size: 12, color: state.notificationsActive ? AppColors.gold : AppColors.goldSoft),
-                      const SizedBox(height: 2),
-                      Text(locationLabel, style: GoogleFonts.cairo(fontSize: 10, color: state.notificationsActive ? AppColors.inkSoft : AppColors.goldSoft, fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                ),
-              ),
+              Text('أقم', style: GoogleFonts.amiri(fontSize: 39, height: .9, fontWeight: FontWeight.w700, color: AppColors.goldSoft)),
+              const SizedBox(height: 6),
+              Text('لأجل صلاة في وقتها', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600)),
             ],
           ),
         ],
@@ -274,104 +232,196 @@ class _TitleBlock extends StatelessWidget {
   }
 }
 
-class _MainCard extends StatefulWidget {
+class _HeroCard extends StatelessWidget {
   final AppState state;
   final Prayer? next;
   final PrayerDayPeriod period;
-  final Duration? remaining;
-
-  const _MainCard({required this.state, required this.next, required this.period, required this.remaining});
-
-  @override
-  State<_MainCard> createState() => _MainCardState();
-}
-
-class _MainCardState extends State<_MainCard> {
-  Prayer? _dismissedPrayer;
-
-  @override
-  void didUpdateWidget(covariant _MainCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.next != _dismissedPrayer) _dismissedPrayer = null;
-  }
-
-  void _openAdhkar() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AdhkarFlowScreen(title: 'أذكار ما بين الأذان والإقامة', items: beforePrayerAdhkar, audioCategory: 'before')));
-  }
+  const _HeroCard({required this.state, required this.next, required this.period});
 
   @override
   Widget build(BuildContext context) {
-    final next = widget.next;
-
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.surfaceElevated, AppColors.surfaceDark]),
-        border: Border.all(color: AppColors.gold.withOpacity(0.46)),
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 22, offset: const Offset(0, 9)),
-          BoxShadow(color: AppColors.gold.withOpacity(0.035), blurRadius: 28, spreadRadius: 1),
-        ],
+        color: AppColors.surfaceDark,
+        border: Border.all(color: AppColors.gold.withOpacity(0.38)),
+        borderRadius: BorderRadius.circular(22),
       ),
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, 14),
+      clipBehavior: Clip.antiAlias,
+      child: next == null
+          ? const SizedBox(height: 150)
+          : PrayerArchHero(
+              next: next!,
+              nextRealTime: state.realTimes?[next!],
+              timeLabel: state.displayTimeFor(next!),
+              period: period,
+            ),
+    );
+  }
+}
+
+class _QuickActions extends StatelessWidget {
+  const _QuickActions();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _QuickActionCard(
+            icon: Icons.mosque_rounded,
+            title: 'أقرب مسجد',
+            subtitle: 'ابحث عن أقرب مسجد',
+            button: 'عرض الخريطة',
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NearbyMosquesScreen())),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _QuickActionCard(
+            icon: Icons.bar_chart_rounded,
+            title: 'التقرير الأسبوعي',
+            subtitle: 'متابعة التقدم الأسبوعي',
+            button: 'عرض التقرير',
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WeekReportScreen())),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String button;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({required this.icon, required this.title, required this.subtitle, required this.button, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 126,
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surface, AppColors.surfaceDark]),
+        border: Border.all(color: AppColors.gold.withOpacity(0.28)),
+        borderRadius: BorderRadius.circular(18),
+      ),
       child: Column(
         children: [
-          if (next != null)
-            ClipRRect(
-              borderRadius: const BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25)),
-              child: PrayerArchHero(next: next, nextRealTime: widget.state.realTimes?[next], timeLabel: widget.state.displayTimeFor(next), period: widget.period),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 24, 18, 8),
-              child: Text('أتممت صلوات اليوم المستهدفة 🎉', style: GoogleFonts.amiri(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.goldSoft), textAlign: TextAlign.center),
+          Row(
+            children: [
+              Icon(icon, size: 30, color: AppColors.goldSoft),
+              const SizedBox(width: 7),
+              Expanded(child: Text(title, textAlign: TextAlign.right, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.amiri(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ivory))),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Align(alignment: Alignment.centerRight, child: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.inkSoft))),
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            height: 30,
+            child: OutlinedButton(
+              onPressed: onTap,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.goldSoft,
+                side: BorderSide(color: AppColors.gold.withOpacity(0.55)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                padding: EdgeInsets.zero,
+              ),
+              child: Text(button, style: GoogleFonts.cairo(fontSize: 10.5, fontWeight: FontWeight.w700)),
             ),
-         
-          const SizedBox(height: 4),
-          DayArc(prayers: widget.state.activePrayers, status: widget.state.todayStatus, timeLabelFor: widget.state.displayTimeFor, period: widget.period),
+          ),
         ],
       ),
     );
   }
 }
 
-class _PillButton extends StatelessWidget {
-  final String label;
-  final IconData? icon;
-  final VoidCallback? onTap;
-  final bool filled;
+class _WeeklyProgressCard extends StatelessWidget {
+  final AppState state;
+  const _WeeklyProgressCard({required this.state});
 
-  const _PillButton({required this.label, this.icon, required this.onTap, this.filled = true});
+  static const _days = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+
+  int get _todayDone => state.activePrayers.where((p) => state.todayStatus[p] == PrayerStatus.done).length;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Ink(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
-          decoration: BoxDecoration(
-            gradient: filled ? const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surface, AppColors.surfaceDark]) : null,
-            color: filled ? null : Colors.transparent,
-            border: Border.all(color: AppColors.gold.withOpacity(0.34)),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+    final total = state.activePrayers.length;
+    final done = _todayDone;
+    final progress = total == 0 ? 0.0 : done / total;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        border: Border.all(color: AppColors.paperLine.withOpacity(0.75)),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          Row(
             children: [
-              if (icon != null) ...[
-                Icon(icon, size: 17, color: AppColors.goldSoft),
-                const SizedBox(width: 8),
-              ],
-              Flexible(
-                child: Text(label, textAlign: TextAlign.center, style: GoogleFonts.amiri(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ivory), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.gold.withOpacity(0.75)), color: AppColors.gold.withOpacity(0.10)),
+                child: const Icon(Icons.workspace_premium_rounded, color: AppColors.goldSoft, size: 22),
               ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('الإنجاز هذا الأسبوع', style: GoogleFonts.amiri(fontSize: 15.5, fontWeight: FontWeight.w700, color: AppColors.ivory)),
+                    Text(done == total ? 'أحسنت، استمر' : 'أكمل صلواتك اليوم', style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.inkSoft)),
+                  ],
+                ),
+              ),
+              Text('$done / $total صلوات', style: GoogleFonts.cairo(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.ivory)),
             ],
           ),
-        ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0, 1),
+              minHeight: 7,
+              backgroundColor: Colors.white.withOpacity(0.10),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.gold),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: List.generate(_days.length, (i) {
+              final isToday = i == _days.length - 1;
+              final completed = isToday ? done == total && total > 0 : state.weekHistory[i] >= 80;
+              return Expanded(
+                child: Column(
+                  children: [
+                    Text(_days[i], style: GoogleFonts.cairo(fontSize: 8.5, color: isToday ? AppColors.goldSoft : AppColors.inkSoft, fontWeight: isToday ? FontWeight.w700 : FontWeight.w500)),
+                    const SizedBox(height: 4),
+                    Container(
+                      width: 27,
+                      height: 27,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: completed ? AppColors.sage.withOpacity(0.80) : AppColors.ink.withOpacity(0.35),
+                        border: Border.all(color: isToday ? AppColors.gold : completed ? AppColors.sage : AppColors.paperLine, width: isToday ? 1.5 : 1),
+                      ),
+                      child: completed ? const Icon(Icons.check_rounded, size: 16, color: Colors.white) : null,
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ],
       ),
     );
   }

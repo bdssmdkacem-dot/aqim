@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../ads/app_banner_ad.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import 'adhkar_home_screen.dart';
@@ -32,7 +33,12 @@ class _MainShellState extends State<MainShell> {
     final next = state.nextPrayer;
 
     return Scaffold(
-      body: IndexedStack(index: _index, children: _tabs),
+      body: Column(
+        children: [
+          Expanded(child: IndexedStack(index: _index, children: _tabs)),
+          if (_index == 0) const AppBannerAd(),
+        ],
+      ),
       bottomNavigationBar: _BottomBar(
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),

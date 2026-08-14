@@ -29,7 +29,7 @@ class DayArc extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 150,
+      height: 170,
       child: CustomPaint(
         painter: _DayArcPainter(
           prayers: prayers,
@@ -73,14 +73,14 @@ class _DayArcPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final n = prayers.length;
     if (n == 0) return;
-    final margin = 26.0;
+    final margin = 34.0;
     final usableWidth = size.width - margin * 2;
-    final trackY = 44.0;
+    final trackY = 52.0;
     final points = <Offset>[];
     for (var i = 0; i < n; i++) {
       final t = n == 1 ? 0.5 : i / (n - 1);
       final x = margin + usableWidth * t;
-      final y = trackY - math.sin(t * math.pi) * 26;
+      final y = trackY - math.sin(t * math.pi) * 34;
       points.add(Offset(x, y));
     }
 
@@ -91,7 +91,7 @@ class _DayArcPainter extends CustomPainter {
     }
     final linePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
+      ..strokeWidth = 2.4
       ..color = AppColors.gold.withOpacity(0.45);
     canvas.drawPath(path, linePaint);
 
@@ -101,7 +101,7 @@ class _DayArcPainter extends CustomPainter {
       final color = _colorFor(s);
       final center = points[i];
       final isUpcoming = s == PrayerStatus.upcoming;
-      final radius = isUpcoming ? 20.0 : 12.0;
+      final radius = isUpcoming ? 22.0 : 11.0;
 
      if (isUpcoming) {
   // تلميح "الصلاة القادمة" فوق النقطة مباشرة.
@@ -114,12 +114,12 @@ class _DayArcPainter extends CustomPainter {
   canvas.drawCircle(center, radius + 10, glow);
 }
       final dot = Paint()..color = color;
-      canvas.drawCircle(center, radius, dot);
+      canvas.drawCircle(center, radius + 12, glow);
 
       if (isUpcoming) {
         final ringPaint = Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
+          ..strokeWidth = 2.5
           ..color = AppColors.goldSoft;
         canvas.drawCircle(center, radius - 2, ringPaint);
         _drawSunOrMoon(canvas, center, radius * 0.5);
@@ -153,9 +153,9 @@ class _DayArcPainter extends CustomPainter {
         canvas,
         p.arabicName,
         center.dx,
-        center.dy + radius + 10,
+        center.dy + radius + 14,
         nameColor,
-        isUpcoming ? 15 : 12.5,
+        isUpcoming ? 16 : 12.5,
         bold: isUpcoming || s == PrayerStatus.missed,
       );
       final timeText = timeLabelFor?.call(p) ?? p.mockTime;
@@ -163,7 +163,7 @@ class _DayArcPainter extends CustomPainter {
         canvas,
         timeText,
         center.dx,
-        center.dy + radius + (isUpcoming ? 30 : 26),
+        center.dy + radius + (isUpcoming ? 38 : 30),
         (s == PrayerStatus.missed ? AppColors.ember : Colors.white)
     .withOpacity(0.85),
         11,
@@ -212,7 +212,7 @@ class _DayArcPainter extends CustomPainter {
 
     final pillW = tp.width + 20;
     const pillH = 24.0;
-    final pillCenterY = dotCenter.dy - dotRadius - 22;
+    final pillCenterY = dotCenter.dy - dotRadius - 28;
     final pillRect = Rect.fromCenter(center: Offset(dotCenter.dx, pillCenterY), width: pillW, height: pillH);
     final rrect = RRect.fromRectAndRadius(pillRect, const Radius.circular(12));
 

@@ -6,6 +6,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../models/prayer.dart';
 import '../navigation/nav_key.dart';
+import '../screens/missed_prayer_response_screen.dart';
 import '../screens/pre_prayer_screen.dart';
 
 /// يدير تنبيهات الصلاة وملخص التقدم الأسبوعي.
@@ -42,13 +43,17 @@ class NotificationService {
     }
     final prayer = _prayerFromId(payload);
     if (prayer == null) return;
-    rootNavigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => PrePrayerScreen(prayer: prayer)));
+    if (response.notificationResponseType == NotificationResponseType.selectedNotification) {
+      rootNavigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => MissedPrayerResponseScreen(prayer: prayer)));
+    } else {
+      rootNavigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => PrePrayerScreen(prayer: prayer)));
+    }
   }
 
   Future<void> _snoozeCheckIn(String prayerId) async {
     final prayer = _prayerFromId(prayerId);
     if (prayer == null) return;
-    await _scheduleCheckIn(id: _idFor(prayer, 1), title: 'فاتتك صلاة ${prayer.arabicName}', body: 'لم تسجّل ${prayer.arabicName} بعد. اضغط هنا لتسجيلها كصلاة مقضيّة.', scheduledDate: DateTime.now().add(const Duration(minutes: 15)), payload: prayerId);
+    await _scheduleCheckIn(id: _idFor(prayer, 1), title: 'فاتتك صلاة ${prayer.arabicName}', body: 'هل صليتها؟ اضغط هنا لتسجيل الإجابة.', scheduledDate: DateTime.now().add(const Duration(minutes: 15)), payload: prayerId);
   }
 
   Prayer? _prayerFromId(String id) {
@@ -96,9 +101,8 @@ class NotificationService {
       if (adhanEnabled && prayerTime.isAfter(now)) {
         await _scheduleAdhan(id: _idFor(prayer, 2), title: isJumuah ? 'حان وقت صلاة الجمعة' : 'حان وقت ${prayer.arabicName}', body: 'حيّ على الصلاة، حيّ على الفلاح.', scheduledDate: prayerTime, payload: prayer.name);
       }
-      // بعد انتهاء المهلة يظهر إشعار واضح بأن الصلاة فاتت.
       if (missedTime.isAfter(now)) {
-        await _scheduleCheckIn(id: _idFor(prayer, 1), title: isJumuah ? 'فاتتك صلاة الجمعة' : 'فاتتك صلاة ${prayer.arabicName}', body: 'لم تسجّل هذه الصلاة بعد. اضغط هنا لتسجيلها كصلاة مقضيّة.', scheduledDate: missedTime, payload: prayer.name);
+        await _scheduleCheckIn(id: _idFor(prayer, 1), title: isJumuah ? 'فاتتك صلاة الجمعة' : 'فاتتك صلاة ${prayer.arabicName}', body: 'اضغط هنا لتجيب مباشرة: هل صليتها أم لا؟', scheduledDate: missedTime, payload: prayer.name);
       }
     }
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../ads/app_banner_ad.dart';
 import '../models/prayer.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
@@ -38,10 +37,7 @@ class WeekReportScreen extends StatelessWidget {
                         children: [
                           Container(
                             height: (v * 0.6).clamp(6, 60).toDouble(),
-                            decoration: BoxDecoration(
-                              color: done ? AppColors.sage : AppColors.paperLine,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
+                            decoration: BoxDecoration(color: done ? AppColors.sage : AppColors.paperLine, borderRadius: BorderRadius.circular(6)),
                           ),
                           const SizedBox(height: 6),
                           Text(_dayLabels[i], style: Theme.of(context).textTheme.labelSmall),
@@ -66,15 +62,8 @@ class WeekReportScreen extends StatelessWidget {
                       title: Text(p.arabicName, style: Theme.of(context).textTheme.titleMedium),
                       trailing: CircleAvatar(
                         radius: 11,
-                        backgroundColor: isDone
-                            ? AppColors.sage
-                            : isMissed
-                                ? AppColors.ember
-                                : AppColors.paperLine,
-                        child: Text(
-                          isDone ? '✓' : (isMissed ? '✕' : ''),
-                          style: const TextStyle(fontSize: 11, color: Colors.white),
-                        ),
+                        backgroundColor: isDone ? AppColors.sage : isMissed ? AppColors.ember : AppColors.paperLine,
+                        child: Text(isDone ? '✓' : (isMissed ? '✕' : ''), style: const TextStyle(fontSize: 11, color: Colors.white)),
                       ),
                     );
                   }).toList(),
@@ -85,31 +74,19 @@ class WeekReportScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.ember.withOpacity(0.06),
-                  border: Border.all(color: AppColors.ember.withOpacity(0.25)),
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                decoration: BoxDecoration(color: AppColors.ember.withOpacity(0.06), border: Border.all(color: AppColors.ember.withOpacity(0.25)), borderRadius: BorderRadius.circular(16)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('ملاحظة', style: TextStyle(fontSize: 11, color: AppColors.ember, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 6),
-                    Text(
-                      'لاحظنا أن ${weakest.arabicName} هي الصلاة التي تفوتك أكثر من غيرها. هدف قادم: تحسينها.',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                    Text('لاحظنا أن ${weakest.arabicName} هي الصلاة التي تفوتك أكثر من غيرها. هدف قادم: تحسينها.', style: Theme.of(context).textTheme.bodyMedium),
                   ],
                 ),
               ),
             ],
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('حسنًا، لنعمل عليها'),
-            ),
-            const SizedBox(height: 16),
-            if (!state.adsRemoved) const Center(child: AppBannerAd()),
+            ElevatedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('حسنًا، لنعمل عليها')),
           ],
         ),
       ),

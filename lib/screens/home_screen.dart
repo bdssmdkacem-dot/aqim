@@ -10,17 +10,11 @@ import '../theme/app_theme.dart';
 import '../utils/gregorian_arabic.dart';
 import '../utils/hijri_date.dart';
 import '../widgets/day_arc.dart';
-
-
 import '../widgets/missed_prayers_card.dart';
-
 import '../widgets/prayer_arch_hero.dart';
 import '../widgets/prayer_window_icon.dart';
 import 'adhkar_flow_screen.dart';
 import 'nearby_mosques_screen.dart';
-
-import 'pre_prayer_screen.dart';
-
 import 'settings_screen.dart';
 import 'week_report_screen.dart';
 
@@ -97,10 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final next = state.nextPrayer;
-    final period = currentDayPeriod();
-
     final period = currentPrayerDayPeriod();
-
 
     return Scaffold(
       backgroundColor: AppColors.ink,
@@ -113,18 +104,13 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 10),
               _TitleBlock(state: state, locationLabel: _locationLabel(state)),
               const SizedBox(height: 14),
-
-              _MissedPrayersBanner(state: state),
-
               _MainCard(
                 state: state,
                 next: next,
                 period: period,
                 shortCountdown: next == null ? null : _shortCountdown(state, next),
               ),
-
               const MissedPrayersCard(),
-
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -160,68 +146,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-
-class _MissedPrayersBanner extends StatelessWidget {
-  final AppState state;
-  const _MissedPrayersBanner({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final missed = state.activePrayers.where((p) => state.todayStatus[p] == PrayerStatus.missed).toList();
-    if (missed.isEmpty) return const SizedBox.shrink();
-
-    final names = missed.map((p) => p.arabicName).join('، ');
-    final title = missed.length == 1
-        ? 'فاتتك صلاة ${missed.first.arabicName}'
-        : 'فاتتك ${missed.length} صلوات اليوم';
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => PrePrayerScreen(prayer: missed.first)),
-        ),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.ember.withOpacity(0.12),
-            border: Border.all(color: AppColors.ember.withOpacity(0.6)),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.error_outline_rounded, color: AppColors.ember, size: 22),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: AppColors.ember),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      missed.length == 1 ? 'اضغط لتسجيلها الآن' : '$names — اضغط لتسجيلها',
-                      style: TextStyle(fontSize: 11.5, color: AppColors.ember.withOpacity(0.85), fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.arrow_back_ios_new_rounded, size: 13, color: AppColors.ember),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 
 class _TopRow extends StatelessWidget {
   final AppState state;
@@ -359,11 +283,7 @@ class _TitleBlock extends StatelessWidget {
 class _MainCard extends StatelessWidget {
   final AppState state;
   final Prayer? next;
-
-  final DayPeriod period;
-
   final PrayerDayPeriod  period;
-
   final String? shortCountdown;
 
   const _MainCard({

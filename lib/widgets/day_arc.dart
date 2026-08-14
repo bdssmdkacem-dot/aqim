@@ -3,14 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/prayer.dart';
 import '../theme/app_theme.dart';
-import 'prayer_window_icon.dart' show PrayerDayPeriod;
+import 'prayer_window_icon.dart'
+    show PrayerDayPeriod;
 
-/// "قوس اليوم": يمثل الصلوات الخمس كنقاط على مسار مقوّس يشبه مسار الشمس.
+/// "قوس اليوم": يمثل الصلوات الخمس كنقاط على مسار مقوّس يشبه مسار الشمس،
+/// كل نقطة تُلوَّن بحسب حالتها (تمت / القادمة / لم يحن وقتها / فائتة لم
+/// تُصلَّ بعد). الصلاة القادمة تُبرَز بدائرة ذهبية أكبر مع أيقونة
+/// شمس/قمر واسمها بخط أكبر، وفوقها تلميح "الصلاة القادمة". الصلوات
+/// الفائتة (التي مرّ وقتها ولم تُسجَّل كمُصلّاة) تظهر بعلامة ✕ ولون
+/// نحاسي/أحمر مائل، واسمها بنفس اللون كي تُلفت الانتباه لتداركها.
 class DayArc extends StatelessWidget {
   final List<Prayer> prayers;
   final Map<Prayer, PrayerStatus> status;
   final String Function(Prayer)? timeLabelFor;
-  final PrayerDayPeriod period;
+  final PrayerDayPeriod  period;
 
   const DayArc({
     super.key,
@@ -41,7 +47,7 @@ class _DayArcPainter extends CustomPainter {
   final List<Prayer> prayers;
   final Map<Prayer, PrayerStatus> status;
   final String Function(Prayer)? timeLabelFor;
-  final PrayerDayPeriod period;
+  final PrayerDayPeriod  period;
 
   _DayArcPainter({
     required this.prayers,
@@ -59,7 +65,7 @@ class _DayArcPainter extends CustomPainter {
       case PrayerStatus.missed:
         return AppColors.ember;
       case PrayerStatus.pending:
-        return Colors.white.withValues(alpha: 0.55);
+       return Colors.white.withOpacity(0.55);
     }
   }
 
@@ -78,6 +84,7 @@ class _DayArcPainter extends CustomPainter {
       points.add(Offset(x, y));
     }
 
+    // خط المسار ذهبي شفاف قليلًا.
     final path = Path()..moveTo(points.first.dx, points.first.dy);
     for (final p in points.skip(1)) {
       path.lineTo(p.dx, p.dy);
@@ -85,7 +92,7 @@ class _DayArcPainter extends CustomPainter {
     final linePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..color = AppColors.gold.withValues(alpha: 0.45);
+      ..color = AppColors.gold.withOpacity(0.45);
     canvas.drawPath(path, linePaint);
 
     for (var i = 0; i < n; i++) {
@@ -96,14 +103,16 @@ class _DayArcPainter extends CustomPainter {
       final isUpcoming = s == PrayerStatus.upcoming;
       final radius = isUpcoming ? 20.0 : 12.0;
 
-      if (isUpcoming) {
-        _drawCallout(canvas, center, radius);
-        final glow = Paint()
-          ..color = AppColors.gold.withValues(alpha: 0.22)
-          ..style = PaintingStyle.fill;
-        canvas.drawCircle(center, radius + 10, glow);
-      }
+     if (isUpcoming) {
+  // تلميح "الصلاة القادمة" فوق النقطة مباشرة.
+  _drawCallout(canvas, center, radius);
 
+  final glow = Paint()
+    ..color = AppColors.gold.withOpacity(0.22)
+    ..style = PaintingStyle.fill;
+
+  canvas.drawCircle(center, radius + 10, glow);
+}
       final dot = Paint()..color = color;
       canvas.drawCircle(center, radius, dot);
 
@@ -155,14 +164,17 @@ class _DayArcPainter extends CustomPainter {
         timeText,
         center.dx,
         center.dy + radius + (isUpcoming ? 30 : 26),
-        (s == PrayerStatus.missed ? AppColors.ember : Colors.white).withValues(alpha: 0.85),
+        (s == PrayerStatus.missed ? AppColors.ember : Colors.white)
+    .withOpacity(0.85),
         11,
       );
     }
   }
 
   void _drawSunOrMoon(Canvas canvas, Offset center, double r) {
-    final isNight = period == PrayerDayPeriod.night || period == PrayerDayPeriod.dawn;
+    final isNight =
+    period == PrayerDayPeriod.night ||
+    period == PrayerDayPeriod.dawn;
     final iconPaint = Paint()..color = AppColors.ink;
     if (isNight) {
       canvas.saveLayer(Rect.fromCircle(center: center, radius: r + 2), Paint());
@@ -208,10 +220,11 @@ class _DayArcPainter extends CustomPainter {
     final strokePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2
-      ..color = AppColors.gold.withValues(alpha: 0.7);
+      ..color = AppColors.gold.withOpacity(0.7);
     canvas.drawRRect(rrect, fillPaint);
     canvas.drawRRect(rrect, strokePaint);
 
+    // مثلث صغير يشير إلى النقطة.
     final arrow = Path()
       ..moveTo(dotCenter.dx - 5, pillRect.bottom)
       ..lineTo(dotCenter.dx + 5, pillRect.bottom)

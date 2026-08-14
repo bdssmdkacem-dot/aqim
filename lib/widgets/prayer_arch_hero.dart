@@ -5,12 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/prayer.dart';
 import '../theme/app_theme.dart';
-
-import 'prayer_window_icon.dart' show DayPeriod;
-
 import 'prayer_window_icon.dart'
     show PrayerDayPeriod;
-
 
 /// شكل "قوس المحراب" (مغربي/أندلسي — قوس حدوة حصان مدبَّب) الذي يظهر
 /// أعلى الصفحة الرئيسية، ويحتضن صورة/رسمة المسجد ومعلومات الصلاة القادمة.
@@ -39,11 +35,7 @@ class PrayerArchHero extends StatefulWidget {
   final Prayer next;
   final DateTime? nextRealTime;
   final String timeLabel;
-
-  final DayPeriod period;
-
   final PrayerDayPeriod  period;
-
 
   const PrayerArchHero({
     super.key,
@@ -136,21 +128,12 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                         stops: const [0.0, 0.46, 0.62, 1.0],
-
-                        colors: [
-                          Colors.transparent,
-                          Colors.transparent,
-                          AppColors.ink.withOpacity(0.55),
-                          AppColors.ink.withOpacity(0.92),
-                        ],
-
                        colors: [
   Colors.transparent,
   Colors.transparent,
   AppColors.ink.withValues(alpha: 0.55),
   AppColors.ink.withValues(alpha: 0.92),
 ],
-
                       ),
                     ),
                   ),
@@ -288,11 +271,7 @@ class _ArchBorderPainter extends CustomPainter {
 /// رسمة بديلة (fallback) لمشهد مسجد عند الغروب/فترات اليوم المختلفة،
 /// تُستعمل تلقائيًا حين لا يوجد ملف assets/images/arch_hero.jpg.
 class _ArchScenePainter extends CustomPainter {
-
-  final DayPeriod period;
-
   final PrayerDayPeriod  period;
-
   _ArchScenePainter({required this.period});
 
   @override
@@ -316,11 +295,7 @@ class _ArchScenePainter extends CustomPainter {
 
     // الشمس/القمر
     final bodyCenter = Offset(w * 0.28, h * 0.32);
-
-    final isNight = period == DayPeriod.night;
-
     final isNight = period == PrayerDayPeriod.night;
-
     if (isNight) {
       final moonR = w * 0.05;
       canvas.saveLayer(rect, Paint());
@@ -404,20 +379,6 @@ class _ArchScenePainter extends CustomPainter {
     canvas.restore();
   }
 
-
-  List<Color> _skyColorsFor(DayPeriod period) {
-    switch (period) {
-      case DayPeriod.dawn:
-        return const [Color(0xFF35304A), Color(0xFF8A5A5A), Color(0xFFD9A15C)];
-      case DayPeriod.day:
-        return const [Color(0xFF4A87B0), Color(0xFF9CC3D9), Color(0xFFE8DDB8)];
-      case DayPeriod.sunset:
-        return const [Color(0xFF3B3350), Color(0xFFB06A45), Color(0xFFF0C36B)];
-      case DayPeriod.night:
-        return const [Color(0xFF0B1330), Color(0xFF16264A), Color(0xFF203A52)];
-    }
-  }
-
 List<Color> _skyColorsFor(PrayerDayPeriod period) {
   switch (period) {
     case PrayerDayPeriod.dawn:
@@ -449,7 +410,6 @@ List<Color> _skyColorsFor(PrayerDayPeriod period) {
       ];
   }
 }
-
 
   @override
   bool shouldRepaint(covariant _ArchScenePainter oldDelegate) => oldDelegate.period != period;

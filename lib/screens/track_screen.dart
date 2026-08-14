@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-import 'package:provider/provider.dart';
-import '../state/app_state.dart';
-import '../theme/app_theme.dart';
-=======
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/prayer.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/gregorian_arabic.dart';
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 
 const _weekdayLabels = ['إث', 'ثل', 'أر', 'خم', 'جم', 'سب', 'أح'];
 const _monthNames = [
@@ -27,20 +21,14 @@ class TrackScreen extends StatefulWidget {
 
 class _TrackScreenState extends State<TrackScreen> {
   late DateTime _visibleMonth;
-<<<<<<< HEAD
-=======
   late DateTime _selectedDate;
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
     _visibleMonth = DateTime(now.year, now.month);
-<<<<<<< HEAD
-=======
     _selectedDate = DateTime(now.year, now.month, now.day);
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
   }
 
   void _shiftMonth(int delta) {
@@ -49,13 +37,10 @@ class _TrackScreenState extends State<TrackScreen> {
     });
   }
 
-<<<<<<< HEAD
-=======
   void _selectDate(DateTime date) {
     setState(() => _selectedDate = date);
   }
 
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -75,9 +60,6 @@ class _TrackScreenState extends State<TrackScreen> {
               onNext: () => _shiftMonth(1),
             ),
             const SizedBox(height: 12),
-<<<<<<< HEAD
-            _MonthGrid(month: _visibleMonth, state: state),
-=======
             _MonthGrid(
               month: _visibleMonth,
               state: state,
@@ -86,7 +68,6 @@ class _TrackScreenState extends State<TrackScreen> {
             ),
             const SizedBox(height: 14),
             _DayDetailCard(date: _selectedDate, state: state),
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
             const SizedBox(height: 20),
             _WeeklyBars(state: state),
           ],
@@ -233,9 +214,6 @@ class _MonthNavigator extends StatelessWidget {
 class _MonthGrid extends StatelessWidget {
   final DateTime month;
   final AppState state;
-<<<<<<< HEAD
-  const _MonthGrid({required this.month, required this.state});
-=======
   final DateTime selectedDate;
   final ValueChanged<DateTime> onSelectDate;
   const _MonthGrid({
@@ -244,7 +222,6 @@ class _MonthGrid extends StatelessWidget {
     required this.selectedDate,
     required this.onSelectDate,
   });
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 
   @override
   Widget build(BuildContext context) {
@@ -287,9 +264,6 @@ class _MonthGrid extends StatelessWidget {
                   final date = DateTime(month.year, month.month, dayNum);
                   final isFuture = date.isAfter(DateTime.now());
                   final pct = isFuture ? null : state.percentForDate(date);
-<<<<<<< HEAD
-                  return Expanded(child: _DayCell(day: dayNum, percent: pct));
-=======
                   final isSelected = date.year == selectedDate.year &&
                       date.month == selectedDate.month &&
                       date.day == selectedDate.day;
@@ -301,7 +275,6 @@ class _MonthGrid extends StatelessWidget {
                       onTap: isFuture ? null : () => onSelectDate(date),
                     ),
                   );
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
                 }),
               ),
             ),
@@ -314,9 +287,6 @@ class _MonthGrid extends StatelessWidget {
 class _DayCell extends StatelessWidget {
   final int day;
   final int? percent;
-<<<<<<< HEAD
-  const _DayCell({required this.day, required this.percent});
-=======
   final bool isSelected;
   final VoidCallback? onTap;
   const _DayCell({
@@ -325,7 +295,6 @@ class _DayCell extends StatelessWidget {
     this.isSelected = false,
     this.onTap,
   });
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 
   @override
   Widget build(BuildContext context) {
@@ -345,14 +314,6 @@ class _DayCell extends StatelessWidget {
     return SizedBox(
       height: 34,
       child: Center(
-<<<<<<< HEAD
-        child: Container(
-          width: 28,
-          height: 28,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-          child: Text('$day', style: TextStyle(fontSize: 11.5, color: textColor, fontWeight: FontWeight.w600)),
-=======
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
@@ -367,15 +328,12 @@ class _DayCell extends StatelessWidget {
             ),
             child: Text('$day', style: TextStyle(fontSize: 11.5, color: textColor, fontWeight: FontWeight.w600)),
           ),
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
         ),
       ),
     );
   }
 }
 
-<<<<<<< HEAD
-=======
 /// بطاقة تفاصيل اليوم المختار فـ التقويم: تعرض حالة كل صلاة من صلوات
 /// ذلك اليوم (مؤداة / فائتة / لم يحن وقتها بعد) وتقييمًا عامًا لليوم
 /// أسفل شبكة التقويم مباشرة.
@@ -515,7 +473,6 @@ class _PrayerStatusRow extends StatelessWidget {
   }
 }
 
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 class _WeeklyBars extends StatelessWidget {
   final AppState state;
   const _WeeklyBars({required this.state});

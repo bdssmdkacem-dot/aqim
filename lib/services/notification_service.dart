@@ -183,15 +183,12 @@ class NotificationService {
   /// النهوض والاستعداد. يحتاج ملف الصوت المقابل فـ
   /// android/app/src/main/res/raw/ (راجع README) — يستعمل نغمة الإشعار
   /// الافتراضية إن لم يُضَف الملف بعد.
-<<<<<<< HEAD
-=======
   ///
   /// **مهم:** لكل صوت قناة Android منفصلة (مُشتقّة من soundName) بدل
   /// قناة واحدة مشتركة لكل الصلوات. نظام Android يُثبّت صوت القناة عند
   /// أول إنشاء لها ويتجاهل أي تغيير لاحق للصوت طالما بقي نفس معرّف
   /// القناة — استعمال قناة واحدة مشتركة كان يجعل كل الصلوات تُصدِر صوت
   /// أول قناة أُنشئت (مثلاً صوت العصر يتكرر قبل أذان المغرب).
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
   Future<void> _scheduleWakeAlarm({
     required int id,
     required String title,
@@ -208,15 +205,9 @@ class NotificationService {
       scheduledDate: tzTime,
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
-<<<<<<< HEAD
-          'aqim_wake_alarm',
-          'منبّه الاستعداد للصلاة',
-          channelDescription: 'منبّه صوتي قبل كل صلاة لمساعدتك على الاستعداد',
-=======
           'aqim_wake_alarm_$soundName',
           'منبّه الاستعداد — $soundName',
           channelDescription: 'منبّه صوتي قبل الصلاة لمساعدتك على الاستعداد',
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
           importance: Importance.max,
           priority: Priority.max,
           category: AndroidNotificationCategory.alarm,

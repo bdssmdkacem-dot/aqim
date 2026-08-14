@@ -86,6 +86,10 @@ class _HomeScreenState extends State<HomeScreen> {
               _TopRow(state: state),
               const SizedBox(height: 10),
               _TitleBlock(state: state, locationLabel: _locationLabel(state)),
+              if (state.missedTodayCount > 0) ...[
+                const SizedBox(height: 10),
+                _MissedPrayerNotice(state: state),
+              ],
               const SizedBox(height: 12),
               _HeroCard(state: state, next: next, period: period),
               const SizedBox(height: 8),
@@ -225,6 +229,62 @@ class _TitleBlock extends StatelessWidget {
               const SizedBox(height: 6),
               Text('لأجل صلاة في وقتها', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600)),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MissedPrayerNotice extends StatelessWidget {
+  final AppState state;
+  const _MissedPrayerNotice({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final missed = state.missedTodayPrayers;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark.withOpacity(.96),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.ember.withOpacity(.78), width: 1.2),
+        boxShadow: [BoxShadow(color: AppColors.ember.withOpacity(.10), blurRadius: 18, spreadRadius: 1)],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.ember.withOpacity(.13),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: AppColors.ember.withOpacity(.75)),
+            ),
+            child: const Icon(Icons.notifications_active_rounded, color: AppColors.ember, size: 27),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('تنبيه الصلاة الفائتة', style: GoogleFonts.amiri(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.goldSoft)),
+                const SizedBox(height: 3),
+                ...missed.map(
+                  (prayer) => Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      'فاتتك صلاة ${prayer.arabicName}',
+                      style: GoogleFonts.cairo(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.ember),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text('يمكنك تسجيلها الآن كصلاة مقضيّة من شاشة الصلاة.', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft, height: 1.35)),
+              ],
+            ),
           ),
         ],
       ),

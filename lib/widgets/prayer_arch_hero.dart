@@ -18,6 +18,24 @@ import 'prayer_window_icon.dart' show PrayerDayPeriod;
 /// - Prayer time
 /// - Live countdown
 /// - Automatic fallback illustration if the image cannot be loaded
+class PrayerArchHero extends StatefulWidget {
+  final Prayer next;
+  final DateTime? nextRealTime;
+  final String timeLabel;
+  final PrayerDayPeriod period;
+
+  const PrayerArchHero({
+    super.key,
+    required this.next,
+    required this.nextRealTime,
+    required this.timeLabel,
+    required this.period,
+  });
+
+  @override
+  State<PrayerArchHero> createState() => _PrayerArchHeroState();
+}
+
 class _PrayerArchHeroState extends State<PrayerArchHero> {
   Timer? _ticker;
   Duration? _remaining;
@@ -73,11 +91,7 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
     super.dispose();
   }
 
-  String _twoDigits(int value) {
-    return value.toString().padLeft(2, '0');
-  }
-
-  String _twoDigits(int value) {
+   String _twoDigits(int value) {
     return value.toString().padLeft(2, '0');
   }
 
@@ -95,38 +109,38 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
     return '$hours:$minutes:$seconds';
   }
 
- @override
-Widget build(BuildContext context) {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final width = constraints.maxWidth;
-      final height = math.min(width * 0.60, 340.0);
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final height = math.min(width * 0.60, 340.0);
 
-      return SizedBox(
-        width: width,
-        height: height,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // ============================================================
-            // HERO IMAGE / FALLBACK
-            // ============================================================
-            ClipPath(
-              clipper: _ArchClipper(),
-              child: SizedBox.expand(
-                child: Image.asset(
-                  'assets/images/arch_hero.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return CustomPaint(
-                      painter: _ArchScenePainter(
-                        period: widget.period,
-                      ),
-                    );
-                  },
+        return SizedBox(
+          width: width,
+          height: height,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // HERO IMAGE / FALLBACK
+              ClipPath(
+                clipper: _ArchClipper(),
+                child: SizedBox.expand(
+                  child: Image.asset(
+                    'assets/images/arch_hero.jpg',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return CustomPaint(
+                        painter: _ArchScenePainter(
+                          period: widget.period,
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
+
+              // Continue with the rest of your Stack...
 
             // ============================================================
             // GLOBAL DARK OVERLAY

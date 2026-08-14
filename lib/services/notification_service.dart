@@ -30,9 +30,15 @@ class NotificationService {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidInit);
     await _plugin.initialize(settings: initSettings, onDidReceiveNotificationResponse: _onNotificationTap);
-    final androidImpl = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    await androidImpl?.requestNotificationsPermission();
     _initialized = true;
+  }
+
+  /// يطلب صلاحية الإشعارات في شاشة الإعداد الأولي، بدل إظهار نافذة النظام
+  /// قبل أن يرى المستخدم سبب طلبها.
+  Future<bool> requestNotificationsPermission() async {
+    if (!_initialized) await init();
+    final androidImpl = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    return await androidImpl?.requestNotificationsPermission() ?? true;
   }
 
   void _onNotificationTap(NotificationResponse response) {

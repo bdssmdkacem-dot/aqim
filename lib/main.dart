@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart' hide AppState;
 import 'package:provider/provider.dart';
 import 'navigation/nav_key.dart';
 import 'screens/main_shell.dart';
@@ -21,7 +21,7 @@ class AqimApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
+    return ChangeNotifierProvider<AppState>(
       create: (_) => AppState()..init(),
       child: MaterialApp(
         navigatorKey: rootNavigatorKey,
@@ -35,7 +35,10 @@ class AqimApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        builder: (context, child) => Directionality(textDirection: TextDirection.rtl, child: child ?? const SizedBox.shrink()),
+        builder: (context, child) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: child ?? const SizedBox.shrink(),
+        ),
         home: const _Gate(),
       ),
     );
@@ -49,8 +52,16 @@ class _Gate extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     if (!state.ready) {
-      return const Scaffold(backgroundColor: AppColors.ink, body: Center(child: CircularProgressIndicator(color: AppColors.gold)));
+      return const Scaffold(
+        backgroundColor: AppColors.ink,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.gold),
+        ),
+      );
     }
-    return state.onboardingComplete ? const MainShell() : const OnboardingScreen();
+
+    return state.onboardingComplete
+        ? const MainShell()
+        : const OnboardingScreen();
   }
 }

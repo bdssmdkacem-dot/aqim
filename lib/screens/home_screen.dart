@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+
 import '../ads/app_banner_ad.dart';
 import '../models/adhkar.dart';
 import '../models/prayer.dart';
@@ -13,6 +14,9 @@ import '../widgets/day_arc.dart';
 import '../widgets/in_app_prayer_notification.dart';
 import '../widgets/missed_prayers_card.dart';
 import '../widgets/prayer_arch_hero.dart';
+import '../widgets/prayer_window_icon.dart'
+    show PrayerDayPeriod, currentPrayerDayPeriod;
+
 import 'adhkar_flow_screen.dart';
 import 'nearby_mosques_screen.dart';
 import 'settings_screen.dart';

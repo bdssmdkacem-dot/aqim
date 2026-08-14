@@ -39,10 +39,6 @@ flutter:
   uses-material-design: true
 
   assets:
-  - assets/audio/before/
-  - assets/audio/after/
-  - assets/images/
-
-
-  - assets/images/prayers/
-
+    - assets/audio/before/
+    - assets/audio/after/
+    - assets/images/

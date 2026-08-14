@@ -210,20 +210,20 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
               // ============================================================
               // PRAYER INFORMATION
               // ============================================================
-              Positioned(
-                top: height * 0.17,
-                right: width * 0.055,
-                bottom: height * 0.11,
-                width: width * 0.46,
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: _PrayerInfoPanel(
-                    prayerName: widget.next.arabicName,
-                    timeLabel: widget.timeLabel,
-                    countdownText: _countdownText,
-                  ),
-                ),
-              ),
+            Positioned(
+  top: height * 0.17,
+  left: width * 0.12,
+  bottom: height * 0.11,
+  width: width * 0.40,
+  child: Align(
+    alignment: Alignment.center,
+    child: _PrayerInfoPanel(
+      prayerName: widget.next.arabicName,
+      timeLabel: widget.timeLabel,
+      countdownText: _countdownText,
+    ),
+  ),
+),
 
               // ============================================================
               // GOLD ARCH BORDER
@@ -262,23 +262,22 @@ class _PrayerInfoPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(
-        minWidth: 120,
-        maxWidth: 220,
+        minWidth: 140,
+        maxWidth: 230,
       ),
       padding: const EdgeInsets.symmetric(
-        horizontal: 13,
-        vertical: 11,
+        horizontal: 16,
+        vertical: 14,
       ),
       decoration: BoxDecoration(
-        color: AppColors.ink.withValues(alpha: 0.38),
+        color: AppColors.ink.withValues(alpha: .38),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppColors.gold.withValues(alpha: 0.28),
-          width: 1,
+          color: AppColors.gold.withValues(alpha: .28),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: Colors.black.withValues(alpha: .18),
             blurRadius: 18,
             offset: const Offset(0, 7),
           ),
@@ -286,70 +285,85 @@ class _PrayerInfoPanel extends StatelessWidget {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // --------------------------------------------------------------
-          // LABEL
-          // --------------------------------------------------------------
-          const Text(
-            'الصلاة القادمة',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontSize: 11.5,
-              height: 1.1,
-              color: Colors.white70,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
 
-          const SizedBox(height: 3),
+          // -------------------------------
+          // Right aligned
+          // -------------------------------
 
-          // --------------------------------------------------------------
-          // PRAYER NAME
-          // --------------------------------------------------------------
-          SizedBox(
-            width: double.infinity,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Text(
-                prayerName,
-                maxLines: 1,
-                textAlign: TextAlign.right,
-                style: GoogleFonts.amiri(
-                  fontSize: 30,
-                  height: 1.05,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.gold,
-                ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'الصلاة القادمة',
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
 
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
 
-          // --------------------------------------------------------------
-          // PRAYER TIME
-          //
-          // Example:
-          // الفجر
-          // 06:02
-          //
-          // The time is intentionally prominent.
-          // --------------------------------------------------------------
-          SizedBox(
-            width: double.infinity,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              prayerName,
+              textAlign: TextAlign.right,
+              style: GoogleFonts.amiri(
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+                color: AppColors.gold,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // -------------------------------
+          // Center
+          // -------------------------------
+
+          Center(
+            child: Text(
+              timeLabel,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.tajawal(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                fontFeatures: const [
+                  FontFeature.tabularFigures(),
+                ],
+              ),
+            ),
+          ),
+
+          if (countdownText != null) ...[
+            const SizedBox(height: 8),
+
+            Center(
               child: Text(
-                timeLabel,
-                maxLines: 1,
-                textAlign: TextAlign.right,
+                'متبقي',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.white60,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 3),
+
+            Center(
+              child: Text(
+                countdownText!,
+                textAlign: TextAlign.center,
                 style: GoogleFonts.tajawal(
-                  fontSize: 23,
-                  height: 1.0,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 21,
+                  fontWeight: FontWeight.bold,
                   color: Colors.white,
                   fontFeatures: const [
                     FontFeature.tabularFigures(),
@@ -357,62 +371,23 @@ class _PrayerInfoPanel extends StatelessWidget {
                 ),
               ),
             ),
-          ),
 
-          if (countdownText != null) ...[
-            const SizedBox(height: 7),
+            const SizedBox(height: 8),
 
-            // ------------------------------------------------------------
-            // COUNTDOWN LABEL
-            // ------------------------------------------------------------
-            const Text(
-              'متبقي',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 10.5,
-                height: 1.0,
-                color: Colors.white60,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            // -------------------------------
+            // Left aligned
+            // -------------------------------
 
-            const SizedBox(height: 2),
-
-            // ------------------------------------------------------------
-            // COUNTDOWN
-            // ------------------------------------------------------------
-            SizedBox(
-              width: double.infinity,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
-                child: Text(
-                  countdownText!,
-                  maxLines: 1,
-                  textAlign: TextAlign.right,
-                  style: GoogleFonts.tajawal(
-                    fontSize: 20,
-                    height: 1.0,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    fontFeatures: const [
-                      FontFeature.tabularFigures(),
-                    ],
-                  ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'إن شاء الله',
+                textAlign: TextAlign.left,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.white54,
+                  fontWeight: FontWeight.w500,
                 ),
-              ),
-            ),
-
-            const SizedBox(height: 3),
-
-            const Text(
-              'إن شاء الله',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 10,
-                height: 1.0,
-                color: Colors.white54,
-                fontWeight: FontWeight.w500,
               ),
             ),
           ],

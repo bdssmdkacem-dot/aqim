@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
+=======
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../models/prayer.dart';
+import '../state/app_state.dart';
+import '../theme/app_theme.dart';
+import '../utils/gregorian_arabic.dart';
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 
 const _weekdayLabels = ['إث', 'ثل', 'أر', 'خم', 'جم', 'سب', 'أح'];
 const _monthNames = [
@@ -18,12 +27,20 @@ class TrackScreen extends StatefulWidget {
 
 class _TrackScreenState extends State<TrackScreen> {
   late DateTime _visibleMonth;
+<<<<<<< HEAD
+=======
+  late DateTime _selectedDate;
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
     _visibleMonth = DateTime(now.year, now.month);
+<<<<<<< HEAD
+=======
+    _selectedDate = DateTime(now.year, now.month, now.day);
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
   }
 
   void _shiftMonth(int delta) {
@@ -32,6 +49,13 @@ class _TrackScreenState extends State<TrackScreen> {
     });
   }
 
+<<<<<<< HEAD
+=======
+  void _selectDate(DateTime date) {
+    setState(() => _selectedDate = date);
+  }
+
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -51,7 +75,18 @@ class _TrackScreenState extends State<TrackScreen> {
               onNext: () => _shiftMonth(1),
             ),
             const SizedBox(height: 12),
+<<<<<<< HEAD
             _MonthGrid(month: _visibleMonth, state: state),
+=======
+            _MonthGrid(
+              month: _visibleMonth,
+              state: state,
+              selectedDate: _selectedDate,
+              onSelectDate: _selectDate,
+            ),
+            const SizedBox(height: 14),
+            _DayDetailCard(date: _selectedDate, state: state),
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
             const SizedBox(height: 20),
             _WeeklyBars(state: state),
           ],
@@ -198,7 +233,18 @@ class _MonthNavigator extends StatelessWidget {
 class _MonthGrid extends StatelessWidget {
   final DateTime month;
   final AppState state;
+<<<<<<< HEAD
   const _MonthGrid({required this.month, required this.state});
+=======
+  final DateTime selectedDate;
+  final ValueChanged<DateTime> onSelectDate;
+  const _MonthGrid({
+    required this.month,
+    required this.state,
+    required this.selectedDate,
+    required this.onSelectDate,
+  });
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 
   @override
   Widget build(BuildContext context) {
@@ -241,7 +287,21 @@ class _MonthGrid extends StatelessWidget {
                   final date = DateTime(month.year, month.month, dayNum);
                   final isFuture = date.isAfter(DateTime.now());
                   final pct = isFuture ? null : state.percentForDate(date);
+<<<<<<< HEAD
                   return Expanded(child: _DayCell(day: dayNum, percent: pct));
+=======
+                  final isSelected = date.year == selectedDate.year &&
+                      date.month == selectedDate.month &&
+                      date.day == selectedDate.day;
+                  return Expanded(
+                    child: _DayCell(
+                      day: dayNum,
+                      percent: pct,
+                      isSelected: isSelected,
+                      onTap: isFuture ? null : () => onSelectDate(date),
+                    ),
+                  );
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
                 }),
               ),
             ),
@@ -254,7 +314,18 @@ class _MonthGrid extends StatelessWidget {
 class _DayCell extends StatelessWidget {
   final int day;
   final int? percent;
+<<<<<<< HEAD
   const _DayCell({required this.day, required this.percent});
+=======
+  final bool isSelected;
+  final VoidCallback? onTap;
+  const _DayCell({
+    required this.day,
+    required this.percent,
+    this.isSelected = false,
+    this.onTap,
+  });
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 
   @override
   Widget build(BuildContext context) {
@@ -274,18 +345,177 @@ class _DayCell extends StatelessWidget {
     return SizedBox(
       height: 34,
       child: Center(
+<<<<<<< HEAD
         child: Container(
           width: 28,
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
           child: Text('$day', style: TextStyle(fontSize: 11.5, color: textColor, fontWeight: FontWeight.w600)),
+=======
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: bg,
+              shape: BoxShape.circle,
+              border: isSelected ? Border.all(color: AppColors.goldSoft, width: 2) : null,
+            ),
+            child: Text('$day', style: TextStyle(fontSize: 11.5, color: textColor, fontWeight: FontWeight.w600)),
+          ),
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
         ),
       ),
     );
   }
 }
 
+<<<<<<< HEAD
+=======
+/// بطاقة تفاصيل اليوم المختار فـ التقويم: تعرض حالة كل صلاة من صلوات
+/// ذلك اليوم (مؤداة / فائتة / لم يحن وقتها بعد) وتقييمًا عامًا لليوم
+/// أسفل شبكة التقويم مباشرة.
+class _DayDetailCard extends StatelessWidget {
+  final DateTime date;
+  final AppState state;
+  const _DayDetailCard({required this.date, required this.state});
+
+  bool get _isToday {
+    final now = DateTime.now();
+    return date.year == now.year && date.month == now.month && date.day == now.day;
+  }
+
+  ({String emoji, String label, Color color}) _rating(int? pct) {
+    if (pct == null) {
+      return (emoji: '—', label: 'لا بيانات لهذا اليوم', color: AppColors.textMuted);
+    }
+    if (pct >= 100) return (emoji: '🌿', label: 'يوم مكتمل — تقبّل الله منك', color: AppColors.sage);
+    if (pct >= 80) return (emoji: '✅', label: 'يوم ممتاز', color: AppColors.sage);
+    if (pct > 0) return (emoji: '🟡', label: 'يوم متوسط — يمكن أفضل', color: AppColors.gold);
+    return (emoji: '🔴', label: 'لم تُؤدَّ أي صلاة هذا اليوم', color: AppColors.ember);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statuses = state.prayerStatusForDate(date);
+    final pct = state.percentForDate(date);
+    final rating = _rating(pct);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        border: Border.all(color: AppColors.paperLine),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _isToday ? 'اليوم — ${GregorianArabic.format(date)}' : GregorianArabic.format(date),
+                  style: GoogleFonts.amiri(fontSize: 15.5, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+              ),
+              if (pct != null)
+                Text(
+                  '$pct%',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: rating.color),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (statuses == null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text(
+                'لا توجد بيانات مسجَّلة لهذا اليوم.',
+                style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+              ),
+            )
+          else
+            Column(
+              children: Prayer.values.map((p) => _PrayerStatusRow(prayer: p, status: statuses[p])).toList(),
+            ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            decoration: BoxDecoration(
+              color: rating.color.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: rating.color.withOpacity(0.5)),
+            ),
+            child: Row(
+              children: [
+                Text(rating.emoji, style: const TextStyle(fontSize: 16)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    rating.label,
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: rating.color),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrayerStatusRow extends StatelessWidget {
+  final Prayer prayer;
+  final PrayerStatus? status;
+  const _PrayerStatusRow({required this.prayer, required this.status});
+
+  (IconData, Color, String) _visualFor(PrayerStatus? s) {
+    switch (s) {
+      case PrayerStatus.done:
+        return (Icons.check_circle_rounded, AppColors.sage, 'أُدِّيت');
+      case PrayerStatus.missed:
+        return (Icons.cancel_rounded, AppColors.ember, 'فائتة');
+      case PrayerStatus.upcoming:
+        return (Icons.access_time_rounded, AppColors.gold, 'قادمة');
+      case PrayerStatus.pending:
+      case null:
+        return (Icons.remove_circle_outline_rounded, AppColors.textMuted, 'لم يحن وقتها');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, color, label) = _visualFor(status);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              prayer.arabicName,
+              style: GoogleFonts.cairo(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 class _WeeklyBars extends StatelessWidget {
   final AppState state;
   const _WeeklyBars({required this.state});

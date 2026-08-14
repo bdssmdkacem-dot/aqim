@@ -10,11 +10,18 @@ import '../theme/app_theme.dart';
 import '../utils/gregorian_arabic.dart';
 import '../utils/hijri_date.dart';
 import '../widgets/day_arc.dart';
+<<<<<<< HEAD
+=======
+import '../widgets/missed_prayers_card.dart';
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 import '../widgets/prayer_arch_hero.dart';
 import '../widgets/prayer_window_icon.dart';
 import 'adhkar_flow_screen.dart';
 import 'nearby_mosques_screen.dart';
+<<<<<<< HEAD
 import 'pre_prayer_screen.dart';
+=======
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 import 'settings_screen.dart';
 import 'week_report_screen.dart';
 
@@ -91,7 +98,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final next = state.nextPrayer;
+<<<<<<< HEAD
     final period = currentDayPeriod();
+=======
+    final period = currentPrayerDayPeriod();
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 
     return Scaffold(
       backgroundColor: AppColors.ink,
@@ -104,13 +115,20 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 10),
               _TitleBlock(state: state, locationLabel: _locationLabel(state)),
               const SizedBox(height: 14),
+<<<<<<< HEAD
               _MissedPrayersBanner(state: state),
+=======
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
               _MainCard(
                 state: state,
                 next: next,
                 period: period,
                 shortCountdown: next == null ? null : _shortCountdown(state, next),
               ),
+<<<<<<< HEAD
+=======
+              const MissedPrayersCard(),
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -147,6 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+<<<<<<< HEAD
 class _MissedPrayersBanner extends StatelessWidget {
   final AppState state;
   const _MissedPrayersBanner({required this.state});
@@ -207,6 +226,8 @@ class _MissedPrayersBanner extends StatelessWidget {
   }
 }
 
+=======
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 class _TopRow extends StatelessWidget {
   final AppState state;
   const _TopRow({required this.state});
@@ -343,7 +364,11 @@ class _TitleBlock extends StatelessWidget {
 class _MainCard extends StatelessWidget {
   final AppState state;
   final Prayer? next;
+<<<<<<< HEAD
   final DayPeriod period;
+=======
+  final PrayerDayPeriod  period;
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
   final String? shortCountdown;
 
   const _MainCard({

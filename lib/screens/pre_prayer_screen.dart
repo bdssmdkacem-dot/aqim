@@ -22,6 +22,7 @@ class PrePrayerScreen extends StatelessWidget {
     return 'حان وقت هذه الصلاة';
   }
 
+<<<<<<< HEAD
   /// لا يمكن تسجيل "صليت" أو "لم أُصلِّ بعد" قبل دخول وقت الصلاة فعليًا
   /// — لا معنى لتسجيل أي منهما قبل ذلك. إن لم تتوفّر أوقات حقيقية بعد
   /// (realTimes==null)، نسمح بالتسجيل احتياطيًا كي لا يتعطّل التطبيق.
@@ -31,11 +32,16 @@ class PrePrayerScreen extends StatelessWidget {
     return !real.isAfter(DateTime.now());
   }
 
+=======
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
   @override
   Widget build(BuildContext context) {
     final reminder = preReminders[prayer]!;
     final state = context.watch<AppState>();
+<<<<<<< HEAD
     final timeArrived = _prayerTimeHasArrived(state);
+=======
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
 
     return Scaffold(
       appBar: AppBar(title: Text('صلاة ${prayer.arabicName}')),
@@ -76,6 +82,7 @@ class PrePrayerScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
+<<<<<<< HEAD
             if (timeArrived) ...[
               ElevatedButton(
                 onPressed: () => Navigator.of(context).push(
@@ -111,6 +118,21 @@ class PrePrayerScreen extends StatelessWidget {
                   ],
                 ),
               ),
+=======
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => DhikrScreen(prayer: prayer)),
+              ),
+              child: const Text('صليت'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => ReasonScreen(prayer: prayer)),
+              ),
+              child: const Text('لم أُصلِّ بعد'),
+            ),
+>>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
           ],
         ),
       ),

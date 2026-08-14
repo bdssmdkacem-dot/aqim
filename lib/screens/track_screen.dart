@@ -512,7 +512,7 @@ class _PrayerStatusRow extends StatelessWidget {
   }
 }
 
->>>>>>> 18ef8b7ca6fda35dd97059675b4b9b1de596e92a
+
 class _WeeklyBars extends StatelessWidget {
   final AppState state;
   const _WeeklyBars({required this.state});

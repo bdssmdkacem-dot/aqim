@@ -7,7 +7,9 @@ extension PrayerLabel on Prayer {
       case Prayer.fajr:
         return 'الفجر';
       case Prayer.dhuhr:
-        return 'الظهر';
+        // Keep the internal prayer as `dhuhr` for calculations, schedules,
+        // and status tracking, but show the correct Islamic name on Friday.
+        return DateTime.now().weekday == DateTime.friday ? 'الجمعة' : 'الظهر';
       case Prayer.asr:
         return 'العصر';
       case Prayer.maghrib:

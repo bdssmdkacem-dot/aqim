@@ -36,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _maybePromptBatterySettings() async {
     final state = context.read<AppState>();
     if (state.batteryPromptShown) return;
+
     final exempted = await BatteryService.isFullyExempted();
     if (exempted) {
       await state.markBatteryPromptShown();
@@ -43,30 +44,37 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (!mounted) return;
 
-    await showDialog<void>(
+    final openSettings = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('لضمان وصول تذكيراتك فوقتها'),
         content: const Text(
           'بعض الهواتف (خصوصًا Xiaomi وHuawei وOppo) توقف التطبيقات في الخلفية تلقائيًا. '
-          'فعّل الإعدادات التالية كي تصلك تذكيرات الصلاة دون انقطاع.',
+          'فعّل السماح لأقم بالعمل في الخلفية والتشغيل التلقائي حتى تصلك تذكيرات الصلاة في وقتها.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).pop(false),
             child: const Text('لاحقًا'),
           ),
           ElevatedButton(
-            onPressed: () {
-              BatteryService.openSettings();
-              Navigator.of(context).pop();
-            },
-            child: const Text('فتح الإعدادات'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('تحسين البطارية'),
           ),
         ],
       ),
     );
-    await state.markBatteryPromptShown();
+
+    if (openSettings == true) {
+      await BatteryService.openSettings();
+
+      // Returning from Settings does not guarantee that the user granted
+      // the exemption. Verify the real state before marking the prompt done.
+      final granted = await BatteryService.isFullyExempted();
+      if (granted && mounted) {
+        await state.markBatteryPromptShown();
+      }
+    }
   }
 
   String _locationLabel(AppState state) {

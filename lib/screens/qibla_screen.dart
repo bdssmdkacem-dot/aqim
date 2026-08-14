@@ -66,6 +66,18 @@ class _QiblaScreenState extends State<QiblaScreen> {
     return _normalize(math.atan2(x, y) * 180 / math.pi);
   }
 
+  double _distanceKm(double latitude, double longitude) {
+    const earthRadiusKm = 6371.0088;
+    final lat1 = _degToRad(latitude);
+    final lat2 = _degToRad(_kaabaLat);
+    final dLat = lat2 - lat1;
+    final dLon = _degToRad(_kaabaLon - longitude);
+    final a = math.pow(math.sin(dLat / 2), 2) +
+        math.cos(lat1) * math.cos(lat2) * math.pow(math.sin(dLon / 2), 2);
+    final c = 2 * math.atan2(math.sqrt(a.toDouble()), math.sqrt(1 - a.toDouble()));
+    return earthRadiusKm * c;
+  }
+
   double _degToRad(double value) => value * math.pi / 180;
 
   double _normalize(double value) => (value % 360 + 360) % 360;
@@ -78,7 +90,16 @@ class _QiblaScreenState extends State<QiblaScreen> {
   }
 
   String _directionName(double degrees) {
-    final dirs = ['شمال', 'شمال شرقي', 'شرق', 'جنوب شرقي', 'جنوب', 'جنوب غربي', 'غرب', 'شمال غربي'];
+    const dirs = [
+      'شمال',
+      'شمال شرقي',
+      'شرق',
+      'جنوب شرقي',
+      'جنوب',
+      'جنوب غربي',
+      'غرب',
+      'شمال غربي',
+    ];
     final index = ((degrees + 22.5) / 45).floor() % 8;
     return dirs[index];
   }
@@ -89,7 +110,10 @@ class _QiblaScreenState extends State<QiblaScreen> {
       backgroundColor: AppColors.ink,
       appBar: AppBar(
         backgroundColor: AppColors.ink,
-        title: Text('تحديد القبلة', style: GoogleFonts.amiri(fontWeight: FontWeight.w800)),
+        title: Text(
+          'تحديد القبلة',
+          style: GoogleFonts.amiri(fontWeight: FontWeight.w800),
+        ),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -103,7 +127,14 @@ class _QiblaScreenState extends State<QiblaScreen> {
                   )
                 : _CompassView(
                     position: _position!,
-                    qiblaBearing: _qiblaBearing(_position!.latitude, _position!.longitude),
+                    qiblaBearing: _qiblaBearing(
+                      _position!.latitude,
+                      _position!.longitude,
+                    ),
+                    distanceKm: _distanceKm(
+                      _position!.latitude,
+                      _position!.longitude,
+                    ),
                     relativeAngle: _relativeAngle,
                     directionName: _directionName,
                   ),
@@ -115,12 +146,14 @@ class _QiblaScreenState extends State<QiblaScreen> {
 class _CompassView extends StatelessWidget {
   final Position position;
   final double qiblaBearing;
+  final double distanceKm;
   final double Function(double qibla, double heading) relativeAngle;
   final String Function(double degrees) directionName;
 
   const _CompassView({
     required this.position,
     required this.qiblaBearing,
+    required this.distanceKm,
     required this.relativeAngle,
     required this.directionName,
   });
@@ -132,6 +165,7 @@ class _CompassView extends StatelessWidget {
     if (stream == null) {
       return _SensorUnavailable(
         qiblaBearing: qiblaBearing,
+        distanceKm: distanceKm,
         directionName: directionName,
       );
     }
@@ -142,6 +176,7 @@ class _CompassView extends StatelessWidget {
         if (snapshot.hasError) {
           return _SensorUnavailable(
             qiblaBearing: qiblaBearing,
+            distanceKm: distanceKm,
             directionName: directionName,
           );
         }
@@ -150,86 +185,247 @@ class _CompassView extends StatelessWidget {
         if (heading == null) {
           return _SensorUnavailable(
             qiblaBearing: qiblaBearing,
+            distanceKm: distanceKm,
             directionName: directionName,
           );
         }
 
         final angle = relativeAngle(qiblaBearing, heading);
         final accuracy = snapshot.data?.accuracy;
+        final aligned = angle.abs() <= 5;
+        final close = angle.abs() <= 15;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 28),
           child: Column(
             children: [
-              Text('اتجه بالهاتف حتى يشير السهم إلى الكعبة', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 14, color: AppColors.inkSoft)),
+              Text(
+                aligned ? 'أحسنت! أنت باتجاه القبلة' : 'حرّك الهاتف حتى يشير السهم إلى الكعبة',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cairo(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: aligned ? AppColors.sage : AppColors.inkSoft,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                aligned
+                    ? 'ثبّت الهاتف بهذا الاتجاه للصلاة.'
+                    : close
+                        ? 'اقتربت — حرّكه قليلًا إلى ${angle > 0 ? 'اليمين' : 'اليسار'}.'
+                        : 'اجعل مقدمة الهاتف في اتجاه السهم.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted),
+              ),
+              const SizedBox(height: 16),
+              _CompassDial(angle: angle, aligned: aligned),
               const SizedBox(height: 18),
               Container(
-                width: 310,
-                height: 310,
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
                   color: AppColors.surfaceDark,
-                  border: Border.all(color: AppColors.gold.withOpacity(.55), width: 2),
-                  boxShadow: [
-                    BoxShadow(color: AppColors.gold.withOpacity(.10), blurRadius: 35, spreadRadius: 6),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: AppColors.gold.withOpacity(.32)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '${qiblaBearing.toStringAsFixed(0)}°',
+                      style: GoogleFonts.tajawal(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.gold,
+                      ),
+                    ),
+                    Text(
+                      'من الشمال — ${directionName(qiblaBearing)}',
+                      style: GoogleFonts.cairo(
+                        color: AppColors.ivory,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 9),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _InfoPill(
+                          icon: Icons.navigation_rounded,
+                          label: 'انحرافك ${angle.abs().toStringAsFixed(0)}°',
+                        ),
+                        const SizedBox(width: 8),
+                        _InfoPill(
+                          icon: Icons.place_rounded,
+                          label: '${distanceKm.toStringAsFixed(0)} كم',
+                        ),
+                      ],
+                    ),
+                    if (accuracy != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'دقة البوصلة: ±${accuracy!.toStringAsFixed(0)}°',
+                        style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted),
+                      ),
+                    ],
                   ],
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
+              ),
+              const SizedBox(height: 13),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withOpacity(.75),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.paperLine.withOpacity(.65)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Positioned(top: 22, child: Text('شمال', style: TextStyle(color: AppColors.ivory, fontWeight: FontWeight.w800))),
-                    const Positioned(bottom: 22, child: Text('جنوب', style: TextStyle(color: AppColors.inkSoft))),
-                    const Positioned(left: 22, child: Text('غرب', style: TextStyle(color: AppColors.inkSoft))),
-                    const Positioned(right: 22, child: Text('شرق', style: TextStyle(color: AppColors.inkSoft))),
-                    Transform.rotate(
-                      angle: angle * math.pi / 180,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.navigation_rounded, color: AppColors.gold, size: 108),
-                          Transform.translate(
-                            offset: const Offset(0, -12),
-                            child: const Icon(Icons.mosque_rounded, color: AppColors.ivory, size: 30),
-                          ),
-                        ],
+                    const Icon(Icons.sync_rounded, color: AppColors.goldSoft, size: 23),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        'إذا كان السهم يهتز أو الاتجاه غير ثابت، حرّك الهاتف ببطء على شكل رقم 8، وأبعده عن المغناطيس والمعادن والأغطية المغناطيسية.',
+                        textAlign: TextAlign.right,
+                        style: GoogleFonts.cairo(fontSize: 10.5, height: 1.7, color: AppColors.inkSoft),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 22),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceDark,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.gold.withOpacity(.30)),
-                ),
-                child: Column(
-                  children: [
-                    Text('${qiblaBearing.toStringAsFixed(0)}°', style: GoogleFonts.tajawal(fontSize: 32, fontWeight: FontWeight.w900, color: AppColors.gold)),
-                    const SizedBox(height: 3),
-                    Text(directionName(qiblaBearing), style: GoogleFonts.cairo(color: AppColors.ivory, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 8),
-                    Text('اتجاه القبلة من موقعك الحالي', style: GoogleFonts.cairo(fontSize: 11, color: AppColors.inkSoft)),
-                    if (accuracy != null) ...[
-                      const SizedBox(height: 5),
-                      Text('دقة البوصلة: ±${accuracy!.toStringAsFixed(0)}°', style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted)),
-                    ],
-                  ],
-                ),
+              const SizedBox(height: 9),
+              Text(
+                '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}',
+                style: GoogleFonts.tajawal(fontSize: 9.5, color: AppColors.textMuted),
               ),
-              const SizedBox(height: 14),
-              Text('إذا كان السهم يتذبذب، حرّك الهاتف على شكل رقم 8 لمعايرة البوصلة وأبعده عن المعادن والمغناطيس.', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 11, height: 1.7, color: AppColors.textMuted)),
-              const SizedBox(height: 8),
-              Text('${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}', style: GoogleFonts.tajawal(fontSize: 10, color: AppColors.textMuted)),
             ],
           ),
         );
       },
     );
   }
+}
+
+class _CompassDial extends StatelessWidget {
+  final double angle;
+  final bool aligned;
+
+  const _CompassDial({required this.angle, required this.aligned});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 320,
+      height: 320,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.surfaceDark,
+        border: Border.all(
+          color: aligned ? AppColors.sage : AppColors.gold.withOpacity(.60),
+          width: aligned ? 3 : 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (aligned ? AppColors.sage : AppColors.gold).withOpacity(.12),
+            blurRadius: 32,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Positioned(top: 22, child: _Cardinal('شمال')),
+          const Positioned(bottom: 22, child: _Cardinal('جنوب')),
+          const Positioned(left: 22, child: _Cardinal('غرب')),
+          const Positioned(right: 22, child: _Cardinal('شرق')),
+          Positioned(
+            top: 54,
+            child: Container(
+              width: 7,
+              height: 7,
+              decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.gold),
+            ),
+          ),
+          Transform.rotate(
+            angle: angle * math.pi / 180,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.navigation_rounded,
+                  color: aligned ? AppColors.sage : AppColors.gold,
+                  size: 112,
+                ),
+                Transform.translate(
+                  offset: const Offset(0, -14),
+                  child: const Icon(Icons.mosque_rounded, color: AppColors.ivory, size: 31),
+                ),
+              ],
+            ),
+          ),
+          if (aligned)
+            Positioned(
+              bottom: 47,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.sage.withOpacity(.16),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.sage.withOpacity(.65)),
+                ),
+                child: Text(
+                  'القبلة ✓',
+                  style: GoogleFonts.cairo(color: AppColors.sage, fontWeight: FontWeight.w800, fontSize: 11),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Cardinal extends StatelessWidget {
+  final String text;
+  const _Cardinal(this.text);
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text,
+        style: GoogleFonts.cairo(
+          color: text == 'شمال' ? AppColors.ivory : AppColors.inkSoft,
+          fontWeight: text == 'شمال' ? FontWeight.w800 : FontWeight.w500,
+          fontSize: 13,
+        ),
+      );
+}
+
+class _InfoPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _InfoPill({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.ink.withOpacity(.35),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: AppColors.gold.withOpacity(.16)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: AppColors.goldSoft),
+            const SizedBox(width: 4),
+            Text(label, style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.inkSoft)),
+          ],
+        ),
+      );
 }
 
 class _LocationRequired extends StatelessWidget {
@@ -263,36 +459,38 @@ class _LocationRequired extends StatelessWidget {
 
 class _SensorUnavailable extends StatelessWidget {
   final double qiblaBearing;
+  final double distanceKm;
   final String Function(double degrees) directionName;
 
-  const _SensorUnavailable({required this.qiblaBearing, required this.directionName});
+  const _SensorUnavailable({required this.qiblaBearing, required this.distanceKm, required this.directionName});
 
   @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.explore_off_rounded, color: AppColors.gold, size: 62),
-              const SizedBox(height: 18),
-              Text('البوصلة غير متوفرة في هذا الجهاز', textAlign: TextAlign.center, style: GoogleFonts.amiri(fontSize: 23, fontWeight: FontWeight.w800, color: AppColors.ivory)),
-              const SizedBox(height: 10),
-              Text('هذا الجهاز لا يوفّر حساس اتجاه مغناطيسي يمكن للتطبيق قراءته. لا يمكن إعطاء سهم حيّ دقيق دون هذا الحساس.', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 12.5, height: 1.7, color: AppColors.inkSoft)),
-              const SizedBox(height: 18),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: AppColors.surfaceDark, borderRadius: BorderRadius.circular(18), border: Border.all(color: AppColors.gold.withOpacity(.3))),
-                child: Column(children: [
-                  Text('${qiblaBearing.toStringAsFixed(0)}°', style: GoogleFonts.tajawal(fontSize: 30, fontWeight: FontWeight.w900, color: AppColors.gold)),
-                  Text('من الشمال — ${directionName(qiblaBearing)}', style: GoogleFonts.cairo(color: AppColors.ivory)),
-                  const SizedBox(height: 6),
-                  Text('يمكن استخدام هذه الزاوية مع بوصلة خارجية.', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted)),
-                ]),
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) => SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 35),
+            const Icon(Icons.explore_off_rounded, color: AppColors.gold, size: 62),
+            const SizedBox(height: 18),
+            Text('البوصلة غير متوفرة في هذا الجهاز', textAlign: TextAlign.center, style: GoogleFonts.amiri(fontSize: 23, fontWeight: FontWeight.w800, color: AppColors.ivory)),
+            const SizedBox(height: 10),
+            Text('هذا الجهاز لا يوفّر حساس اتجاه مغناطيسي يمكن للتطبيق قراءته. لا يمكن إعطاء سهم حيّ دقيق دون هذا الحساس.', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 12.5, height: 1.7, color: AppColors.inkSoft)),
+            const SizedBox(height: 18),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: AppColors.surfaceDark, borderRadius: BorderRadius.circular(18), border: Border.all(color: AppColors.gold.withOpacity(.3))),
+              child: Column(children: [
+                Text('${qiblaBearing.toStringAsFixed(0)}°', style: GoogleFonts.tajawal(fontSize: 30, fontWeight: FontWeight.w900, color: AppColors.gold)),
+                Text('من الشمال — ${directionName(qiblaBearing)}', style: GoogleFonts.cairo(color: AppColors.ivory)),
+                const SizedBox(height: 7),
+                Text('المسافة التقريبية إلى الكعبة: ${distanceKm.toStringAsFixed(0)} كم', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted)),
+                const SizedBox(height: 5),
+                Text('يمكن استخدام هذه الزاوية مع بوصلة خارجية.', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted)),
+              ]),
+            ),
+          ],
         ),
       );
 }

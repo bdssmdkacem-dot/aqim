@@ -16,6 +16,12 @@ class NotificationService {
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
 
+  static const _snoozeActionId = 'snooze_15';
+  static const _weeklySummaryId = 9000;
+
+  /// صوت خاص بالجمعة — لا يُستخدم للظهر في الأيام الأخرى.
+  static const _jumuahAlarmSound = 'alarm_jomoaa';
+
   Future<void> init() async {
     if (_initialized) return;
 
@@ -38,9 +44,6 @@ class NotificationService {
 
     _initialized = true;
   }
-
-  static const _snoozeActionId = 'snooze_15';
-  static const _weeklySummaryId = 9000;
 
   void _onNotificationTap(NotificationResponse response) {
     final payload = response.payload;
@@ -81,12 +84,16 @@ class NotificationService {
 
   int _idFor(Prayer p, int typeOffset) => Prayer.values.indexOf(p) * 10 + typeOffset;
 
-  /// اسم صوت منبّه الاستعداد.
-  /// الجمعة حالة خاصة: Dhuhr يبقى Prayer.dhuhr داخليًا، لكن إذا كان
-  /// موعده يوم الجمعة نستعمل alarm_jomoaa.
+  /// Returns the preparation alarm sound for a prayer.
+  ///
+  /// IMPORTANT: Friday Jumu'ah is the Dhuhr slot internally, but it MUST
+  /// use a separate notification sound/channel from normal Dhuhr.
+  ///
+  /// Friday Dhuhr -> alarm_jomoaa
+  /// Other days Dhuhr -> alarm_dhuhr
   String _wakeAlarmSoundFor(Prayer p, DateTime prayerTime) {
     if (p == Prayer.dhuhr && prayerTime.weekday == DateTime.friday) {
-      return 'alarm_jomoaa';
+      return _jumuahAlarmSound;
     }
 
     switch (p) {
@@ -168,7 +175,6 @@ class NotificationService {
   Future<void> scheduleWeeklySummary(String text) async {
     if (!_initialized) return;
 
-    // flutter_local_notifications 21.x exposes cancel using a named id.
     await _plugin.cancel(id: _weeklySummaryId);
 
     final now = tz.TZDateTime.now(tz.local);
@@ -221,6 +227,11 @@ class NotificationService {
     required String payload,
   }) async {
     final tzTime = tz.TZDateTime.from(scheduledDate, tz.local);
+
+    // The channel ID includes the sound name so Friday Jumu'ah has its own
+    // persistent Android notification channel and cannot inherit normal Dhuhr.
+    final channelId = 'aqim_wake_alarm_$soundName';
+
     await _plugin.zonedSchedule(
       id: id,
       title: title,
@@ -228,9 +239,13 @@ class NotificationService {
       scheduledDate: tzTime,
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
-          'aqim_wake_alarm_$soundName',
-          'منبّه الاستعداد — $soundName',
-          channelDescription: 'منبّه صوتي قبل الصلاة لمساعدتك على الاستعداد',
+          channelId,
+          soundName == _jumuahAlarmSound
+              ? 'منبّه صلاة الجمعة'
+              : 'منبّه الاستعداد — $soundName',
+          channelDescription: soundName == _jumuahAlarmSound
+              ? 'منبّه صوتي خاص بصلاة الجمعة'
+              : 'منبّه صوتي قبل الصلاة لمساعدتك على الاستعداد',
           importance: Importance.max,
           priority: Priority.max,
           category: AndroidNotificationCategory.alarm,
@@ -337,7 +352,7 @@ class NotificationService {
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
           playSound: true,
-      ),
+        ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       payload: payload,

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import 'nearby_mosques_screen.dart';
+import 'prayer_guide_screen.dart';
+import 'qibla_screen.dart';
 import 'settings_screen.dart';
 import 'week_report_screen.dart';
 
@@ -20,6 +22,22 @@ class MoreScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
           children: [
+            _MenuTile(
+              icon: Icons.explore_rounded,
+              title: 'تحديد القبلة',
+              subtitle: 'بوصلة حية',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const QiblaScreen()),
+              ),
+            ),
+            _MenuTile(
+              icon: Icons.menu_book_rounded,
+              title: 'كيف أقيم صلاتي؟',
+              subtitle: 'من الوضوء إلى التسليم',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PrayerGuideScreen()),
+              ),
+            ),
             _MenuTile(
               icon: Icons.mosque_outlined,
               title: 'أقرب مسجد',
@@ -96,7 +114,7 @@ class _MenuTile extends StatelessWidget {
                 child: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
               ),
               if (subtitle != null)
-                Text(subtitle!, style: const TextStyle(fontSize: 12, color: AppColors.gold, fontWeight: FontWeight.w700)),
+                Flexible(child: Text(subtitle!, textAlign: TextAlign.left, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10.5, color: AppColors.gold, fontWeight: FontWeight.w700))),
               const SizedBox(width: 6),
               const Icon(Icons.arrow_back_ios_new, size: 13, color: AppColors.textMuted),
             ],

@@ -27,7 +27,7 @@ class NotificationService {
   static const _jumuahAlarmSound = 'alarm_jomoaa';
   static const _missedPrefix = 'missed:';
   static const _quranPrefix = 'quran:';
-  static const _channelVersion = 'v6';
+  static const _channelVersion = 'v7';
 
   Future<void> init() {
     if (_initialized) return Future.value();
@@ -191,29 +191,33 @@ class NotificationService {
     required String soundName,
     required String payload,
   }) async {
+    // Keep the wrapper type explicit. flutter_local_notifications 21.x expects
+    // NotificationDetails here; AndroidNotificationDetails is only the nested
+    // platform-specific value.
+    final NotificationDetails notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _alarmChannel(soundName),
+        soundName == _jumuahAlarmSound ? 'منبّه صلاة الجمعة' : 'منبّه الاستعداد للصلاة',
+        channelDescription: 'تنبيه صوتي قبل الصلاة — يعمل كمنبّه',
+        importance: Importance.max,
+        priority: Priority.max,
+        category: AndroidNotificationCategory.alarm,
+        fullScreenIntent: true,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(soundName),
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        channelBypassDnd: notificationPolicyAccessGranted,
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
+      ),
+    );
     await _scheduleExact(
       id: id,
       title: title,
       body: body,
       scheduledDate: scheduledDate,
       payload: payload,
-      details: NotificationDetails(
-        android: AndroidNotificationDetails(
-          _alarmChannel(soundName),
-          soundName == _jumuahAlarmSound ? 'منبّه صلاة الجمعة' : 'منبّه الاستعداد للصلاة',
-          channelDescription: 'تنبيه صوتي قبل الصلاة — يعمل كمنبّه',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.alarm,
-          fullScreenIntent: true,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound(soundName),
-          audioAttributesUsage: AudioAttributesUsage.alarm,
-          channelBypassDnd: notificationPolicyAccessGranted,
-          enableVibration: true,
-          visibility: NotificationVisibility.public,
-        ),
-      ),
+      details: notificationDetails,
     );
   }
 
@@ -227,54 +231,56 @@ class NotificationService {
   }
 
   Future<void> _scheduleAdhan({required int id, required String title, required String body, required DateTime scheduledDate, required String payload}) async {
+    final NotificationDetails notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'aqim_adhan_${_channelVersion}',
+        'الأذان',
+        channelDescription: 'الأذان عند دخول وقت الصلاة — صوت منبّه',
+        importance: Importance.max,
+        priority: Priority.max,
+        category: AndroidNotificationCategory.alarm,
+        fullScreenIntent: true,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound('adhan'),
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        channelBypassDnd: notificationPolicyAccessGranted,
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
+      ),
+    );
     await _scheduleExact(
       id: id,
       title: title,
       body: body,
       scheduledDate: scheduledDate,
       payload: payload,
-      details: NotificationDetails(
-        android: AndroidNotificationDetails(
-          'aqim_adhan_${_channelVersion}',
-          'الأذان',
-          channelDescription: 'الأذان عند دخول وقت الصلاة — صوت منبّه',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.alarm,
-          fullScreenIntent: true,
-          playSound: true,
-          sound: const RawResourceAndroidNotificationSound('adhan'),
-          audioAttributesUsage: AudioAttributesUsage.alarm,
-          channelBypassDnd: notificationPolicyAccessGranted,
-          enableVibration: true,
-          visibility: NotificationVisibility.public,
-        ),
-      ),
+      details: notificationDetails,
     );
   }
 
   Future<void> _scheduleCheckIn({required int id, required String title, required String body, required DateTime scheduledDate, required String payload}) async {
+    final NotificationDetails notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'aqim_missed_prayer_${_channelVersion}',
+        'تذكير الصلاة',
+        channelDescription: 'تذكير بعد انتهاء وقت الصلاة',
+        importance: Importance.max,
+        priority: Priority.max,
+        category: AndroidNotificationCategory.reminder,
+        playSound: true,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        channelBypassDnd: notificationPolicyAccessGranted,
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
+      ),
+    );
     await _scheduleExact(
       id: id,
       title: title,
       body: body,
       scheduledDate: scheduledDate,
       payload: payload,
-      details: NotificationDetails(
-        android: AndroidNotificationDetails(
-          'aqim_missed_prayer_${_channelVersion}',
-          'تذكير الصلاة',
-          channelDescription: 'تذكير بعد انتهاء وقت الصلاة',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.reminder,
-          playSound: true,
-          audioAttributesUsage: AudioAttributesUsage.alarm,
-          channelBypassDnd: notificationPolicyAccessGranted,
-          enableVibration: true,
-          visibility: NotificationVisibility.public,
-        ),
-      ),
+      details: notificationDetails,
     );
   }
 

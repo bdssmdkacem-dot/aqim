@@ -23,6 +23,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkBattery();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AppState>().refreshNotificationStatus();
+    });
   }
 
   @override
@@ -33,7 +36,10 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _checkBattery();
+    if (state == AppLifecycleState.resumed) {
+      _checkBattery();
+      if (mounted) context.read<AppState>().refreshNotificationStatus();
+    }
   }
 
   Future<void> _checkBattery() async {

@@ -82,32 +82,40 @@ class QuranService {
   final offline_quran.QuranService _offline =
       offline_quran.QuranService.instance;
 
-  /// Converts a number to Arabic-Indic digits for the traditional ayah marker.
   String _arabicDigits(int number) {
     const digits = <String>['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
     return number.toString().split('').map((d) => digits[int.parse(d)]).join();
   }
 
+  bool _isSajdaAyah(int surahNumber, int ayahNumber) => const <String>{
+    '7:206',
+    '13:15',
+    '16:50',
+    '17:109',
+    '19:58',
+    '22:18',
+    '22:77',
+    '25:60',
+    '27:26',
+    '32:15',
+    '38:24',
+    '41:38',
+    '53:62',
+    '84:21',
+    '96:19',
+  }.contains('$surahNumber:$ayahNumber');
+
   /// Removes any source-provided end marker or malformed suffix before rendering.
-  /// The app owns the presentation of the ayah marker so it stays consistent
-  /// on every device and font.
   String _cleanAyahText(String text) {
     var cleaned = text.trim();
-
-    // Remove common source marker formats, including U+06DD and ﴿١﴾.
     cleaned = cleaned.replaceFirst(
       RegExp(r'\s*(?:۝\s*[٠-٩0-9]*|﴿\s*[٠-٩0-9]+\s*﴾)\s*$'),
       '',
     );
-
-    // Remove the malformed suffix visible in some font/rendering combinations.
     cleaned = cleaned.replaceFirst(RegExp(r'\s*(?:ئج|غج)\s*$'), '');
-
     return cleaned.trim();
   }
 
-  /// Returns the global ayah number used by the old online API shape.
-  /// The value is calculated entirely from the bundled Quran metadata.
   int _globalAyahNumber(int surahNumber, int ayahNumber) {
     var total = 0;
     for (var surah = 1; surah < surahNumber; surah++) {
@@ -119,9 +127,11 @@ class QuranService {
   QuranVerse _mapAyah(offline_quran.Ayah ayah) {
     final rub = _offline.getRubIndex(ayah.surahNumber, ayah.id) ?? 1;
     final cleanText = _cleanAyahText(ayah.text);
-    // Use the standard Quranic end-of-ayah glyph instead of the old
-    // decorative bracket pair, which was visually distracting on some fonts.
-    final marker = '۝${_arabicDigits(ayah.id)}';
+    // Normal ayahs use the clean end-of-ayah glyph. Sajda ayahs use the
+    // traditional ۩ marker so the reader can notice the prostration point.
+    final marker = _isSajdaAyah(ayah.surahNumber, ayah.id)
+        ? '۩ ${_arabicDigits(ayah.id)}'
+        : '۝${_arabicDigits(ayah.id)}';
 
     return QuranVerse(
       number: _globalAyahNumber(ayah.surahNumber, ayah.id),
@@ -135,7 +145,6 @@ class QuranService {
     );
   }
 
-  /// Fully offline: Quran text and page metadata are embedded in the app.
   Future<QuranPage> fetchPage(int page) async {
     if (page < 1 || page > 604) {
       throw ArgumentError.value(page, 'page', 'must be between 1 and 604');
@@ -147,7 +156,6 @@ class QuranService {
     );
   }
 
-  /// Fully offline: all 114 surahs come from bundled metadata.
   Future<List<QuranSurah>> fetchSurahs() async {
     return _offline
         .getAllSurahs()
@@ -162,32 +170,23 @@ class QuranService {
         .toList(growable: false);
   }
 
-  /// Fully offline: returns the first page containing the requested surah.
   Future<int> fetchSurahStartPage(int surahNumber) async {
-    final pages = <int>[];
     for (var page = 1; page <= 604; page++) {
       final ayahs = _offline.getPage(page);
-      if (ayahs.any((ayah) => ayah.surahNumber == surahNumber)) {
-        pages.add(page);
-        break;
-      }
+      if (ayahs.any((ayah) => ayah.surahNumber == surahNumber)) return page;
     }
-    if (pages.isEmpty) throw Exception('Surah not found');
-    return pages.first;
+    throw Exception('Surah not found');
   }
 
-  /// Fully offline Arabic search. The package normalizes Arabic text for us.
   Future<List<QuranSearchResult>> search(String keyword) async {
     final query = keyword.trim();
     if (query.isEmpty) return const [];
-
     final matches = _offline.search(query, limit: 50);
     return matches
         .map((ayah) => QuranSearchResult(verse: _mapAyah(ayah)))
         .toList(growable: false);
   }
 
-  /// Fully offline Tafsir Al-Muyassar for every ayah.
   Future<QuranTafsir> fetchTafsir(int globalAyahNumber) async {
     var remaining = globalAyahNumber;
     for (var surah = 1; surah <= 114; surah++) {
@@ -195,10 +194,7 @@ class QuranService {
       if (remaining <= count) {
         final tafsir = _offline.getTafsir(surah)[remaining];
         if (tafsir != null && tafsir.trim().isNotEmpty) {
-          return QuranTafsir(
-            text: tafsir.trim(),
-            source: 'التفسير الميسر',
-          );
+          return QuranTafsir(text: tafsir.trim(), source: 'التفسير الميسر');
         }
         break;
       }

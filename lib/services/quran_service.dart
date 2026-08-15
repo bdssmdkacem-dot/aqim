@@ -1,5 +1,4 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:quran_with_tafsir/quran_with_tafsir.dart' as offline_quran;
 
 class QuranVerse {
   final int number;
@@ -21,22 +20,6 @@ class QuranVerse {
     required this.surahNumber,
     required this.surahName,
   });
-
-  factory QuranVerse.fromJson(Map<String, dynamic> json) {
-    final surah = json['surah'] is Map
-        ? Map<String, dynamic>.from(json['surah'] as Map)
-        : const <String, dynamic>{};
-    return QuranVerse(
-      number: (json['number'] as num?)?.toInt() ?? 0,
-      numberInSurah: (json['numberInSurah'] as num?)?.toInt() ?? 0,
-      text: json['text'] as String? ?? '',
-      page: (json['page'] as num?)?.toInt() ?? 1,
-      juz: (json['juz'] as num?)?.toInt() ?? 1,
-      hizbQuarter: (json['hizbQuarter'] as num?)?.toInt() ?? 1,
-      surahNumber: (surah['number'] as num?)?.toInt() ?? 0,
-      surahName: surah['name'] as String? ?? '',
-    );
-  }
 
   bool get isSajda => const <String>{
     '7:206',
@@ -79,13 +62,6 @@ class QuranSurah {
     required this.englishName,
     required this.numberOfAyahs,
   });
-
-  factory QuranSurah.fromJson(Map<String, dynamic> json) => QuranSurah(
-        number: (json['number'] as num?)?.toInt() ?? 0,
-        name: json['name'] as String? ?? '',
-        englishName: json['englishName'] as String? ?? '',
-        numberOfAyahs: (json['numberOfAyahs'] as num?)?.toInt() ?? 0,
-      );
 }
 
 class QuranSearchResult {
@@ -102,95 +78,103 @@ class QuranTafsir {
 class QuranService {
   QuranService._();
   static final QuranService instance = QuranService._();
-  static const _base = 'https://api.alquran.cloud/v1';
 
-  Future<QuranPage> fetchPage(int page) async {
-    final response = await http
-        .get(Uri.parse('$_base/page/$page/quran-uthmani'))
-        .timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200) throw Exception('Quran request failed');
-    final root = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = root['data'] as Map<String, dynamic>;
-    final ayahs = (data['ayahs'] as List)
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
-    return QuranPage(
-      page: page,
-      verses: ayahs.map(QuranVerse.fromJson).toList(),
+  final offline_quran.QuranService _offline =
+      offline_quran.QuranService.instance;
+
+  /// Returns the global ayah number used by the old online API shape.
+  /// The value is calculated entirely from the bundled Quran metadata.
+  int _globalAyahNumber(int surahNumber, int ayahNumber) {
+    var total = 0;
+    for (var surah = 1; surah < surahNumber; surah++) {
+      total += _offline.getVerseCount(surah);
+    }
+    return total + ayahNumber;
+  }
+
+  QuranVerse _mapAyah(offline_quran.Ayah ayah) {
+    final rub = _offline.getRubIndex(ayah.surahNumber, ayah.id) ?? 1;
+    return QuranVerse(
+      number: _globalAyahNumber(ayah.surahNumber, ayah.id),
+      numberInSurah: ayah.id,
+      text: ayah.text,
+      page: ayah.page,
+      juz: ayah.juz,
+      hizbQuarter: rub,
+      surahNumber: ayah.surahNumber,
+      surahName: _offline.getSurahNameArabic(ayah.surahNumber),
     );
   }
 
+  /// Fully offline: Quran text and page metadata are embedded in the app.
+  Future<QuranPage> fetchPage(int page) async {
+    if (page < 1 || page > 604) {
+      throw ArgumentError.value(page, 'page', 'must be between 1 and 604');
+    }
+    final ayahs = _offline.getPage(page);
+    return QuranPage(
+      page: page,
+      verses: ayahs.map(_mapAyah).toList(growable: false),
+    );
+  }
+
+  /// Fully offline: all 114 surahs come from bundled metadata.
   Future<List<QuranSurah>> fetchSurahs() async {
-    final response = await http
-        .get(Uri.parse('$_base/surah'))
-        .timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200) throw Exception('Quran surahs request failed');
-    final root = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = (root['data'] as List)
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
-    return data.map(QuranSurah.fromJson).toList();
+    return _offline
+        .getAllSurahs()
+        .map(
+          (s) => QuranSurah(
+            number: s.number,
+            name: s.nameAr,
+            englishName: s.nameEn,
+            numberOfAyahs: s.ayahCount,
+          ),
+        )
+        .toList(growable: false);
   }
 
+  /// Fully offline: returns the first page containing the requested surah.
   Future<int> fetchSurahStartPage(int surahNumber) async {
-    final response = await http
-        .get(Uri.parse('$_base/surah/$surahNumber/quran-uthmani'))
-        .timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200) throw Exception('Surah request failed');
-    final root = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = root['data'] as Map<String, dynamic>;
-    final ayahs = data['ayahs'] as List;
-    if (ayahs.isEmpty) throw Exception('Surah has no ayahs');
-    final first = Map<String, dynamic>.from(ayahs.first as Map);
-    return (first['page'] as num?)?.toInt() ?? 1;
+    final pages = <int>[];
+    for (var page = 1; page <= 604; page++) {
+      final ayahs = _offline.getPage(page);
+      if (ayahs.any((ayah) => ayah.surahNumber == surahNumber)) {
+        pages.add(page);
+        break;
+      }
+    }
+    if (pages.isEmpty) throw Exception('Surah not found');
+    return pages.first;
   }
 
+  /// Fully offline Arabic search. The package normalizes Arabic text for us.
   Future<List<QuranSearchResult>> search(String keyword) async {
     final query = keyword.trim();
     if (query.isEmpty) return const [];
 
-    final encoded = Uri.encodeComponent(query);
-    final response = await http
-        .get(Uri.parse('$_base/search/$encoded/all/quran-uthmani'))
-        .timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200) throw Exception('Quran search failed');
-
-    final root = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = root['data'] as Map<String, dynamic>?;
-    final matches = (data?['matches'] as List?) ?? const [];
+    final matches = _offline.search(query, limit: 50);
     return matches
-        .whereType<Map>()
-        .map((e) => QuranSearchResult(
-              verse: QuranVerse.fromJson(
-                Map<String, dynamic>.from(e),
-              ),
-            ))
-        .toList();
+        .map((ayah) => QuranSearchResult(verse: _mapAyah(ayah)))
+        .toList(growable: false);
   }
 
+  /// Fully offline Tafsir Al-Muyassar for every ayah.
   Future<QuranTafsir> fetchTafsir(int globalAyahNumber) async {
-    final editions = <String, String>{
-      'ar.muyassar': 'التفسير الميسر',
-      'ar.jalalayn': 'تفسير الجلالين',
-    };
-
-    for (final entry in editions.entries) {
-      try {
-        final response = await http
-            .get(Uri.parse('$_base/ayah/$globalAyahNumber/${entry.key}'))
-            .timeout(const Duration(seconds: 12));
-        if (response.statusCode != 200) continue;
-        final root = jsonDecode(response.body) as Map<String, dynamic>;
-        final data = root['data'] as Map<String, dynamic>;
-        final text = data['text'] as String?;
-        if (text != null && text.trim().isNotEmpty) {
-          return QuranTafsir(text: text.trim(), source: entry.value);
+    var remaining = globalAyahNumber;
+    for (var surah = 1; surah <= 114; surah++) {
+      final count = _offline.getVerseCount(surah);
+      if (remaining <= count) {
+        final tafsir = _offline.getTafsir(surah)[remaining];
+        if (tafsir != null && tafsir.trim().isNotEmpty) {
+          return QuranTafsir(
+            text: tafsir.trim(),
+            source: 'التفسير الميسر',
+          );
         }
-      } catch (_) {
-        // Try the next available Arabic tafsir edition.
+        break;
       }
+      remaining -= count;
     }
-
-    throw Exception('Tafsir request failed');
+    throw Exception('Tafsir not found');
   }
 }

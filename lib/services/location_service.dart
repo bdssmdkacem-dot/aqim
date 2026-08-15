@@ -3,6 +3,36 @@ import 'package:geolocator/geolocator.dart';
 /// يجلب إحداثيات الهاتف بدقة عالية لحساب أوقات الصلاة، مع استخدام آخر
 /// موقع معروف كاحتياط حتى لا تختفي مواقيت الصلاة عند ضعف GPS.
 class LocationService {
+  static Future<LocationPermission> permissionStatus() async {
+    try {
+      return await Geolocator.checkPermission();
+    } catch (_) {
+      return LocationPermission.denied;
+    }
+  }
+
+  static Future<bool> requestLocationPermission() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        return false;
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      return permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> hasLocationPermission() async {
+    final permission = await permissionStatus();
+    return permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always;
+  }
+
   static Future<Position?> getCurrentPosition() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {

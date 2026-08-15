@@ -546,6 +546,133 @@ class _QuranScreenState extends State<QuranScreen> {
     );
   }
 
+  Future<void> _showSajdaGuide(QuranVerse verse) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surfaceDark,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.gold.withOpacity(.12),
+                      border: Border.all(color: AppColors.gold.withOpacity(.40)),
+                    ),
+                    child: const Icon(Icons.self_improvement_rounded, color: AppColors.gold),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'سجدة التلاوة',
+                          textAlign: TextAlign.right,
+                          style: GoogleFonts.amiri(
+                            color: AppColors.ivory,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          '${verse.surahName} • الآية ${verse.numberInSurah}',
+                          textAlign: TextAlign.right,
+                          style: GoogleFonts.cairo(color: AppColors.textMuted, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.ink.withOpacity(.55),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.gold.withOpacity(.16)),
+                ),
+                child: Text(
+                  verse.text,
+                  textAlign: TextAlign.right,
+                  style: GoogleFonts.amiri(color: AppColors.ivory, fontSize: 22, height: 1.9),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'كيف تؤدي سجدة التلاوة؟',
+                textAlign: TextAlign.right,
+                style: GoogleFonts.amiri(
+                  color: AppColors.gold,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              ...[
+                'أكمل قراءة الآية التي عليها علامة السجدة.',
+                'اسجد سجدة واحدة بنية سجود التلاوة، مع استقبال القبلة إن تيسّر.',
+                'قل في السجود: «سبحان ربي الأعلى»، ثم ارفع رأسك.',
+              ].asMap().entries.map(
+                (entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.gold.withOpacity(.12),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${entry.key + 1}',
+                          style: GoogleFonts.cairo(
+                            color: AppColors.gold,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          entry.value,
+                          textAlign: TextAlign.right,
+                          style: GoogleFonts.cairo(color: AppColors.ivory, fontSize: 14, height: 1.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'ملاحظة: قد تختلف بعض التفاصيل الفقهية باختلاف المذهب، فاستعن بما تتبعه من أحكام.',
+                textAlign: TextAlign.right,
+                style: GoogleFonts.cairo(color: AppColors.textMuted, fontSize: 11, height: 1.7),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _changePage(int delta) {
     final next = (_page + delta).clamp(1, 604);
     if (next == _page) return;
@@ -799,6 +926,20 @@ class _QuranScreenState extends State<QuranScreen> {
                           ),
                         ),
                         const Spacer(),
+                        if (verse.isSajda)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: IconButton(
+                              onPressed: () => _showSajdaGuide(verse),
+                              tooltip: 'موضع سجدة التلاوة',
+                              visualDensity: VisualDensity.compact,
+                              icon: const Icon(
+                                Icons.self_improvement_rounded,
+                                color: AppColors.gold,
+                                size: 20,
+                              ),
+                            ),
+                          ),
                         const Icon(Icons.menu_book_rounded, color: AppColors.textMuted, size: 17),
                       ],
                     ),

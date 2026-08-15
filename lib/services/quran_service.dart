@@ -37,6 +37,24 @@ class QuranVerse {
       surahName: surah['name'] as String? ?? '',
     );
   }
+
+  bool get isSajda => const <String>{
+    '7:206',
+    '13:15',
+    '16:50',
+    '17:109',
+    '19:58',
+    '22:18',
+    '22:77',
+    '25:60',
+    '27:26',
+    '32:15',
+    '38:24',
+    '41:38',
+    '53:62',
+    '84:21',
+    '96:19',
+  }.contains('$surahNumber:$numberInSurah');
 }
 
 class QuranPage {

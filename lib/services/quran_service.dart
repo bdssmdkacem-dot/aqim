@@ -119,7 +119,9 @@ class QuranService {
   QuranVerse _mapAyah(offline_quran.Ayah ayah) {
     final rub = _offline.getRubIndex(ayah.surahNumber, ayah.id) ?? 1;
     final cleanText = _cleanAyahText(ayah.text);
-    final marker = '﴿${_arabicDigits(ayah.id)}﴾';
+    // Use the standard Quranic end-of-ayah glyph instead of the old
+    // decorative bracket pair, which was visually distracting on some fonts.
+    final marker = '۝${_arabicDigits(ayah.id)}';
 
     return QuranVerse(
       number: _globalAyahNumber(ayah.surahNumber, ayah.id),

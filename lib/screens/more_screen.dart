@@ -13,7 +13,10 @@ class MoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
+    // Keep AppState here because ads are still intentionally shown on the
+    // home screen and weekly report. The paid "remove ads" entry itself is
+    // no longer exposed in the More screen.
+    context.watch<AppState>();
 
     return Scaffold(
       backgroundColor: AppColors.ink,
@@ -59,18 +62,15 @@ class MoreScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
               ),
             ),
-            if (!state.adsRemoved)
-              _MenuTile(
-                icon: Icons.block_flipped,
-                title: 'إزالة الإعلانات',
-                subtitle: state.removeAdsPriceLabel,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                ),
-              ),
             const SizedBox(height: 20),
             const Center(
-              child: Text('أقم — لأجل صلاة في وقتها', style: TextStyle(fontSize: 11.5, color: AppColors.textMuted)),
+              child: Text(
+                'أقم — لأجل صلاة في وقتها',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: AppColors.textMuted,
+                ),
+              ),
             ),
           ],
         ),
@@ -111,12 +111,34 @@ class _MenuTile extends StatelessWidget {
               Icon(icon, color: AppColors.gold, size: 21),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
               ),
               if (subtitle != null)
-                Flexible(child: Text(subtitle!, textAlign: TextAlign.left, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10.5, color: AppColors.gold, fontWeight: FontWeight.w700))),
+                Flexible(
+                  child: Text(
+                    subtitle!,
+                    textAlign: TextAlign.left,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      color: AppColors.gold,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               const SizedBox(width: 6),
-              const Icon(Icons.arrow_back_ios_new, size: 13, color: AppColors.textMuted),
+              const Icon(
+                Icons.arrow_back_ios_new,
+                size: 13,
+                color: AppColors.textMuted,
+              ),
             ],
           ),
         ),

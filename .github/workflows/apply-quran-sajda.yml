@@ -1,4 +1,4 @@
-name: Apply Quran Sajda Patch
+name: Apply Quran Sajda Patch (run)
 
 on:
   push:

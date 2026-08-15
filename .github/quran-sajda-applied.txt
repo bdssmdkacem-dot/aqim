@@ -1,1 +1,2 @@
 Quran sajda patch applied: 15 standard sajda positions, visible marker, and tap-to-guide UI.
+Release build trigger: verify patched Quran UI on the next AAB/APK build.

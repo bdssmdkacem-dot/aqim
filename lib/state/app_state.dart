@@ -47,7 +47,10 @@ class AppState extends ChangeNotifier {
   bool batteryPromptShown = false;
   String? cityName;
   String? notificationIssue;
-  bool get notificationsActive => realTimes != null && notificationIssue == null;
+  bool get notificationsActive =>
+      realTimes != null &&
+      notificationIssue == null &&
+      NotificationService.instance.notificationsPermissionGranted;
   double? get lastKnownLatitude => _prefs.getDouble('last_lat');
   double? get lastKnownLongitude => _prefs.getDouble('last_lng');
   List<Prayer> get activePrayers => _allPrayers;
@@ -93,45 +96,77 @@ class AppState extends ChangeNotifier {
   Future<void> loadPrayerTimes() async {
     timesLoading = true;
     notifyListeners();
-    final position = await LocationService.getCurrentPosition();
-    final lat = position?.latitude ?? _prefs.getDouble('last_lat');
-    final lng = position?.longitude ?? _prefs.getDouble('last_lng');
-    if (position != null) {
-      await _prefs.setDouble('last_lat', position.latitude);
-      await _prefs.setDouble('last_lng', position.longitude);
-    }
-    if (lat == null || lng == null) {
-      notificationIssue = 'تعذّر تحديد موقعك — تأكد من تفعيل خدمة الموقع ومنح صلاحية الوصول له.';
+    try {
+      final position = await LocationService.getCurrentPosition();
+      final lat = position?.latitude ?? _prefs.getDouble('last_lat');
+      final lng = position?.longitude ?? _prefs.getDouble('last_lng');
+      if (position != null) {
+        await _prefs.setDouble('last_lat', position.latitude);
+        await _prefs.setDouble('last_lng', position.longitude);
+      }
+      if (lat == null || lng == null) {
+        notificationIssue = 'تعذّر تحديد موقعك — تأكد من تفعيل خدمة الموقع ومنح صلاحية الوصول له.';
+        timesLoading = false;
+        notifyListeners();
+        return;
+      }
+      final cityFuture = GeocodingService.cityFor(latitude: lat, longitude: lng);
+      var times = await PrayerTimesService.fetchToday(latitude: lat, longitude: lng);
+      usingOfflineTimes = false;
+      if (times == null) {
+        times = OfflinePrayerTimesService.calculateToday(latitude: lat, longitude: lng);
+        usingOfflineTimes = times != null;
+      }
+      cityName = await cityFuture;
+      if (times == null) {
+        notificationIssue = 'تعذّر جلب أو حساب أوقات الصلاة. أعد المحاولة.';
+        timesLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      realTimes = times;
+      _recomputeUpcoming();
+
+      // جدولة الإشعارات أصبحت مستقلة عن صلاحية المنبّه الدقيق؛ الخدمة
+      // تستخدم exact عند توفره وتعود تلقائيًا إلى inexact عند عدم توفره.
+      try {
+        await NotificationService.instance.scheduleAllForToday(
+          times,
+          beforeMinutes: beforeMinutes,
+          afterMinutes: afterMinutes,
+          adhanEnabled: adhanEnabled,
+        );
+        await NotificationService.instance.scheduleWeeklySummary(_weeklySummaryText());
+        final enabled = await NotificationService.instance.areNotificationsEnabled();
+        notificationIssue = enabled
+            ? null
+            : 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم اضغط «إعادة المحاولة»."';
+        debugPrint('Prayer notifications scheduled: $enabled');
+      } catch (error) {
+        notificationIssue = 'تعذّر جدولة الإشعارات. تحقق من صلاحية الإشعارات وإعدادات البطارية ثم أعد المحاولة.';
+        debugPrint('Notification scheduling failed: $error');
+      }
+    } catch (error) {
+      notificationIssue = 'تعذّر تحديث أوقات الصلاة والإشعارات. أعد المحاولة.';
+      debugPrint('Prayer times load failed: $error');
+    } finally {
       timesLoading = false;
       notifyListeners();
-      return;
     }
-    final cityFuture = GeocodingService.cityFor(latitude: lat, longitude: lng);
-    var times = await PrayerTimesService.fetchToday(latitude: lat, longitude: lng);
-    usingOfflineTimes = false;
-    if (times == null) {
-      times = OfflinePrayerTimesService.calculateToday(latitude: lat, longitude: lng);
-      usingOfflineTimes = times != null;
+  }
+
+  Future<void> refreshNotificationStatus() async {
+    try {
+      final enabled = await NotificationService.instance.areNotificationsEnabled();
+      if (enabled) {
+        notificationIssue = realTimes == null ? 'جارٍ تحميل أوقات الصلاة.' : null;
+      } else {
+        notificationIssue = 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم أعد المحاولة.';
+      }
+    } catch (_) {
+      notificationIssue = 'تعذّر التحقق من حالة الإشعارات. اضغط «إعادة المحاولة»."';
     }
-    cityName = await cityFuture;
-    if (times == null) {
-      notificationIssue = 'تعذّر جلب أو حساب أوقات الصلاة. أعد المحاولة.';
-      timesLoading = false;
-      notifyListeners();
-      return;
-    }
-    realTimes = times;
-    notificationIssue = null;
-    _recomputeUpcoming();
-    await NotificationService.instance.scheduleAllForToday(
-      times,
-      beforeMinutes: beforeMinutes,
-      afterMinutes: afterMinutes,
-      adhanEnabled: adhanEnabled,
-    );
-    await NotificationService.instance.scheduleWeeklySummary(_weeklySummaryText());
-    debugPrint('Prayer notifications scheduled');
-    timesLoading = false;
     notifyListeners();
   }
 
@@ -161,6 +196,7 @@ class AppState extends ChangeNotifier {
         adhanEnabled: adhanEnabled,
       );
       await NotificationService.instance.scheduleWeeklySummary(_weeklySummaryText());
+      await refreshNotificationStatus();
     } else {
       await loadPrayerTimes();
     }
@@ -178,6 +214,7 @@ class AppState extends ChangeNotifier {
         afterMinutes: afterMinutes,
         adhanEnabled: adhanEnabled,
       );
+      await refreshNotificationStatus();
     } else {
       await loadPrayerTimes();
     }

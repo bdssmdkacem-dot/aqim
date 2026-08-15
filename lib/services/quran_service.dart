@@ -88,15 +88,15 @@ class QuranService {
     return number.toString().split('').map((d) => digits[int.parse(d)]).join();
   }
 
-  /// Removes a malformed/duplicated end-of-ayah suffix before rendering.
-  /// The source package provides the Quran text; the app owns the presentation
-  /// of the ayah marker so it stays consistent on every device/font.
+  /// Removes any source-provided end marker or malformed suffix before rendering.
+  /// The app owns the presentation of the ayah marker so it stays consistent
+  /// on every device and font.
   String _cleanAyahText(String text) {
     var cleaned = text.trim();
 
-    // Remove an existing Quran end-of-ayah marker and its number, if present.
+    // Remove common source marker formats, including U+06DD and ﴿١﴾.
     cleaned = cleaned.replaceFirst(
-      RegExp(r'\s*[۝﴿﴾]\s*[٠-٩0-9]+\s*$'),
+      RegExp(r'\s*(?:۝\s*[٠-٩0-9]*|﴿\s*[٠-٩0-9]+\s*﴾)\s*$'),
       '',
     );
 

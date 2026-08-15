@@ -12,8 +12,13 @@ import 'theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await MobileAds.instance.initialize();
-  await NotificationService.instance.init();
+
+  // لا نطلب صلاحية الإشعارات قبل رسم واجهة أقم.
+  // طلب الصلاحية مبكرًا كان يجعل Android 13+ يعرض نافذة النظام فوق شاشة سوداء.
   runApp(const AqimApp());
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    NotificationService.instance.init();
+  });
 }
 
 class AqimApp extends StatelessWidget {
@@ -52,10 +57,55 @@ class _Gate extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     if (!state.ready) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: AppColors.ink,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.gold),
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 86,
+                  height: 86,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.surfaceDark,
+                    border: Border.all(color: AppColors.gold.withOpacity(.65), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(color: AppColors.gold.withOpacity(.12), blurRadius: 28, spreadRadius: 2),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.mosque_rounded, color: AppColors.gold, size: 42),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'أقم',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    color: AppColors.ivory,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'لأجل صلاة في وقتها',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.goldSoft,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.gold,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }

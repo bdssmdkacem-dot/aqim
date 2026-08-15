@@ -57,7 +57,27 @@ class AppState extends ChangeNotifier {
       final s = todayStatus[p];
       if (s == PrayerStatus.pending || s == PrayerStatus.upcoming) return p;
     }
-    return null;
+    // After Isha, today's Fajr is not a future prayer. The next prayer is
+    // Fajr tomorrow; nextPrayerTime below supplies tomorrow's DateTime.
+    return Prayer.fajr;
+  }
+
+  DateTime? get nextPrayerTime {
+    final prayer = nextPrayer;
+    if (prayer == null) return null;
+    final time = _timeFor(prayer);
+    if (time == null) return null;
+    final now = DateTime.now();
+    if (prayer == Prayer.fajr && !time.isAfter(now)) {
+      return time.add(const Duration(days: 1));
+    }
+    return time;
+  }
+
+  bool get nextPrayerIsTomorrow {
+    final prayer = nextPrayer;
+    final time = prayer == null ? null : _timeFor(prayer);
+    return prayer == Prayer.fajr && time != null && !time.isAfter(DateTime.now());
   }
 
   String displayTimeFor(Prayer p) {
@@ -336,25 +356,30 @@ class AppState extends ChangeNotifier {
   void _recomputeUpcoming() {
     final now = DateTime.now();
     var missedChanged = false;
-    Prayer? next;
+    Prayer? nextToday;
+
+    // A prayer is today's upcoming prayer only while its time is still in the future.
     for (final prayer in activePrayers) {
       final t = _timeFor(prayer);
       if (t == null) continue;
       if (t.isAfter(now)) {
-        next = prayer;
+        nextToday = prayer;
         break;
       }
     }
-    next ??= Prayer.fajr;
+
     for (final prayer in activePrayers) {
       final status = todayStatus[prayer];
       if (status == PrayerStatus.done || status == PrayerStatus.missed) continue;
-      if (prayer == next) {
+
+      final t = _timeFor(prayer);
+      final elapsed = t != null && !t.isAfter(now);
+
+      if (prayer == nextToday) {
         todayStatus[prayer] = PrayerStatus.upcoming;
         continue;
       }
-      final t = _timeFor(prayer);
-      final elapsed = t != null && now.isAfter(t);
+
       if (elapsed) {
         todayStatus[prayer] = PrayerStatus.missed;
         missTally[prayer] = (missTally[prayer] ?? 0) + 1;
@@ -363,6 +388,7 @@ class AppState extends ChangeNotifier {
         todayStatus[prayer] = PrayerStatus.pending;
       }
     }
+
     if (missedChanged) {
       unawaited(_persist());
       unawaited(_persistMissTally());

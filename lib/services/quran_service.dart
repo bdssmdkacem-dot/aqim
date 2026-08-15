@@ -82,40 +82,6 @@ class QuranService {
   final offline_quran.QuranService _offline =
       offline_quran.QuranService.instance;
 
-  String _arabicDigits(int number) {
-    const digits = <String>['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-    return number.toString().split('').map((d) => digits[int.parse(d)]).join();
-  }
-
-  bool _isSajdaAyah(int surahNumber, int ayahNumber) => const <String>{
-    '7:206',
-    '13:15',
-    '16:50',
-    '17:109',
-    '19:58',
-    '22:18',
-    '22:77',
-    '25:60',
-    '27:26',
-    '32:15',
-    '38:24',
-    '41:38',
-    '53:62',
-    '84:21',
-    '96:19',
-  }.contains('$surahNumber:$ayahNumber');
-
-  /// Removes any source-provided end marker or malformed suffix before rendering.
-  String _cleanAyahText(String text) {
-    var cleaned = text.trim();
-    cleaned = cleaned.replaceFirst(
-      RegExp(r'\s*(?:۝\s*[٠-٩0-9]*|﴿\s*[٠-٩0-9]+\s*﴾)\s*$'),
-      '',
-    );
-    cleaned = cleaned.replaceFirst(RegExp(r'\s*(?:ئج|غج)\s*$'), '');
-    return cleaned.trim();
-  }
-
   int _globalAyahNumber(int surahNumber, int ayahNumber) {
     var total = 0;
     for (var surah = 1; surah < surahNumber; surah++) {
@@ -126,17 +92,15 @@ class QuranService {
 
   QuranVerse _mapAyah(offline_quran.Ayah ayah) {
     final rub = _offline.getRubIndex(ayah.surahNumber, ayah.id) ?? 1;
-    final cleanText = _cleanAyahText(ayah.text);
-    // Normal ayahs use the clean end-of-ayah glyph. Sajda ayahs use the
-    // traditional ۩ marker so the reader can notice the prostration point.
-    final marker = _isSajdaAyah(ayah.surahNumber, ayah.id)
-        ? '۩ ${_arabicDigits(ayah.id)}'
-        : '۝${_arabicDigits(ayah.id)}';
 
+    // IMPORTANT: ayah.text comes directly from the offline Quran dataset.
+    // Do not append ۝, numbers, sajda glyphs, or any other UI marker to it.
+    // The ayah number and sajda indicator are rendered separately by the UI
+    // so the Quran text itself remains exactly the source text.
     return QuranVerse(
       number: _globalAyahNumber(ayah.surahNumber, ayah.id),
       numberInSurah: ayah.id,
-      text: '$cleanText $marker',
+      text: ayah.text.trim(),
       page: ayah.page,
       juz: ayah.juz,
       hizbQuarter: rub,

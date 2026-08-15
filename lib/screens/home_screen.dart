@@ -62,9 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _locationLabel(AppState state) {
-    if (!state.notificationsActive) return 'الإشعارات غير مفعّلة';
-    if (state.timesLoading) return 'جارٍ تحديد موقعك...';
-    return state.cityName ?? 'اضغط لتفعيل تحديد المدينة';
+    if (state.timesLoading && state.cityName == null) return 'جارٍ تحديد موقعك...';
+    if (state.cityName != null) return state.cityName!;
+    return 'لم يتم تحديد المدينة — اضغط للإعدادات';
   }
 
   @override
@@ -146,22 +146,33 @@ class _TitleBlock extends StatelessWidget {
   final String locationLabel;
   const _TitleBlock({required this.state, required this.locationLabel});
   @override
-  Widget build(BuildContext context) => Container(
-    height: 104,
-    padding: const EdgeInsets.fromLTRB(14, 10, 14, 9),
-    decoration: BoxDecoration(color: AppColors.surfaceDark.withOpacity(0.72), borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.paperLine.withOpacity(0.8))),
-    child: Row(children: [
-      Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(GregorianArabic.format(DateTime.now()), style: GoogleFonts.cairo(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.ivory)),
-        const SizedBox(height: 5),
-        Text(HijriDate.fromGregorian(DateTime.now()).formatted, style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft)),
-        const Spacer(),
-        InkWell(onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())), borderRadius: BorderRadius.circular(8), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(state.notificationsActive ? Icons.location_on_outlined : Icons.error_outline, size: 13, color: state.notificationsActive ? AppColors.gold : AppColors.goldSoft), const SizedBox(width: 4), Text(locationLabel, style: GoogleFonts.cairo(fontSize: 10, color: state.notificationsActive ? AppColors.inkSoft : AppColors.goldSoft, fontWeight: FontWeight.w600))])),
-      ])),
-      const SizedBox(width: 12),
-      Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [Text('أقم', style: GoogleFonts.amiri(fontSize: 39, height: .9, fontWeight: FontWeight.w700, color: AppColors.goldSoft)), const SizedBox(height: 6), Text('لأجل صلاة في وقتها', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600))]),
-    ]),
-  );
+  Widget build(BuildContext context) {
+    final locationReady = state.cityName != null;
+    return Container(
+      height: 104,
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 9),
+      decoration: BoxDecoration(color: AppColors.surfaceDark.withOpacity(0.72), borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.paperLine.withOpacity(0.8))),
+      child: Row(children: [
+        Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(GregorianArabic.format(DateTime.now()), style: GoogleFonts.cairo(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.ivory)),
+          const SizedBox(height: 5),
+          Text(HijriDate.fromGregorian(DateTime.now()).formatted, style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft)),
+          const Spacer(),
+          InkWell(
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+            borderRadius: BorderRadius.circular(8),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(locationReady ? Icons.location_on_outlined : Icons.error_outline, size: 13, color: locationReady ? AppColors.gold : AppColors.goldSoft),
+              const SizedBox(width: 4),
+              Text(locationLabel, style: GoogleFonts.cairo(fontSize: 10, color: locationReady ? AppColors.inkSoft : AppColors.goldSoft, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+        ])),
+        const SizedBox(width: 12),
+        Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [Text('أقم', style: GoogleFonts.amiri(fontSize: 39, height: .9, fontWeight: FontWeight.w700, color: AppColors.goldSoft)), const SizedBox(height: 6), Text('لأجل صلاة في وقتها', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600))]),
+      ]),
+    );
+  }
 }
 
 class _MissedPrayerNotice extends StatelessWidget {

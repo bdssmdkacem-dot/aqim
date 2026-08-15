@@ -13,8 +13,9 @@ import '../screens/quran_screen.dart';
 
 /// إشعارات الصلاة والقرآن.
 ///
-/// إشعارات الصلاة تستخدم Exact Alarm فقط. لا نستخدم inexact لأن دقائق
-/// التأخير غير مقبولة في مواقيت الصلاة.
+/// نستخدم Exact Alarm عندما يسمح Android بذلك. إذا لم يمنح النظام صلاحية
+/// المنبّه الدقيق، لا نوقف الإشعارات كلها؛ نستخدم inexactAllowWhileIdle
+/// كحل احتياطي حتى لا تتوقف التنبيهات تمامًا على الأجهزة المقيدة.
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -33,8 +34,7 @@ class NotificationService {
   static const _quranPrefix = 'quran:';
 
   // إصدار جديد للقنوات حتى لا ترث القنوات القديمة إعدادات الصوت/الأهمية.
-  // Android لا يسمح بتغيير صوت القناة بعد إنشائها.
-  static const _channelVersion = 'v3';
+  static const _channelVersion = 'v4';
 
   Future<void> init() {
     if (_initialized) return Future.value();
@@ -59,9 +59,12 @@ class NotificationService {
       final android = _android;
       if (android != null) {
         notificationsPermissionGranted =
-            await android.requestNotificationsPermission() ?? false;
+            await android.areNotificationsEnabled() ?? false;
+        if (!notificationsPermissionGranted) {
+          notificationsPermissionGranted =
+              await android.requestNotificationsPermission() ?? false;
+        }
 
-        // الأذان/التذكير يجب أن يصل في الدقيقة المحددة حتى أثناء Doze.
         try {
           exactAlarmPermissionGranted =
               await android.canScheduleExactNotifications() ?? false;
@@ -73,7 +76,6 @@ class NotificationService {
           exactAlarmPermissionGranted = false;
         }
 
-        // مطلوب عند استخدام fullScreenIntent على Android الحديث.
         try {
           await android.requestFullScreenIntentPermission();
         } catch (_) {}
@@ -130,6 +132,11 @@ class NotificationService {
     if (exactAlarmPermissionGranted) return true;
     return requestExactAlarmPermission();
   }
+
+  AndroidScheduleMode get _scheduleMode =>
+      exactAlarmPermissionGranted
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle;
 
   void _onNotificationTap(NotificationResponse response) {
     final payload = response.payload;
@@ -208,7 +215,7 @@ class NotificationService {
       body: body,
       scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
       notificationDetails: details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: _scheduleMode,
       payload: payload,
     );
   }
@@ -226,11 +233,8 @@ class NotificationService {
       throw StateError('NOTIFICATIONS_PERMISSION_REQUIRED');
     }
 
-    // لا نسمح بالرجوع إلى inexact؛ ذلك هو سبب التأخير الذي ظهر مؤخراً.
-    final exact = await _ensureExactAlarmPermission();
-    if (!exact) {
-      throw StateError('EXACT_ALARM_PERMISSION_REQUIRED');
-    }
+    // نطلب exact عندما يمكن، لكن لا نجعل غيابه سببًا لتعطيل التنبيهات.
+    await _ensureExactAlarmPermission();
 
     await _plugin.cancelAll();
     final now = DateTime.now();
@@ -314,7 +318,7 @@ class NotificationService {
           soundName == _jumuahAlarmSound
               ? 'منبّه صلاة الجمعة'
               : 'منبّه الاستعداد للصلاة',
-          channelDescription: 'تنبيه صوتي دقيق قبل الصلاة',
+          channelDescription: 'تنبيه صوتي قبل الصلاة',
           importance: Importance.max,
           priority: Priority.max,
           category: AndroidNotificationCategory.alarm,
@@ -370,7 +374,7 @@ class NotificationService {
       payload: payload,
       details: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'aqim_adhan_v3',
+          'aqim_adhan_v4',
           'الأذان',
           channelDescription: 'الأذان عند دخول وقت الصلاة',
           importance: Importance.max,
@@ -401,7 +405,7 @@ class NotificationService {
       payload: payload,
       details: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'aqim_missed_prayer_v3',
+          'aqim_missed_prayer_v4',
           'تذكير الصلاة',
           channelDescription: 'تذكير بعد انتهاء وقت الصلاة',
           importance: Importance.max,
@@ -417,6 +421,7 @@ class NotificationService {
 
   Future<void> scheduleQuranDaily(int page) async {
     await init();
+    await refreshExactAlarmPermission();
     final safePage = page.clamp(1, 604);
     await _plugin.cancel(id: _quranDailyId);
     final now = tz.TZDateTime.now(tz.local);
@@ -437,7 +442,7 @@ class NotificationService {
       scheduledDate: first,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'aqim_quran_daily_v3',
+          'aqim_quran_daily_v4',
           'الورد اليومي من القرآن',
           channelDescription: 'تذكير يومي لقراءة القرآن الكريم',
           importance: Importance.defaultImportance,
@@ -445,7 +450,7 @@ class NotificationService {
           playSound: true,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: _scheduleMode,
       matchDateTimeComponents: DateTimeComponents.time,
       payload: '$_quranPrefix$safePage',
     );
@@ -453,6 +458,7 @@ class NotificationService {
 
   Future<void> scheduleWeeklySummary(String text) async {
     await init();
+    await refreshExactAlarmPermission();
     await _plugin.cancel(id: _weeklySummaryId);
     final now = tz.TZDateTime.now(tz.local);
     var first = tz.TZDateTime(tz.local, now.year, now.month, now.day, 20);
@@ -473,7 +479,7 @@ class NotificationService {
       scheduledDate: first,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'aqim_weekly_summary_v3',
+          'aqim_weekly_summary_v4',
           'ملخص الأسبوع',
           channelDescription: 'ملخص أسبوعي لتقدمك في الصلاة',
           importance: Importance.defaultImportance,
@@ -481,7 +487,7 @@ class NotificationService {
           playSound: true,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: _scheduleMode,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       payload: 'weekly_summary',
     );

@@ -82,6 +82,30 @@ class QuranService {
   final offline_quran.QuranService _offline =
       offline_quran.QuranService.instance;
 
+  /// Converts a number to Arabic-Indic digits for the traditional ayah marker.
+  String _arabicDigits(int number) {
+    const digits = <String>['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    return number.toString().split('').map((d) => digits[int.parse(d)]).join();
+  }
+
+  /// Removes a malformed/duplicated end-of-ayah suffix before rendering.
+  /// The source package provides the Quran text; the app owns the presentation
+  /// of the ayah marker so it stays consistent on every device/font.
+  String _cleanAyahText(String text) {
+    var cleaned = text.trim();
+
+    // Remove an existing Quran end-of-ayah marker and its number, if present.
+    cleaned = cleaned.replaceFirst(
+      RegExp(r'\s*[۝﴿﴾]\s*[٠-٩0-9]+\s*$'),
+      '',
+    );
+
+    // Remove the malformed suffix visible in some font/rendering combinations.
+    cleaned = cleaned.replaceFirst(RegExp(r'\s*(?:ئج|غج)\s*$'), '');
+
+    return cleaned.trim();
+  }
+
   /// Returns the global ayah number used by the old online API shape.
   /// The value is calculated entirely from the bundled Quran metadata.
   int _globalAyahNumber(int surahNumber, int ayahNumber) {
@@ -94,10 +118,13 @@ class QuranService {
 
   QuranVerse _mapAyah(offline_quran.Ayah ayah) {
     final rub = _offline.getRubIndex(ayah.surahNumber, ayah.id) ?? 1;
+    final cleanText = _cleanAyahText(ayah.text);
+    final marker = '﴿${_arabicDigits(ayah.id)}﴾';
+
     return QuranVerse(
       number: _globalAyahNumber(ayah.surahNumber, ayah.id),
       numberInSurah: ayah.id,
-      text: ayah.text,
+      text: '$cleanText $marker',
       page: ayah.page,
       juz: ayah.juz,
       hizbQuarter: rub,

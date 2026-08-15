@@ -56,13 +56,6 @@ class NotificationService {
             .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
         await androidImpl?.requestExactAlarmsPermission();
       } catch (_) {}
-
-      final prefs = await SharedPreferences.getInstance();
-      try {
-        await scheduleQuranDaily(prefs.getInt('quran_next_page') ?? 1);
-      } catch (_) {
-        // فشل جدولة ورد القرآن لا يعطّل إشعارات الصلاة.
-      }
     } catch (_) {
       _initialized = false;
       _initFuture = null;

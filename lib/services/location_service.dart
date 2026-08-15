@@ -1,29 +1,58 @@
 import 'package:geolocator/geolocator.dart';
 
-/// يجلب إحداثيات الهاتف بدقة عالية لحساب أوقات الصلاة.
+/// يجلب إحداثيات الهاتف بدقة عالية لحساب أوقات الصلاة، مع استخدام آخر
+/// موقع معروف كاحتياط حتى لا تختفي مواقيت الصلاة عند ضعف GPS.
 class LocationService {
   static Future<Position?> getCurrentPosition() async {
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) return null;
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        return await Geolocator.getLastKnownPosition();
+      }
 
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        return null;
+      if (permission == LocationPermission.deniedForever) {
+        return await Geolocator.getLastKnownPosition();
+      }
+      if (permission == LocationPermission.denied) {
+        return await Geolocator.getLastKnownPosition();
       }
 
-      return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 0,
-          timeLimit: Duration(seconds: 20),
-        ),
-      );
+      try {
+        return await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 0,
+            timeLimit: Duration(seconds: 20),
+          ),
+        );
+      } catch (_) {
+        return await Geolocator.getLastKnownPosition();
+      }
     } catch (_) {
-      return null;
+      try {
+        return await Geolocator.getLastKnownPosition();
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+
+  static Future<bool> openAppSettings() async {
+    try {
+      return await Geolocator.openAppSettings();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> openLocationSettings() async {
+    try {
+      return await Geolocator.openLocationSettings();
+    } catch (_) {
+      return false;
     }
   }
 }

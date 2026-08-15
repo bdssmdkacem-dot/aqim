@@ -70,6 +70,11 @@ class QuranSurah {
       );
 }
 
+class QuranSearchResult {
+  final QuranVerse verse;
+  const QuranSearchResult({required this.verse});
+}
+
 class QuranTafsir {
   final String text;
   final String source;
@@ -120,6 +125,29 @@ class QuranService {
     if (ayahs.isEmpty) throw Exception('Surah has no ayahs');
     final first = Map<String, dynamic>.from(ayahs.first as Map);
     return (first['page'] as num?)?.toInt() ?? 1;
+  }
+
+  Future<List<QuranSearchResult>> search(String keyword) async {
+    final query = keyword.trim();
+    if (query.isEmpty) return const [];
+
+    final encoded = Uri.encodeComponent(query);
+    final response = await http
+        .get(Uri.parse('$_base/search/$encoded/all/quran-uthmani'))
+        .timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) throw Exception('Quran search failed');
+
+    final root = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = root['data'] as Map<String, dynamic>?;
+    final matches = (data?['matches'] as List?) ?? const [];
+    return matches
+        .whereType<Map>()
+        .map((e) => QuranSearchResult(
+              verse: QuranVerse.fromJson(
+                Map<String, dynamic>.from(e),
+              ),
+            ))
+        .toList();
   }
 
   Future<QuranTafsir> fetchTafsir(int globalAyahNumber) async {

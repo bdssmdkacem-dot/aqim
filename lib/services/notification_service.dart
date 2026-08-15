@@ -11,21 +11,30 @@ import '../screens/missed_prayer_response_screen.dart';
 import '../screens/pre_prayer_screen.dart';
 import '../screens/quran_screen.dart';
 
-/// يدير تنبيهات الصلاة والورد اليومي من القرآن وملخص التقدم الأسبوعي.
+/// إشعارات الصلاة والقرآن.
+///
+/// إشعارات الصلاة تستخدم Exact Alarm فقط. لا نستخدم inexact لأن دقائق
+/// التأخير غير مقبولة في مواقيت الصلاة.
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
-  final _plugin = FlutterLocalNotificationsPlugin();
+
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
   bool _initialized = false;
   bool notificationsPermissionGranted = false;
+  bool exactAlarmPermissionGranted = false;
   Future<void>? _initFuture;
 
-  static const _snoozeActionId = 'snooze_15';
   static const _weeklySummaryId = 9000;
   static const _quranDailyId = 9100;
   static const _jumuahAlarmSound = 'alarm_jomoaa';
   static const _missedPrefix = 'missed:';
   static const _quranPrefix = 'quran:';
+
+  // إصدار جديد للقنوات حتى لا ترث القنوات القديمة إعدادات الصوت/الأهمية.
+  // Android لا يسمح بتغيير صوت القناة بعد إنشائها.
+  static const _channelVersion = 'v3';
 
   Future<void> init() {
     if (_initialized) return Future.value();
@@ -41,21 +50,34 @@ class NotificationService {
       } catch (_) {}
 
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-      const initSettings = InitializationSettings(android: androidInit);
       await _plugin.initialize(
-        settings: initSettings,
+        settings: const InitializationSettings(android: androidInit),
         onDidReceiveNotificationResponse: _onNotificationTap,
       );
       _initialized = true;
 
-      notificationsPermissionGranted =
-          await _requestNotificationsPermissionInternal();
+      final android = _android;
+      if (android != null) {
+        notificationsPermissionGranted =
+            await android.requestNotificationsPermission() ?? false;
 
-      try {
-        final androidImpl = _plugin
-            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-        await androidImpl?.requestExactAlarmsPermission();
-      } catch (_) {}
+        // الأذان/التذكير يجب أن يصل في الدقيقة المحددة حتى أثناء Doze.
+        try {
+          exactAlarmPermissionGranted =
+              await android.canScheduleExactNotifications() ?? false;
+          if (!exactAlarmPermissionGranted) {
+            exactAlarmPermissionGranted =
+                await android.requestExactAlarmsPermission() ?? false;
+          }
+        } catch (_) {
+          exactAlarmPermissionGranted = false;
+        }
+
+        // مطلوب عند استخدام fullScreenIntent على Android الحديث.
+        try {
+          await android.requestFullScreenIntentPermission();
+        } catch (_) {}
+      }
     } catch (_) {
       _initialized = false;
       _initFuture = null;
@@ -63,51 +85,56 @@ class NotificationService {
     }
   }
 
-  Future<bool> _requestNotificationsPermissionInternal() async {
-    final androidImpl = _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    final granted = await androidImpl?.requestNotificationsPermission() ?? true;
-    notificationsPermissionGranted = granted;
-    return granted;
-  }
+  AndroidFlutterLocalNotificationsPlugin? get _android =>
+      _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
 
-  /// يقرأ الحالة الفعلية لإشعارات Android بدل الاعتماد على نتيجة طلب الصلاحية فقط.
   Future<bool> areNotificationsEnabled() async {
     await init();
-    final androidImpl = _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    final enabled = await androidImpl?.areNotificationsEnabled();
+    final enabled = await _android?.areNotificationsEnabled();
     notificationsPermissionGranted = enabled ?? notificationsPermissionGranted;
     return notificationsPermissionGranted;
   }
 
   Future<bool> requestNotificationsPermission() async {
     await init();
-    return _requestNotificationsPermissionInternal();
+    final granted = await _android?.requestNotificationsPermission() ?? false;
+    notificationsPermissionGranted = granted;
+    return granted;
   }
 
-  /// إذا لم تتوفر صلاحية المنبّه الدقيق نستخدم إشعارًا غير دقيق بدل فشل الجدولة.
-  Future<AndroidScheduleMode> _scheduleMode() async {
-    final androidImpl = _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    if (androidImpl == null) return AndroidScheduleMode.exactAllowWhileIdle;
+  Future<bool> refreshExactAlarmPermission() async {
+    await init();
     try {
-      final canExact = await androidImpl.canScheduleExactNotifications();
-      return canExact == true
-          ? AndroidScheduleMode.exactAllowWhileIdle
-          : AndroidScheduleMode.inexactAllowWhileIdle;
+      exactAlarmPermissionGranted =
+          await _android?.canScheduleExactNotifications() ?? false;
     } catch (_) {
-      return AndroidScheduleMode.inexactAllowWhileIdle;
+      exactAlarmPermissionGranted = false;
     }
+    return exactAlarmPermissionGranted;
+  }
+
+  Future<bool> requestExactAlarmPermission() async {
+    await init();
+    try {
+      exactAlarmPermissionGranted =
+          await _android?.requestExactAlarmsPermission() ?? false;
+    } catch (_) {
+      exactAlarmPermissionGranted = false;
+    }
+    return exactAlarmPermissionGranted;
+  }
+
+  Future<bool> _ensureExactAlarmPermission() async {
+    await refreshExactAlarmPermission();
+    if (exactAlarmPermissionGranted) return true;
+    return requestExactAlarmPermission();
   }
 
   void _onNotificationTap(NotificationResponse response) {
     final payload = response.payload;
-    if (payload == null) return;
-    if (response.actionId == _snoozeActionId) {
-      _snoozeCheckIn(payload);
-      return;
-    }
+    if (payload == null || payload.isEmpty) return;
+
     if (payload.startsWith(_quranPrefix)) {
       final page = int.tryParse(payload.substring(_quranPrefix.length)) ?? 1;
       rootNavigatorKey.currentState?.push(
@@ -115,32 +142,20 @@ class NotificationService {
       );
       return;
     }
-    final isMissed = payload.startsWith(_missedPrefix);
-    final prayerId = isMissed
-        ? payload.substring(_missedPrefix.length)
-        : payload;
-    final prayer = _prayerFromId(prayerId);
-    if (prayer == null) return;
-    final screen = isMissed
-        ? MissedPrayerResponseScreen(prayer: prayer)
-        : PrePrayerScreen(prayer: prayer);
-    rootNavigatorKey.currentState?.push(
-      MaterialPageRoute(builder: (_) => screen),
-    );
-  }
 
-  Future<void> _snoozeCheckIn(String payload) async {
-    final prayerId = payload.startsWith(_missedPrefix)
+    final missed = payload.startsWith(_missedPrefix);
+    final prayerId = missed
         ? payload.substring(_missedPrefix.length)
         : payload;
     final prayer = _prayerFromId(prayerId);
     if (prayer == null) return;
-    await _scheduleCheckIn(
-      id: _idFor(prayer, 1),
-      title: 'فاتتك صلاة ${prayer.arabicName}',
-      body: 'هل صليتها؟ اضغط هنا لتسجيل الإجابة.',
-      scheduledDate: DateTime.now().add(const Duration(minutes: 15)),
-      payload: '$_missedPrefix$prayerId',
+
+    rootNavigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (_) => missed
+            ? MissedPrayerResponseScreen(prayer: prayer)
+            : PrePrayerScreen(prayer: prayer),
+      ),
     );
   }
 
@@ -151,8 +166,7 @@ class NotificationService {
     return null;
   }
 
-  int _idFor(Prayer p, int typeOffset) =>
-      Prayer.values.indexOf(p) * 10 + typeOffset;
+  int _idFor(Prayer p, int offset) => Prayer.values.indexOf(p) * 10 + offset;
 
   Future<void> cancelMissedPrayer(Prayer prayer) async {
     if (!_initialized) return;
@@ -177,6 +191,28 @@ class NotificationService {
     }
   }
 
+  String _alarmChannel(String sound) => 'aqim_alarm_${_channelVersion}_$sound';
+
+  Future<void> _scheduleExact({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+    required NotificationDetails details,
+    required String payload,
+  }) async {
+    if (!scheduledDate.isAfter(DateTime.now())) return;
+    await _plugin.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
+      notificationDetails: details,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: payload,
+    );
+  }
+
   Future<void> scheduleAllForToday(
     Map<Prayer, DateTime> realTimes, {
     int beforeMinutes = 10,
@@ -184,9 +220,16 @@ class NotificationService {
     bool adhanEnabled = true,
   }) async {
     await init();
-    if (!notificationsPermissionGranted) {
-      notificationsPermissionGranted =
-          await _requestNotificationsPermissionInternal();
+
+    final notificationsEnabled = await areNotificationsEnabled();
+    if (!notificationsEnabled) {
+      throw StateError('NOTIFICATIONS_PERMISSION_REQUIRED');
+    }
+
+    // لا نسمح بالرجوع إلى inexact؛ ذلك هو سبب التأخير الذي ظهر مؤخراً.
+    final exact = await _ensureExactAlarmPermission();
+    if (!exact) {
+      throw StateError('EXACT_ALARM_PERMISSION_REQUIRED');
     }
 
     await _plugin.cancelAll();
@@ -233,7 +276,6 @@ class NotificationService {
         );
       }
 
-      // لا يظهر سؤال «هل صليت؟» إلا بعد انتهاء وقت الصلاة + مدة التذكير.
       if (missedTime.isAfter(now)) {
         await _scheduleCheckIn(
           id: _idFor(prayer, 1),
@@ -251,6 +293,128 @@ class NotificationService {
     await scheduleQuranDaily(prefs.getInt('quran_next_page') ?? 1);
   }
 
+  Future<void> _scheduleWakeAlarm({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+    required String soundName,
+    required String payload,
+  }) async {
+    final channel = _alarmChannel(soundName);
+    await _scheduleExact(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      payload: payload,
+      details: NotificationDetails(
+        android: AndroidNotificationDetails(
+          channel,
+          soundName == _jumuahAlarmSound
+              ? 'منبّه صلاة الجمعة'
+              : 'منبّه الاستعداد للصلاة',
+          channelDescription: 'تنبيه صوتي دقيق قبل الصلاة',
+          importance: Importance.max,
+          priority: Priority.max,
+          category: AndroidNotificationCategory.alarm,
+          fullScreenIntent: true,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound(soundName),
+          audioAttributesUsage: AudioAttributesUsage.alarm,
+          enableVibration: true,
+          visibility: NotificationVisibility.public,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _scheduleFajrWakeAlarms({
+    required DateTime finalAlarmTime,
+    required int beforeMinutes,
+    required DateTime now,
+  }) async {
+    final stages = [
+      (10, 'alarm_fajr_1', 'اقترب وقت الفجر', 0),
+      (5, 'alarm_fajr_2', 'استعد لصلاة الفجر', 3),
+      (0, 'alarm_fajr_3', 'حان الاستعداد الأخير لصلاة الفجر', 4),
+    ];
+    for (final stage in stages) {
+      final scheduledDate = finalAlarmTime.subtract(
+        Duration(minutes: stage.$1),
+      );
+      if (!scheduledDate.isAfter(now)) continue;
+      await _scheduleWakeAlarm(
+        id: _idFor(Prayer.fajr, stage.$4),
+        title: stage.$3,
+        body: 'تبقّى $beforeMinutes دقيقة على صلاة الفجر.',
+        scheduledDate: scheduledDate,
+        soundName: stage.$2,
+        payload: Prayer.fajr.name,
+      );
+    }
+  }
+
+  Future<void> _scheduleAdhan({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+    required String payload,
+  }) async {
+    await _scheduleExact(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      payload: payload,
+      details: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'aqim_adhan_v3',
+          'الأذان',
+          channelDescription: 'الأذان عند دخول وقت الصلاة',
+          importance: Importance.max,
+          priority: Priority.max,
+          category: AndroidNotificationCategory.alarm,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound('adhan'),
+          audioAttributesUsage: AudioAttributesUsage.alarm,
+          enableVibration: true,
+          visibility: NotificationVisibility.public,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _scheduleCheckIn({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+    required String payload,
+  }) async {
+    await _scheduleExact(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      payload: payload,
+      details: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'aqim_missed_prayer_v3',
+          'تذكير الصلاة',
+          channelDescription: 'تذكير بعد انتهاء وقت الصلاة',
+          importance: Importance.max,
+          priority: Priority.max,
+          category: AndroidNotificationCategory.reminder,
+          playSound: true,
+          enableVibration: true,
+          visibility: NotificationVisibility.public,
+        ),
+      ),
+    );
+  }
+
   Future<void> scheduleQuranDaily(int page) async {
     await init();
     final safePage = page.clamp(1, 604);
@@ -265,6 +429,7 @@ class NotificationService {
       30,
     );
     if (!first.isAfter(now)) first = first.add(const Duration(days: 1));
+
     await _plugin.zonedSchedule(
       id: _quranDailyId,
       title: 'وردك اليومي من القرآن 🌙',
@@ -272,15 +437,15 @@ class NotificationService {
       scheduledDate: first,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'aqim_quran_daily',
+          'aqim_quran_daily_v3',
           'الورد اليومي من القرآن',
-          channelDescription: 'تذكير يومي لطيف لقراءة جزء من القرآن الكريم',
+          channelDescription: 'تذكير يومي لقراءة القرآن الكريم',
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
           playSound: true,
         ),
       ),
-      androidScheduleMode: await _scheduleMode(),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
       payload: '$_quranPrefix$safePage',
     );
@@ -308,7 +473,7 @@ class NotificationService {
       scheduledDate: first,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'aqim_weekly_summary',
+          'aqim_weekly_summary_v3',
           'ملخص الأسبوع',
           channelDescription: 'ملخص أسبوعي لتقدمك في الصلاة',
           importance: Importance.defaultImportance,
@@ -316,149 +481,9 @@ class NotificationService {
           playSound: true,
         ),
       ),
-      androidScheduleMode: await _scheduleMode(),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       payload: 'weekly_summary',
-    );
-  }
-
-  Future<void> _scheduleWakeAlarm({
-    required int id,
-    required String title,
-    required String body,
-    required DateTime scheduledDate,
-    required String soundName,
-    required String payload,
-  }) async {
-    final tzTime = tz.TZDateTime.from(scheduledDate, tz.local);
-    final channelId = 'aqim_wake_alarm_$soundName';
-    await _plugin.zonedSchedule(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: tzTime,
-      notificationDetails: NotificationDetails(
-        android: AndroidNotificationDetails(
-          channelId,
-          soundName == _jumuahAlarmSound
-              ? 'منبّه صلاة الجمعة'
-              : 'منبّه الاستعداد — $soundName',
-          channelDescription: soundName == _jumuahAlarmSound
-              ? 'منبّه صوتي خاص بصلاة الجمعة'
-              : 'منبّه صوتي قبل الصلاة لمساعدتك على الاستعداد',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.alarm,
-          fullScreenIntent: true,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound(soundName),
-          enableVibration: true,
-          visibility: NotificationVisibility.public,
-        ),
-      ),
-      androidScheduleMode: await _scheduleMode(),
-      payload: payload,
-    );
-  }
-
-  Future<void> _scheduleFajrWakeAlarms({
-    required DateTime finalAlarmTime,
-    required int beforeMinutes,
-    required DateTime now,
-  }) async {
-    final stages = [
-      (
-        offsetMinutes: 10,
-        soundName: 'alarm_fajr_1',
-        title: 'اقترب وقت الفجر',
-        typeOffset: 0,
-      ),
-      (
-        offsetMinutes: 5,
-        soundName: 'alarm_fajr_2',
-        title: 'استعد لصلاة الفجر',
-        typeOffset: 3,
-      ),
-      (
-        offsetMinutes: 0,
-        soundName: 'alarm_fajr_3',
-        title: 'حان الاستعداد الأخير لصلاة الفجر',
-        typeOffset: 4,
-      ),
-    ];
-    for (final stage in stages) {
-      final scheduledDate = finalAlarmTime.subtract(
-        Duration(minutes: stage.offsetMinutes),
-      );
-      if (!scheduledDate.isAfter(now)) continue;
-      await _scheduleWakeAlarm(
-        id: _idFor(Prayer.fajr, stage.typeOffset),
-        title: stage.title,
-        body: 'تبقّى $beforeMinutes دقيقة على صلاة الفجر.',
-        scheduledDate: scheduledDate,
-        soundName: stage.soundName,
-        payload: Prayer.fajr.name,
-      );
-    }
-  }
-
-  Future<void> _scheduleAdhan({
-    required int id,
-    required String title,
-    required String body,
-    required DateTime scheduledDate,
-    required String payload,
-  }) async {
-    final tzTime = tz.TZDateTime.from(scheduledDate, tz.local);
-    await _plugin.zonedSchedule(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: tzTime,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'aqim_adhan',
-          'الأذان',
-          channelDescription: 'تنبيه عند دخول وقت الصلاة',
-          importance: Importance.high,
-          priority: Priority.high,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound('adhan'),
-        ),
-      ),
-      androidScheduleMode: await _scheduleMode(),
-      payload: payload,
-    );
-  }
-
-  Future<void> _scheduleCheckIn({
-    required int id,
-    required String title,
-    required String body,
-    required DateTime scheduledDate,
-    required String payload,
-  }) async {
-    final tzTime = tz.TZDateTime.from(scheduledDate, tz.local);
-    await _plugin.zonedSchedule(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: tzTime,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'aqim_missed_prayer',
-          'الصلوات الفائتة',
-          channelDescription: 'تنبيه عند عدم تسجيل الصلاة بعد انتهاء وقتها',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.reminder,
-          playSound: true,
-          enableVibration: true,
-          visibility: NotificationVisibility.public,
-        ),
-      ),
-      androidScheduleMode: await _scheduleMode(),
-      payload: payload,
     );
   }
 }

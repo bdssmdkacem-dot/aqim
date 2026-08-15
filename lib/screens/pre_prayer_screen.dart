@@ -17,31 +17,25 @@ class PrePrayerScreen extends StatelessWidget {
     final real = state.realTimes?[prayer];
     if (real == null) return 'استعد لهذه الصلاة';
     final diff = real.difference(DateTime.now());
-    if (diff.inMinutes > 1) return 'تبقّى ${diff.inMinutes} دقيقة';
-    if (diff.inMinutes >= 0) return 'تبقّى أقل من دقيقة';
+    if (diff.inSeconds > 60) return 'تبقّى ${diff.inMinutes} دقيقة';
+    if (diff.inSeconds >= 0) return 'تبقّى أقل من دقيقة';
     return 'حان وقت هذه الصلاة';
   }
 
-
-  /// لا يمكن تسجيل "صليت" أو "لم أُصلِّ بعد" قبل دخول وقت الصلاة فعليًا
-  /// — لا معنى لتسجيل أي منهما قبل ذلك. إن لم تتوفّر أوقات حقيقية بعد
-  /// (realTimes==null)، نسمح بالتسجيل احتياطيًا كي لا يتعطّل التطبيق.
+  /// لا يمكن تسجيل «صليت» أو «لم أُصلِّ بعد» قبل دخول وقت الصلاة فعليًا.
   bool _prayerTimeHasArrived(AppState state) {
     final real = state.realTimes?[prayer];
-    if (real == null) return true;
+    // إذا لم تصل الأوقات الحقيقية بعد، لا نسمح بالتسجيل حتى لا يتم تجاوز
+    // الحماية بالضغط السريع أثناء التحميل.
+    if (real == null) return false;
     return !real.isAfter(DateTime.now());
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     final reminder = preReminders[prayer]!;
     final state = context.watch<AppState>();
-
     final timeArrived = _prayerTimeHasArrived(state);
-
-
 
     return Scaffold(
       appBar: AppBar(title: Text('صلاة ${prayer.arabicName}')),
@@ -111,28 +105,15 @@ class PrePrayerScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'لم يحن وقت صلاة ${prayer.arabicName} بعد — يمكنك تسجيلها فور دخول وقتها.',
+                        state.realTimes == null
+                            ? 'جارٍ تحميل أوقات الصلاة… لا يمكن تسجيل الصلاة قبل معرفة وقتها.'
+                            : 'لم يحن وقت صلاة ${prayer.arabicName} بعد — يمكنك تسجيلها فور دخول وقتها.',
                         style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
                 ),
               ),
-
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => DhikrScreen(prayer: prayer)),
-              ),
-              child: const Text('صليت'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => ReasonScreen(prayer: prayer)),
-              ),
-              child: const Text('لم أُصلِّ بعد'),
-            ),
-
           ],
         ),
       ),

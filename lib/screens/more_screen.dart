@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import 'nearby_mosques_screen.dart';
@@ -10,6 +11,20 @@ import 'week_report_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
+
+  Future<void> _shareApp(BuildContext context) async {
+    await SharePlus.instance.share(
+      ShareParams(
+        subject: 'تطبيق أقم',
+        text:
+            'شارك الخير مع عائلتك ❤️\n\n'
+            'تطبيق أقم — لأجل صلاة في وقتها.\n'
+            'يساعدك على متابعة أوقات الصلاة، القرآن الكريم، الأذكار والقبلة.\n\n'
+            'حمّل تطبيق أقم وشاركه مع من تحب:\n'
+            'https://play.google.com/store/apps/details?id=com.comptaflow.aqim',
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +76,12 @@ class MoreScreen extends StatelessWidget {
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
               ),
+            ),
+            _MenuTile(
+              icon: Icons.family_restroom_rounded,
+              title: 'شارك التطبيق مع عائلتك',
+              subtitle: 'شارك الخير',
+              onTap: () => _shareApp(context),
             ),
             const SizedBox(height: 20),
             const Center(

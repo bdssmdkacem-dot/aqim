@@ -13,9 +13,10 @@ import '../screens/quran_screen.dart';
 
 /// إشعارات الصلاة والقرآن.
 ///
-/// نستخدم Exact Alarm عندما يسمح Android بذلك. إذا لم يمنح النظام صلاحية
-/// المنبّه الدقيق، لا نوقف الإشعارات كلها؛ نستخدم inexactAllowWhileIdle
-/// كحل احتياطي حتى لا تتوقف التنبيهات تمامًا على الأجهزة المقيدة.
+/// تنبيهات الصلاة تُعامل كمنبّهات Android: Exact Alarm عند توفر الصلاحية،
+/// وalarmClock عند الجدولة الدقيقة، مع صوت على مسار ALARM بدل مسار الوسائط.
+/// إذا لم تتوفر الصلاحية الدقيقة نستخدم inexactAllowWhileIdle حتى لا تختفي
+/// الإشعارات بالكامل.
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -25,6 +26,7 @@ class NotificationService {
   bool _initialized = false;
   bool notificationsPermissionGranted = false;
   bool exactAlarmPermissionGranted = false;
+  bool notificationPolicyAccessGranted = false;
   Future<void>? _initFuture;
 
   static const _weeklySummaryId = 9000;
@@ -33,8 +35,8 @@ class NotificationService {
   static const _missedPrefix = 'missed:';
   static const _quranPrefix = 'quran:';
 
-  // إصدار جديد للقنوات حتى لا ترث القنوات القديمة إعدادات الصوت/الأهمية.
-  static const _channelVersion = 'v4';
+  // إصدار جديد للقنوات حتى لا ترث القنوات القديمة إعدادات الصوت.
+  static const _channelVersion = 'v5';
 
   Future<void> init() {
     if (_initialized) return Future.value();
@@ -55,31 +57,7 @@ class NotificationService {
         onDidReceiveNotificationResponse: _onNotificationTap,
       );
       _initialized = true;
-
-      final android = _android;
-      if (android != null) {
-        notificationsPermissionGranted =
-            await android.areNotificationsEnabled() ?? false;
-        if (!notificationsPermissionGranted) {
-          notificationsPermissionGranted =
-              await android.requestNotificationsPermission() ?? false;
-        }
-
-        try {
-          exactAlarmPermissionGranted =
-              await android.canScheduleExactNotifications() ?? false;
-          if (!exactAlarmPermissionGranted) {
-            exactAlarmPermissionGranted =
-                await android.requestExactAlarmsPermission() ?? false;
-          }
-        } catch (_) {
-          exactAlarmPermissionGranted = false;
-        }
-
-        try {
-          await android.requestFullScreenIntentPermission();
-        } catch (_) {}
-      }
+      await refreshPermissionStatus();
     } catch (_) {
       _initialized = false;
       _initFuture = null;
@@ -90,6 +68,25 @@ class NotificationService {
   AndroidFlutterLocalNotificationsPlugin? get _android =>
       _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
+
+  Future<void> refreshPermissionStatus() async {
+    final android = _android;
+    if (android == null) return;
+    notificationsPermissionGranted =
+        await android.areNotificationsEnabled() ?? false;
+    try {
+      exactAlarmPermissionGranted =
+          await android.canScheduleExactNotifications() ?? false;
+    } catch (_) {
+      exactAlarmPermissionGranted = false;
+    }
+    try {
+      notificationPolicyAccessGranted =
+          await android.hasNotificationPolicyAccess() ?? false;
+    } catch (_) {
+      notificationPolicyAccessGranted = false;
+    }
+  }
 
   Future<bool> areNotificationsEnabled() async {
     await init();
@@ -127,15 +124,41 @@ class NotificationService {
     return exactAlarmPermissionGranted;
   }
 
-  Future<bool> _ensureExactAlarmPermission() async {
-    await refreshExactAlarmPermission();
-    if (exactAlarmPermissionGranted) return true;
-    return requestExactAlarmPermission();
+  Future<bool> requestFullScreenIntentPermission() async {
+    await init();
+    try {
+      await _android?.requestFullScreenIntentPermission();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> refreshNotificationPolicyAccess() async {
+    await init();
+    try {
+      notificationPolicyAccessGranted =
+          await _android?.hasNotificationPolicyAccess() ?? false;
+    } catch (_) {
+      notificationPolicyAccessGranted = false;
+    }
+    return notificationPolicyAccessGranted;
+  }
+
+  Future<bool> requestNotificationPolicyAccess() async {
+    await init();
+    try {
+      await _android?.requestNotificationPolicyAccess();
+      return refreshNotificationPolicyAccess();
+    } catch (_) {
+      notificationPolicyAccessGranted = false;
+      return false;
+    }
   }
 
   AndroidScheduleMode get _scheduleMode =>
       exactAlarmPermissionGranted
-          ? AndroidScheduleMode.exactAllowWhileIdle
+          ? AndroidScheduleMode.alarmClock
           : AndroidScheduleMode.inexactAllowWhileIdle;
 
   void _onNotificationTap(NotificationResponse response) {
@@ -233,8 +256,9 @@ class NotificationService {
       throw StateError('NOTIFICATIONS_PERMISSION_REQUIRED');
     }
 
-    // نطلب exact عندما يمكن، لكن لا نجعل غيابه سببًا لتعطيل التنبيهات.
-    await _ensureExactAlarmPermission();
+    // إذا كانت صلاحية المنبّه الدقيق مفعلة نستعمل alarmClock، وإلا نستخدم
+    // inexactAllowWhileIdle بدل إيقاف التنبيهات كليًا.
+    await refreshExactAlarmPermission();
 
     await _plugin.cancelAll();
     final now = DateTime.now();
@@ -318,7 +342,7 @@ class NotificationService {
           soundName == _jumuahAlarmSound
               ? 'منبّه صلاة الجمعة'
               : 'منبّه الاستعداد للصلاة',
-          channelDescription: 'تنبيه صوتي قبل الصلاة',
+          channelDescription: 'تنبيه صوتي قبل الصلاة — يعمل كمنبّه',
           importance: Importance.max,
           priority: Priority.max,
           category: AndroidNotificationCategory.alarm,
@@ -326,6 +350,7 @@ class NotificationService {
           playSound: true,
           sound: RawResourceAndroidNotificationSound(soundName),
           audioAttributesUsage: AudioAttributesUsage.alarm,
+          channelBypassDnd: notificationPolicyAccessGranted,
           enableVibration: true,
           visibility: NotificationVisibility.public,
         ),
@@ -372,20 +397,20 @@ class NotificationService {
       body: body,
       scheduledDate: scheduledDate,
       payload: payload,
-      details: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'aqim_adhan_v4',
-          'الأذان',
-          channelDescription: 'الأذان عند دخول وقت الصلاة',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.alarm,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound('adhan'),
-          audioAttributesUsage: AudioAttributesUsage.alarm,
-          enableVibration: true,
-          visibility: NotificationVisibility.public,
-        ),
+      details: AndroidNotificationDetails(
+        'aqim_adhan_v5',
+        'الأذان',
+        channelDescription: 'الأذان عند دخول وقت الصلاة — صوت منبّه',
+        importance: Importance.max,
+        priority: Priority.max,
+        category: AndroidNotificationCategory.alarm,
+        fullScreenIntent: true,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound('adhan'),
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        channelBypassDnd: notificationPolicyAccessGranted,
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
       ),
     );
   }
@@ -403,18 +428,18 @@ class NotificationService {
       body: body,
       scheduledDate: scheduledDate,
       payload: payload,
-      details: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'aqim_missed_prayer_v4',
-          'تذكير الصلاة',
-          channelDescription: 'تذكير بعد انتهاء وقت الصلاة',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.reminder,
-          playSound: true,
-          enableVibration: true,
-          visibility: NotificationVisibility.public,
-        ),
+      details: AndroidNotificationDetails(
+        'aqim_missed_prayer_v5',
+        'تذكير الصلاة',
+        channelDescription: 'تذكير بعد انتهاء وقت الصلاة',
+        importance: Importance.max,
+        priority: Priority.max,
+        category: AndroidNotificationCategory.reminder,
+        playSound: true,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        channelBypassDnd: notificationPolicyAccessGranted,
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
       ),
     );
   }
@@ -442,7 +467,7 @@ class NotificationService {
       scheduledDate: first,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'aqim_quran_daily_v4',
+          'aqim_quran_daily_v5',
           'الورد اليومي من القرآن',
           channelDescription: 'تذكير يومي لقراءة القرآن الكريم',
           importance: Importance.defaultImportance,
@@ -479,7 +504,7 @@ class NotificationService {
       scheduledDate: first,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'aqim_weekly_summary_v4',
+          'aqim_weekly_summary_v5',
           'ملخص الأسبوع',
           channelDescription: 'ملخص أسبوعي لتقدمك في الصلاة',
           importance: Importance.defaultImportance,

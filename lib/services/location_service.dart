@@ -1,13 +1,10 @@
 import 'package:geolocator/geolocator.dart';
 
-/// يجلب إحداثيات الهاتف لحساب أوقات الصلاة الحقيقية. يرجع null بهدوء
-/// (بدل رمي استثناء) في أي حالة فشل: خدمة الموقع مطفأة، أو الصلاحية
-/// مرفوضة — التطبيق يستمر بالعمل بالأوقات الاحتياطية فهاذي الحالة.
+/// يجلب إحداثيات الهاتف بدقة عالية لحساب أوقات الصلاة.
 class LocationService {
   static Future<Position?> getCurrentPosition() async {
     try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return null;
+      if (!await Geolocator.isLocationServiceEnabled()) return null;
 
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -20,8 +17,9 @@ class LocationService {
 
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-          timeLimit: Duration(seconds: 15),
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 0,
+          timeLimit: Duration(seconds: 20),
         ),
       );
     } catch (_) {

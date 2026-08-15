@@ -30,6 +30,7 @@ dependencies:
   url_launcher: ^6.3.2
   in_app_purchase: ^3.3.0
   quran_with_tafsir: ^1.0.1
+  share_plus: ^11.1.0
 
 dev_dependencies:
   flutter_test:

@@ -109,7 +109,7 @@ class _TopRow extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(
     height: 46,
     child: Row(children: [
-      Text('أَقِم', style: GoogleFonts.amiri(fontSize: 25, height: 1, fontWeight: FontWeight.w700, color: AppColors.goldSoft)),
+      Image.asset('assets/images/aqim_logo_transparent_512.png', width: 44, height: 44, fit: BoxFit.contain),
       const Spacer(),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
@@ -158,7 +158,7 @@ class _TitleBlock extends StatelessWidget {
           InkWell(onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())), borderRadius: BorderRadius.circular(8), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(locationReady ? Icons.location_on_outlined : Icons.error_outline, size: 13, color: locationReady ? AppColors.gold : AppColors.goldSoft), const SizedBox(width: 4), Text(locationLabel, style: GoogleFonts.cairo(fontSize: 10, color: locationReady ? AppColors.inkSoft : AppColors.goldSoft, fontWeight: FontWeight.w600))])),
         ])),
         const SizedBox(width: 12),
-        Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [Text('أقم', style: GoogleFonts.amiri(fontSize: 39, height: .9, fontWeight: FontWeight.w700, color: AppColors.goldSoft)), const SizedBox(height: 6), Text('لأجل صلاة في وقتها', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600))]),
+        Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [Image.asset('assets/images/aqim_logo_transparent_512.png', width: 92, height: 66, fit: BoxFit.contain), Text('لأجل صلاة في وقتها', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600))]),
       ]),
     );
   }

@@ -44,4 +44,14 @@ flutter:
   assets:
     - assets/audio/before/
     - assets/audio/after/
+    - assets/audio/morning/
+    - assets/audio/evening/
+    - assets/audio/sleep/
+    - assets/audio/waking/
+    - assets/audio/home/
+    - assets/audio/mosque/
+    - assets/audio/wudu/
+    - assets/audio/food/
+    - assets/audio/travel/
+    - assets/audio/protection/
     - assets/images/

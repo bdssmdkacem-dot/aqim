@@ -14,9 +14,7 @@ import '../screens/quran_screen.dart';
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
-
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
-
   bool _initialized = false;
   bool notificationsPermissionGranted = false;
   bool exactAlarmPermissionGranted = false;
@@ -42,7 +40,6 @@ class NotificationService {
         final localTz = await FlutterTimezone.getLocalTimezone();
         tz.setLocalLocation(tz.getLocation(localTz));
       } catch (_) {}
-
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
       await _plugin.initialize(
         settings: const InitializationSettings(android: androidInit),
@@ -236,8 +233,7 @@ class NotificationService {
 
     final prefs = await SharedPreferences.getInstance();
     final savedPage = prefs.getInt('quran_resume_page') ?? prefs.getInt('quran_next_page') ?? 1;
-    final fajrTime = realTimes[Prayer.fajr];
-    await scheduleQuranDaily(savedPage, afterFajr: fajrTime);
+    await scheduleQuranDaily(savedPage, afterFajr: realTimes[Prayer.fajr]);
   }
 
   NotificationDetails _alarmDetails({
@@ -389,9 +385,7 @@ class NotificationService {
     );
   }
 
-  /// Schedules the Quran reading reminder every day shortly after Fajr.
-  /// If today's Fajr has already passed, the reminder is scheduled after the
-  /// next Fajr so it is never placed in the past.
+  /// Quran reminder: every day after Fajr, using the user's saved Quran page.
   Future<void> scheduleQuranDaily(int page, {DateTime? afterFajr}) async {
     await init();
     final safePage = page.clamp(1, 604);
@@ -400,13 +394,12 @@ class NotificationService {
     final now = DateTime.now();
     DateTime scheduled;
 
-    if (afterFajr != null && afterFajr.isAfter(now)) {
-      // Keep a small gap after Fajr so the user can finish the prayer first.
+    if (afterFajr != null) {
       scheduled = afterFajr.add(const Duration(minutes: 15));
+      if (!scheduled.isAfter(now)) {
+        scheduled = scheduled.add(const Duration(days: 1));
+      }
     } else {
-      // scheduleAllForToday may be called after Fajr. In that case use the
-      // next day's Fajr time supplied by the next daily prayer refresh.
-      // Until then, schedule a safe fallback for tomorrow morning.
       final tomorrow = now.add(const Duration(days: 1));
       scheduled = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 6, 30);
     }
@@ -435,6 +428,7 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: _scheduleMode,
+      matchDateTimeComponents: DateTimeComponents.time,
       payload: '$_quranPrefix$safePage',
     );
   }

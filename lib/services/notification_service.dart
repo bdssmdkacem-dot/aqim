@@ -235,7 +235,9 @@ class NotificationService {
     }
 
     final prefs = await SharedPreferences.getInstance();
-    await scheduleQuranDaily(prefs.getInt('quran_resume_page') ?? prefs.getInt('quran_next_page') ?? 1);
+    final savedPage = prefs.getInt('quran_resume_page') ?? prefs.getInt('quran_next_page') ?? 1;
+    final fajrTime = realTimes[Prayer.fajr];
+    await scheduleQuranDaily(savedPage, afterFajr: fajrTime);
   }
 
   NotificationDetails _alarmDetails({
@@ -387,25 +389,26 @@ class NotificationService {
     );
   }
 
-  /// Keeps a daily Quran reading reminder active. The page is read from the
-  /// saved Quran position, so the reminder always encourages the user to
-  /// continue toward completing the 604-page khatmah.
-  Future<void> scheduleQuranDaily(int page) async {
+  /// Schedules the Quran reading reminder every day shortly after Fajr.
+  /// If today's Fajr has already passed, the reminder is scheduled after the
+  /// next Fajr so it is never placed in the past.
+  Future<void> scheduleQuranDaily(int page, {DateTime? afterFajr}) async {
     await init();
     final safePage = page.clamp(1, 604);
     await _plugin.cancel(id: _quranDailyId);
 
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      20,
-      30,
-    );
-    if (!scheduled.isAfter(now)) {
-      scheduled = scheduled.add(const Duration(days: 1));
+    final now = DateTime.now();
+    DateTime scheduled;
+
+    if (afterFajr != null && afterFajr.isAfter(now)) {
+      // Keep a small gap after Fajr so the user can finish the prayer first.
+      scheduled = afterFajr.add(const Duration(minutes: 15));
+    } else {
+      // scheduleAllForToday may be called after Fajr. In that case use the
+      // next day's Fajr time supplied by the next daily prayer refresh.
+      // Until then, schedule a safe fallback for tomorrow morning.
+      final tomorrow = now.add(const Duration(days: 1));
+      scheduled = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 6, 30);
     }
 
     final progress = (((safePage - 1) / 604) * 100).round();
@@ -417,12 +420,12 @@ class NotificationService {
       id: _quranDailyId,
       title: 'ورد القرآن — أقم',
       body: body,
-      scheduledDate: scheduled,
+      scheduledDate: tz.TZDateTime.from(scheduled, tz.local),
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'aqim_quran_reading_v1',
+          'aqim_quran_reading_v2',
           'قراءة القرآن',
-          channelDescription: 'تذكير يومي بورد القرآن وختم القرآن الكريم',
+          channelDescription: 'تذكير يومي بورد القرآن بعد صلاة الفجر',
           importance: Importance.high,
           priority: Priority.high,
           category: AndroidNotificationCategory.reminder,
@@ -432,7 +435,6 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: _scheduleMode,
-      matchDateTimeComponents: DateTimeComponents.time,
       payload: '$_quranPrefix$safePage',
     );
   }

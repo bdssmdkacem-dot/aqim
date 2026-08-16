@@ -24,7 +24,9 @@ class NotificationService {
   static const _jumuahAlarmSound = 'alarm_jomoaa';
   static const _missedPrefix = 'missed:';
   static const _quranPrefix = 'quran:';
-  static const _channelVersion = 'v7';
+  // Bump channel ids whenever notification sound/timing behaviour changes.
+  // Android keeps channel sound settings once a channel has been created.
+  static const _channelVersion = 'v8';
   static const _weeklySummaryId = 9001;
   static const _quranDailyId = 9002;
 
@@ -156,6 +158,15 @@ class NotificationService {
 
   String _alarmChannel(String sound) => 'aqim_alarm_${_channelVersion}_$sound';
 
+  // Inexact Android alarms are explicitly allowed to drift around their target.
+  // When exact alarms are unavailable we move critical notifications forward,
+  // never backward, so the adhan/missed-prayer alert cannot be intentionally
+  // scheduled before the prayer time. Exact alarms remain the normal path.
+  DateTime _safeFallbackDate(DateTime scheduledDate) {
+    if (exactAlarmPermissionGranted) return scheduledDate;
+    return scheduledDate.add(const Duration(minutes: 2));
+  }
+
   Future<void> _scheduleExact({
     required int id,
     required String title,
@@ -164,12 +175,13 @@ class NotificationService {
     required NotificationDetails details,
     required String payload,
   }) async {
-    if (!scheduledDate.isAfter(DateTime.now())) return;
+    final safeDate = _safeFallbackDate(scheduledDate);
+    if (!safeDate.isAfter(DateTime.now())) return;
     await _plugin.zonedSchedule(
       id: id,
       title: title,
       body: body,
-      scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
+      scheduledDate: tz.TZDateTime.from(safeDate, tz.local),
       notificationDetails: details,
       androidScheduleMode: _scheduleMode,
       payload: payload,
@@ -186,7 +198,17 @@ class NotificationService {
     if (!await areNotificationsEnabled()) {
       throw StateError('NOTIFICATIONS_PERMISSION_REQUIRED');
     }
+
+    // Ask for exact alarms when the OS supports it. This is required for the
+    // adhan to fire at the prayer minute instead of using Android's inexact
+    // alarm window. If the user declines, the safe +2 minute fallback above
+    // prevents an early adhan/missed alert.
     await refreshExactAlarmPermission();
+    if (!exactAlarmPermissionGranted) {
+      await requestExactAlarmPermission();
+      await refreshExactAlarmPermission();
+    }
+
     await _plugin.cancelAll();
     final now = DateTime.now();
 
@@ -409,14 +431,15 @@ class NotificationService {
         ? 'أتممت صفحات الختمة. افتح القرآن لبدء ختمة جديدة بإذن الله.'
         : 'أكمل وردك من الصفحة $safePage — تقدمك نحو ختم القرآن $progress٪. افتح القرآن وتابع من حيث توقفت.';
 
+    final safeDate = _safeFallbackDate(scheduled);
     await _plugin.zonedSchedule(
       id: _quranDailyId,
       title: 'ورد القرآن — أقم',
       body: body,
-      scheduledDate: tz.TZDateTime.from(scheduled, tz.local),
+      scheduledDate: tz.TZDateTime.from(safeDate, tz.local),
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'aqim_quran_reading_v2',
+          'aqim_quran_reading_v3',
           'قراءة القرآن',
           channelDescription: 'تذكير يومي بورد القرآن بعد صلاة الفجر',
           importance: Importance.high,

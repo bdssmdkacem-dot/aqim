@@ -15,6 +15,9 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Apply Aqim branding
+        run: python3 scripts/apply_aqim_branding.py
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:

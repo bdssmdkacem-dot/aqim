@@ -1,50 +1,61 @@
-import 'package:disable_battery_optimization/disable_battery_optimization.dart';
+import 'package:flutter/services.dart';
 
 /// Handles Android battery/background restrictions so scheduled prayer
 /// reminders are less likely to be delayed by Doze or OEM restrictions.
+///
+/// The package-specific battery optimization request is implemented through
+/// a small native MethodChannel. This avoids the third-party dialog flow that
+/// can remain visually stuck on some Honor/MagicOS devices.
 class BatteryService {
+  static const MethodChannel _channel = MethodChannel('aqim/battery');
+
   static Future<bool> isFullyExempted() async {
     try {
-      final result =
-          await DisableBatteryOptimization.isAllBatteryOptimizationDisabled;
+      final result = await _channel.invokeMethod<bool>(
+        'isIgnoringBatteryOptimizations',
+      );
       return result ?? false;
     } catch (_) {
       return false;
     }
   }
 
-  /// Opens the package's combined battery-optimization flow.
+  /// Opens Android's native package-specific battery optimization dialog.
   ///
-  /// The caller should re-check [isFullyExempted] after the user returns
-  /// instead of assuming that opening Settings means permission was granted.
+  /// Do not assume that opening Settings granted the permission. The caller
+  /// re-checks [isFullyExempted] after the app resumes.
   static Future<void> openSettings() async {
-    await DisableBatteryOptimization.showDisableAllOptimizationsSettings(
-      'فعّل التشغيل التلقائي',
-      'اسمح لتطبيق أقم بالعمل في الخلفية كي تصلك تذكيرات الصلاة في وقتها',
-      'إعدادات بطارية إضافية',
-      'بعض الأجهزة مثل Xiaomi وHuawei وOppo لديها إعدادات بطارية خاصة. عطّل التقييد لأقم حتى تعمل التذكيرات بشكل موثوق.',
-    );
+    try {
+      await _channel.invokeMethod<void>('requestIgnoreBatteryOptimizations');
+    } catch (_) {
+      await openBatterySettings();
+    }
   }
 
-  /// Opens the native Android battery optimization request directly.
+  /// Same native request used by the main battery permission button.
   static Future<void> requestNativeExemption() async {
-    await DisableBatteryOptimization.showDisableBatteryOptimizationSettings();
+    await openSettings();
+  }
+
+  /// Opens the standard Android battery optimization list.
+  static Future<void> openBatterySettings() async {
+    try {
+      await _channel.invokeMethod<void>('openBatterySettings');
+    } catch (_) {
+      // Nothing else to do if the OEM does not expose this settings screen.
+    }
   }
 
   /// Opens manufacturer-specific instructions when available.
+  ///
+  /// Kept separate from the package-specific exemption because OEM settings
+  /// such as Auto-start are additional restrictions on Honor/MagicOS.
   static Future<void> openManufacturerSettings() async {
-    await DisableBatteryOptimization
-        .showDisableManufacturerBatteryOptimizationSettings(
-      'إعدادات بطارية إضافية',
-      'قد يحتاج هاتفك إلى السماح لأقم بالعمل تلقائيًا في الخلفية.',
-    );
+    await openBatterySettings();
   }
 
-  /// Opens the OEM auto-start instructions when the device supports them.
+  /// Opens the OEM auto-start/battery settings screen when available.
   static Future<void> openAutoStartSettings() async {
-    await DisableBatteryOptimization.showEnableAutoStartSettings(
-      'فعّل التشغيل التلقائي',
-      'اسمح لتطبيق أقم بالبدء تلقائيًا حتى تبقى تذكيرات الصلاة فعّالة.',
-    );
+    await openBatterySettings();
   }
 }

@@ -60,8 +60,6 @@ class AppState extends ChangeNotifier {
       final s = todayStatus[p];
       if (s == PrayerStatus.pending || s == PrayerStatus.upcoming) return p;
     }
-    // After Isha, today's Fajr is not a future prayer. The next prayer is
-    // Fajr tomorrow; nextPrayerTime below supplies tomorrow's DateTime.
     return Prayer.fajr;
   }
 
@@ -128,8 +126,6 @@ class AppState extends ChangeNotifier {
       realTimes = times;
       _recomputeUpcoming();
 
-      // جدولة الإشعارات أصبحت مستقلة عن صلاحية المنبّه الدقيق؛ الخدمة
-      // تستخدم exact عند توفره وتعود تلقائيًا إلى inexact عند عدم توفره.
       try {
         await NotificationService.instance.scheduleAllForToday(
           times,
@@ -162,7 +158,7 @@ class AppState extends ChangeNotifier {
       if (enabled) {
         notificationIssue = realTimes == null ? 'جارٍ تحميل أوقات الصلاة.' : null;
       } else {
-        notificationIssue = 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم أعد المحاولة.';
+        notificationIssue = 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم اضغط «إعادة المحاولة»."';
       }
     } catch (_) {
       notificationIssue = 'تعذّر التحقق من حالة الإشعارات. اضغط «إعادة المحاولة»."';
@@ -306,7 +302,10 @@ class AppState extends ChangeNotifier {
       }
     }
     _rolloverIfNewDay();
-    _recomputeUpcoming();
+    // Do not infer missed prayers from mock times during startup. Real local
+    // prayer times are loaded immediately afterwards and are the only source
+    // allowed to decide whether a prayer has actually elapsed.
+    if (realTimes != null) _recomputeUpcoming();
     ready = true;
     _startClock();
     notifyListeners();
@@ -392,14 +391,25 @@ class AppState extends ChangeNotifier {
 
   void _recomputeUpcoming() {
     final now = DateTime.now();
+    // Never classify a prayer as missed until today's actual prayer times
+    // have been loaded. Mock times can differ substantially from the user's
+    // location and were the cause of prayers such as Dhuhr being marked missed
+    // before their real time had arrived.
+    if (realTimes == null) {
+      for (final prayer in activePrayers) {
+        if (todayStatus[prayer] != PrayerStatus.done) {
+          todayStatus[prayer] = PrayerStatus.pending;
+        }
+      }
+      return;
+    }
+
     var missedChanged = false;
     Prayer? nextToday;
 
-    // A prayer is today's upcoming prayer only while its time is still in the future.
     for (final prayer in activePrayers) {
-      final t = _timeFor(prayer);
-      if (t == null) continue;
-      if (t.isAfter(now)) {
+      final t = realTimes?[prayer];
+      if (t != null && t.isAfter(now)) {
         nextToday = prayer;
         break;
       }
@@ -407,22 +417,31 @@ class AppState extends ChangeNotifier {
 
     for (final prayer in activePrayers) {
       final status = todayStatus[prayer];
-      if (status == PrayerStatus.done || status == PrayerStatus.missed) continue;
+      if (status == PrayerStatus.done) continue;
 
-      final t = _timeFor(prayer);
+      final t = realTimes?[prayer];
       final elapsed = t != null && !t.isAfter(now);
+
+      // A stale missed status can have been saved by an older buggy build.
+      // If the real prayer time is still in the future, restore it to pending.
+      if (!elapsed) {
+        if (prayer == nextToday) {
+          todayStatus[prayer] = PrayerStatus.upcoming;
+        } else {
+          todayStatus[prayer] = PrayerStatus.pending;
+        }
+        continue;
+      }
 
       if (prayer == nextToday) {
         todayStatus[prayer] = PrayerStatus.upcoming;
         continue;
       }
 
-      if (elapsed) {
+      if (status != PrayerStatus.missed) {
         todayStatus[prayer] = PrayerStatus.missed;
         missTally[prayer] = (missTally[prayer] ?? 0) + 1;
         missedChanged = true;
-      } else {
-        todayStatus[prayer] = PrayerStatus.pending;
       }
     }
 
@@ -432,11 +451,16 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  List<Prayer> get missedTodayPrayers => activePrayers.where((p) => todayStatus[p] == PrayerStatus.missed).toList();
+  List<Prayer> get missedTodayPrayers => activePrayers.where((p) => todayStatus[p] == PrayerStatus.missed && _hasElapsedRealTime(p)).toList();
   int get missedTodayCount => missedTodayPrayers.length;
   int get doneTodayCount => activePrayers.where((p) => todayStatus[p] == PrayerStatus.done).length;
   bool get allTodayDone => activePrayers.isNotEmpty && doneTodayCount == activePrayers.length;
   Future<void> markQada(Prayer p) => markDone(p);
+
+  bool _hasElapsedRealTime(Prayer p) {
+    final t = realTimes?[p];
+    return t != null && !t.isAfter(DateTime.now());
+  }
 
   Future<void> completeOnboarding() async {
     onboardingComplete = true;
@@ -453,6 +477,16 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> markMissed(Prayer p, String reason) async {
+    final t = realTimes?[p];
+    // The user cannot be asked to treat a prayer as missed before its actual
+    // local prayer time. This also protects against stale UI actions.
+    if (t != null && t.isAfter(DateTime.now())) {
+      todayStatus[p] = PrayerStatus.upcoming;
+      todayReasons.remove(p);
+      await _persist();
+      notifyListeners();
+      return;
+    }
     final alreadyMissed = todayStatus[p] == PrayerStatus.missed;
     todayStatus[p] = PrayerStatus.missed;
     todayReasons[p] = reason;

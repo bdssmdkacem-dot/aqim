@@ -323,32 +323,86 @@ class _QuickActionCard extends StatelessWidget {
 class _WeeklyProgressCard extends StatelessWidget {
   final AppState state;
   const _WeeklyProgressCard({required this.state});
-  static const _days = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+
+  static const _dayNames = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+
+  DateTime _weekStart(DateTime date) {
+    final daysFromSaturday = date.weekday % 7;
+    final d = DateTime(date.year, date.month, date.day);
+    return d.subtract(Duration(days: daysFromSaturday));
+  }
+
+  String _dayName(DateTime date) => _dayNames[date.weekday % 7];
+
   int get _todayDone => state.activePrayers.where((p) => state.todayStatus[p] == PrayerStatus.done).length;
+
   @override
   Widget build(BuildContext context) {
+    final today = DateTime.now();
     final total = state.activePrayers.length;
     final done = _todayDone;
     final progress = total == 0 ? 0.0 : done / total;
+    final start = _weekStart(today);
+    final weekDates = List.generate(7, (i) => start.add(Duration(days: i)));
+    final weekPercents = weekDates.map((d) => state.percentForDate(d) ?? 0).toList();
+    final weekDonePrayers = weekPercents.map((p) => (p / 100 * total).round()).fold<int>(0, (a, b) => a + b);
+    final weekTarget = total * 7;
+    final weekProgress = weekTarget == 0 ? 0.0 : weekDonePrayers / weekTarget;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-      decoration: BoxDecoration(color: AppColors.surfaceDark, border: Border.all(color: AppColors.paperLine.withOpacity(0.75)), borderRadius: BorderRadius.circular(20)),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [AppColors.surface, AppColors.surfaceDark]),
+        border: Border.all(color: AppColors.gold.withOpacity(0.30)),
+        borderRadius: BorderRadius.circular(22),
+      ),
       child: Column(children: [
         Row(children: [
-          Container(width: 38, height: 38, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.gold.withOpacity(0.75)), color: AppColors.gold.withOpacity(0.10)), child: const Icon(Icons.workspace_premium_rounded, color: AppColors.goldSoft, size: 22)),
+          Container(width: 40, height: 40, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.gold.withOpacity(0.75)), color: AppColors.gold.withOpacity(0.10)), child: const Icon(Icons.workspace_premium_rounded, color: AppColors.goldSoft, size: 22)),
           const SizedBox(width: 9),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('الإنجاز هذا الأسبوع', style: GoogleFonts.amiri(fontSize: 15.5, fontWeight: FontWeight.w700, color: AppColors.ivory)), Text(done == total ? 'أحسنت، استمر' : 'أكمل صلواتك اليوم', style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.inkSoft))])),
-          Text('$done / $total صلوات', style: GoogleFonts.cairo(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.ivory)),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('الإنجاز هذا الأسبوع', style: GoogleFonts.amiri(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.ivory)),
+            Text('$weekDonePrayers / $weekTarget صلاة', style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.inkSoft)),
+          ])),
+          Text('${(weekProgress * 100).round()}%', style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.goldSoft)),
         ]),
+        const SizedBox(height: 9),
+        ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: weekProgress.clamp(0, 1), minHeight: 7, backgroundColor: Colors.white.withOpacity(0.10), valueColor: const AlwaysStoppedAnimation<Color>(AppColors.gold))),
+        const SizedBox(height: 12),
+        Row(children: weekDates.map((date) {
+          final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
+          final percent = state.percentForDate(date) ?? 0;
+          final completed = percent >= 80;
+          return Expanded(
+            child: Column(children: [
+              Text(_dayName(date), maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.cairo(fontSize: 8.2, color: isToday ? AppColors.goldSoft : AppColors.inkSoft, fontWeight: isToday ? FontWeight.w800 : FontWeight.w500)),
+              const SizedBox(height: 4),
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: completed ? AppColors.sage.withOpacity(0.80) : AppColors.ink.withOpacity(0.35),
+                  border: Border.all(color: isToday ? AppColors.gold : completed ? AppColors.sage : AppColors.paperLine, width: isToday ? 1.6 : 1),
+                ),
+                child: completed ? const Icon(Icons.check_rounded, size: 16, color: Colors.white) : Text('${date.day}', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 8.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600)),
+              ),
+            ]),
+          );
+        }).toList()),
         const SizedBox(height: 10),
-        ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: progress.clamp(0, 1), minHeight: 7, backgroundColor: Colors.white.withOpacity(0.10), valueColor: const AlwaysStoppedAnimation<Color>(AppColors.gold))),
-        const SizedBox(height: 10),
-        Row(children: List.generate(_days.length, (i) {
-          final isToday = i == _days.length - 1;
-          final completed = isToday ? done == total && total > 0 : state.weekHistory[i] >= 80;
-          return Expanded(child: Column(children: [Text(_days[i], style: GoogleFonts.cairo(fontSize: 8.5, color: isToday ? AppColors.goldSoft : AppColors.inkSoft, fontWeight: isToday ? FontWeight.w700 : FontWeight.w500)), const SizedBox(height: 4), Container(width: 27, height: 27, decoration: BoxDecoration(shape: BoxShape.circle, color: completed ? AppColors.sage.withOpacity(0.80) : AppColors.ink.withOpacity(0.35), border: Border.all(color: isToday ? AppColors.gold : completed ? AppColors.sage : AppColors.paperLine, width: isToday ? 1.5 : 1)), child: completed ? const Icon(Icons.check_rounded, size: 16, color: Colors.white) : null)]));
-        })),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(color: AppColors.ink.withOpacity(.22), borderRadius: BorderRadius.circular(14)),
+          child: Row(children: [
+            const Icon(Icons.today_rounded, color: AppColors.goldSoft, size: 17),
+            const SizedBox(width: 6),
+            Expanded(child: Text('اليوم: ${_dayName(today)} — $done / $total صلوات', style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.ivory, fontWeight: FontWeight.w700))),
+            Text('${(progress * 100).round()}%', style: GoogleFonts.cairo(fontSize: 10, color: AppColors.goldSoft, fontWeight: FontWeight.w800)),
+          ]),
+        ),
       ]),
     );
   }

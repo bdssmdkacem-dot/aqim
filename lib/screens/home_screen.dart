@@ -20,7 +20,6 @@ import 'week_report_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -78,27 +77,25 @@ class _HomeScreenState extends State<HomeScreen> {
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(14, 6, 14, 18),
-          child: Column(
-            children: [
-              _TopRow(state: state),
+          child: Column(children: [
+            _TopRow(state: state),
+            const SizedBox(height: 10),
+            _TitleBlock(state: state, locationLabel: _locationLabel(state)),
+            if (state.missedTodayCount > 0) ...[
               const SizedBox(height: 10),
-              _TitleBlock(state: state, locationLabel: _locationLabel(state)),
-              if (state.missedTodayCount > 0) ...[
-                const SizedBox(height: 10),
-                _MissedPrayerNotice(state: state),
-              ],
-              const SizedBox(height: 12),
-              _HeroCard(state: state, next: next, period: period),
-              const SizedBox(height: 8),
-              const _QuickActions(),
-              const SizedBox(height: 8),
-              const _QiblaQuickAction(),
-              const SizedBox(height: 2),
-              if (next != null) DayArc(prayers: state.activePrayers, status: state.todayStatus, timeLabelFor: state.displayTimeFor, period: period),
-              const SizedBox(height: 2),
-              _WeeklyProgressCard(state: state),
+              _MissedPrayerNotice(state: state),
             ],
-          ),
+            const SizedBox(height: 12),
+            _HeroCard(state: state, next: next, period: period),
+            const SizedBox(height: 8),
+            const _QuickActions(),
+            const SizedBox(height: 8),
+            const _QiblaQuickAction(),
+            const SizedBox(height: 2),
+            if (next != null) DayArc(prayers: state.activePrayers, status: state.todayStatus, timeLabelFor: state.displayTimeFor, period: period),
+            const SizedBox(height: 2),
+            _WeeklyProgressCard(state: state),
+          ]),
         ),
       ),
     );
@@ -158,15 +155,7 @@ class _TitleBlock extends StatelessWidget {
           const SizedBox(height: 5),
           Text(HijriDate.fromGregorian(DateTime.now()).formatted, style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft)),
           const Spacer(),
-          InkWell(
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-            borderRadius: BorderRadius.circular(8),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(locationReady ? Icons.location_on_outlined : Icons.error_outline, size: 13, color: locationReady ? AppColors.gold : AppColors.goldSoft),
-              const SizedBox(width: 4),
-              Text(locationLabel, style: GoogleFonts.cairo(fontSize: 10, color: locationReady ? AppColors.inkSoft : AppColors.goldSoft, fontWeight: FontWeight.w600)),
-            ]),
-          ),
+          InkWell(onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())), borderRadius: BorderRadius.circular(8), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(locationReady ? Icons.location_on_outlined : Icons.error_outline, size: 13, color: locationReady ? AppColors.gold : AppColors.goldSoft), const SizedBox(width: 4), Text(locationLabel, style: GoogleFonts.cairo(fontSize: 10, color: locationReady ? AppColors.inkSoft : AppColors.goldSoft, fontWeight: FontWeight.w600))])),
         ])),
         const SizedBox(width: 12),
         Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [Text('أقم', style: GoogleFonts.amiri(fontSize: 39, height: .9, fontWeight: FontWeight.w700, color: AppColors.goldSoft)), const SizedBox(height: 6), Text('لأجل صلاة في وقتها', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600))]),
@@ -178,7 +167,6 @@ class _TitleBlock extends StatelessWidget {
 class _MissedPrayerNotice extends StatelessWidget {
   final AppState state;
   const _MissedPrayerNotice({required this.state});
-
   @override
   Widget build(BuildContext context) {
     final missed = state.missedTodayPrayers;
@@ -192,50 +180,17 @@ class _MissedPrayerNotice extends StatelessWidget {
             return;
           }
           if (missed.isNotEmpty) {
-            showModalBottomSheet<void>(
-              context: context,
-              backgroundColor: AppColors.surfaceDark,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-              builder: (_) => SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Text('الصلوات الفائتة', style: GoogleFonts.amiri(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.ivory)),
-                    const SizedBox(height: 10),
-                    ...missed.map((p) => ListTile(
-                      leading: const Icon(Icons.error_outline_rounded, color: AppColors.ember),
-                      title: Text('فاتتك صلاة ${p.arabicName}', style: GoogleFonts.cairo(color: AppColors.ember, fontWeight: FontWeight.w800)),
-                      trailing: const Icon(Icons.chevron_left_rounded, color: AppColors.goldSoft),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => MissedPrayerResponseScreen(prayer: p)));
-                      },
-                    )),
-                  ]),
-                ),
-              ),
-            );
+            showModalBottomSheet<void>(context: context, backgroundColor: AppColors.surfaceDark, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))), builder: (_) => SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(18, 18, 18, 24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text('الصلوات الفائتة', style: GoogleFonts.amiri(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.ivory)), const SizedBox(height: 10), ...missed.map((p) => ListTile(leading: const Icon(Icons.error_outline_rounded, color: AppColors.ember), title: Text('فاتتك صلاة ${p.arabicName}', style: GoogleFonts.cairo(color: AppColors.ember, fontWeight: FontWeight.w800)), trailing: const Icon(Icons.chevron_left_rounded, color: AppColors.goldSoft), onTap: () { Navigator.of(context).pop(); Navigator.of(context).push(MaterialPageRoute(builder: (_) => MissedPrayerResponseScreen(prayer: p))); }))]))));
           }
         },
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDark.withOpacity(.96),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.ember.withOpacity(.88), width: 1.3),
-            boxShadow: [BoxShadow(color: AppColors.ember.withOpacity(.10), blurRadius: 18, spreadRadius: 1)],
-          ),
+          decoration: BoxDecoration(color: AppColors.surfaceDark.withOpacity(.96), borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.ember.withOpacity(.88), width: 1.3), boxShadow: [BoxShadow(color: AppColors.ember.withOpacity(.10), blurRadius: 18, spreadRadius: 1)]),
           child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
             Container(width: 58, height: 58, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.ember.withOpacity(.10), border: Border.all(color: AppColors.ember.withOpacity(.85), width: 1.2)), child: const Icon(Icons.notifications_active_rounded, color: AppColors.ember, size: 31)),
             const SizedBox(width: 14),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('تنبيه الصلاة الفائتة', style: GoogleFonts.amiri(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ember)),
-              const SizedBox(height: 3),
-              ...missed.map((prayer) => Text('فاتتك صلاة ${prayer.arabicName}', style: GoogleFonts.cairo(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.ivory, height: 1.35))),
-              const SizedBox(height: 5),
-              Text('اضغط هنا للإجابة مباشرة: هل صليتها أم لا؟', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft, height: 1.35)),
-            ])),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('تنبيه الصلاة الفائتة', style: GoogleFonts.amiri(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ember)), const SizedBox(height: 3), ...missed.map((prayer) => Text('فاتتك صلاة ${prayer.arabicName}', style: GoogleFonts.cairo(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.ivory, height: 1.35))), const SizedBox(height: 5), Text('اضغط هنا للإجابة مباشرة: هل صليتها أم لا؟', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft, height: 1.35))])),
             const SizedBox(width: 4),
             const Icon(Icons.chevron_left_rounded, color: AppColors.ember, size: 31),
           ]),
@@ -251,51 +206,19 @@ class _HeroCard extends StatelessWidget {
   final PrayerDayPeriod period;
   const _HeroCard({required this.state, required this.next, required this.period});
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(color: AppColors.surfaceDark, border: Border.all(color: AppColors.gold.withOpacity(0.38)), borderRadius: BorderRadius.circular(22)),
-    clipBehavior: Clip.antiAlias,
-    child: next == null ? const SizedBox(height: 150) : PrayerArchHero(next: next!, nextRealTime: state.realTimes?[next!], timeLabel: state.displayTimeFor(next!), period: period),
-  );
+  Widget build(BuildContext context) => Container(decoration: BoxDecoration(color: AppColors.surfaceDark, border: Border.all(color: AppColors.gold.withOpacity(0.38)), borderRadius: BorderRadius.circular(22)), clipBehavior: Clip.antiAlias, child: next == null ? const SizedBox(height: 150) : PrayerArchHero(next: next!, nextRealTime: state.realTimes?[next!], timeLabel: state.displayTimeFor(next!), period: period));
 }
 
 class _QuickActions extends StatelessWidget {
   const _QuickActions();
   @override
-  Widget build(BuildContext context) => Row(children: [
-    Expanded(child: _QuickActionCard(icon: Icons.mosque_rounded, title: 'أقرب مسجد', subtitle: 'ابحث عن أقرب مسجد', button: 'عرض الخريطة', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NearbyMosquesScreen())))),
-    const SizedBox(width: 8),
-    Expanded(child: _QuickActionCard(icon: Icons.bar_chart_rounded, title: 'التقرير الأسبوعي', subtitle: 'متابعة التقدم الأسبوعي', button: 'عرض التقرير', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WeekReportScreen())))),
-  ]);
+  Widget build(BuildContext context) => Row(children: [Expanded(child: _QuickActionCard(icon: Icons.mosque_rounded, title: 'أقرب مسجد', subtitle: 'ابحث عن أقرب مسجد', button: 'عرض الخريطة', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NearbyMosquesScreen())))), const SizedBox(width: 8), Expanded(child: _QuickActionCard(icon: Icons.bar_chart_rounded, title: 'التقرير الأسبوعي', subtitle: 'متابعة التقدم الأسبوعي', button: 'عرض التقرير', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WeekReportScreen()))))]);
 }
 
 class _QiblaQuickAction extends StatelessWidget {
   const _QiblaQuickAction();
   @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.transparent,
-    child: InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QiblaScreen())),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(begin: Alignment.centerRight, end: Alignment.centerLeft, colors: [AppColors.surface, AppColors.surfaceDark]),
-          border: Border.all(color: AppColors.gold.withOpacity(.30)),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(children: [
-          Container(width: 42, height: 42, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.gold.withOpacity(.10), border: Border.all(color: AppColors.gold.withOpacity(.45))), child: const Icon(Icons.explore_rounded, color: AppColors.goldSoft, size: 24)),
-          const SizedBox(width: 11),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('تحديد القبلة', style: GoogleFonts.amiri(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.ivory)),
-            Text('بوصلة حية باتجاه الكعبة من موقعك', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft)),
-          ])),
-          const Icon(Icons.chevron_left_rounded, color: AppColors.gold, size: 28),
-        ]),
-      ),
-    ),
-  );
+  Widget build(BuildContext context) => Material(color: Colors.transparent, child: InkWell(borderRadius: BorderRadius.circular(18), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QiblaScreen())), child: Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11), decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.centerRight, end: Alignment.centerLeft, colors: [AppColors.surface, AppColors.surfaceDark]), border: Border.all(color: AppColors.gold.withOpacity(.30)), borderRadius: BorderRadius.circular(18)), child: Row(children: [Container(width: 42, height: 42, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.gold.withOpacity(.10), border: Border.all(color: AppColors.gold.withOpacity(.45))), child: const Icon(Icons.explore_rounded, color: AppColors.goldSoft, size: 24)), const SizedBox(width: 11), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('تحديد القبلة', style: GoogleFonts.amiri(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.ivory)), Text('بوصلة حية باتجاه الكعبة من موقعك', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft))])), const Icon(Icons.chevron_left_rounded, color: AppColors.gold, size: 28)])));
 }
 
 class _QuickActionCard extends StatelessWidget {
@@ -306,18 +229,7 @@ class _QuickActionCard extends StatelessWidget {
   final VoidCallback onTap;
   const _QuickActionCard({required this.icon, required this.title, required this.subtitle, required this.button, required this.onTap});
   @override
-  Widget build(BuildContext context) => Container(
-    height: 126,
-    padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
-    decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surface, AppColors.surfaceDark]), border: Border.all(color: AppColors.gold.withOpacity(0.28)), borderRadius: BorderRadius.circular(18)),
-    child: Column(children: [
-      Row(children: [Icon(icon, size: 30, color: AppColors.goldSoft), const SizedBox(width: 7), Expanded(child: Text(title, textAlign: TextAlign.right, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.amiri(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ivory)))]),
-      const SizedBox(height: 2),
-      Align(alignment: Alignment.centerRight, child: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.inkSoft))),
-      const Spacer(),
-      SizedBox(width: double.infinity, height: 30, child: OutlinedButton(onPressed: onTap, style: OutlinedButton.styleFrom(foregroundColor: AppColors.goldSoft, side: BorderSide(color: AppColors.gold.withOpacity(0.55)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)), padding: EdgeInsets.zero), child: Text(button, style: GoogleFonts.cairo(fontSize: 10.5, fontWeight: FontWeight.w700)))),
-    ]),
-  );
+  Widget build(BuildContext context) => Container(height: 126, padding: const EdgeInsets.fromLTRB(10, 8, 10, 9), decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.surface, AppColors.surfaceDark]), border: Border.all(color: AppColors.gold.withOpacity(0.28)), borderRadius: BorderRadius.circular(18)), child: Column(children: [Row(children: [Icon(icon, size: 30, color: AppColors.goldSoft), const SizedBox(width: 7), Expanded(child: Text(title, textAlign: TextAlign.right, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.amiri(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ivory)))]), const SizedBox(height: 2), Align(alignment: Alignment.centerRight, child: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.inkSoft))), const Spacer(), SizedBox(width: double.infinity, height: 30, child: OutlinedButton(onPressed: onTap, style: OutlinedButton.styleFrom(foregroundColor: AppColors.goldSoft, side: BorderSide(color: AppColors.gold.withOpacity(0.55)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)), padding: EdgeInsets.zero), child: Text(button, style: GoogleFonts.cairo(fontSize: 10.5, fontWeight: FontWeight.w700))))]));
 }
 
 class _WeeklyProgressCard extends StatelessWidget {
@@ -327,13 +239,12 @@ class _WeeklyProgressCard extends StatelessWidget {
   static const _dayNames = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
 
   DateTime _weekStart(DateTime date) {
-    final daysFromSaturday = date.weekday % 7;
+    final daysFromSaturday = (date.weekday + 1) % 7;
     final d = DateTime(date.year, date.month, date.day);
     return d.subtract(Duration(days: daysFromSaturday));
   }
 
-  String _dayName(DateTime date) => _dayNames[date.weekday % 7];
-
+  String _dayName(DateTime date) => _dayNames[(date.weekday + 1) % 7];
   int get _todayDone => state.activePrayers.where((p) => state.todayStatus[p] == PrayerStatus.done).length;
 
   @override
@@ -352,19 +263,12 @@ class _WeeklyProgressCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [AppColors.surface, AppColors.surfaceDark]),
-        border: Border.all(color: AppColors.gold.withOpacity(0.30)),
-        borderRadius: BorderRadius.circular(22),
-      ),
+      decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [AppColors.surface, AppColors.surfaceDark]), border: Border.all(color: AppColors.gold.withOpacity(0.30)), borderRadius: BorderRadius.circular(22)),
       child: Column(children: [
         Row(children: [
           Container(width: 40, height: 40, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.gold.withOpacity(0.75)), color: AppColors.gold.withOpacity(0.10)), child: const Icon(Icons.workspace_premium_rounded, color: AppColors.goldSoft, size: 22)),
           const SizedBox(width: 9),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('الإنجاز هذا الأسبوع', style: GoogleFonts.amiri(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.ivory)),
-            Text('$weekDonePrayers / $weekTarget صلاة', style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.inkSoft)),
-          ])),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('الإنجاز هذا الأسبوع', style: GoogleFonts.amiri(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.ivory)), Text('$weekDonePrayers / $weekTarget صلاة', style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.inkSoft))])),
           Text('${(weekProgress * 100).round()}%', style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.goldSoft)),
         ]),
         const SizedBox(height: 9),
@@ -374,35 +278,14 @@ class _WeeklyProgressCard extends StatelessWidget {
           final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
           final percent = state.percentForDate(date) ?? 0;
           final completed = percent >= 80;
-          return Expanded(
-            child: Column(children: [
-              Text(_dayName(date), maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.cairo(fontSize: 8.2, color: isToday ? AppColors.goldSoft : AppColors.inkSoft, fontWeight: isToday ? FontWeight.w800 : FontWeight.w500)),
-              const SizedBox(height: 4),
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: completed ? AppColors.sage.withOpacity(0.80) : AppColors.ink.withOpacity(0.35),
-                  border: Border.all(color: isToday ? AppColors.gold : completed ? AppColors.sage : AppColors.paperLine, width: isToday ? 1.6 : 1),
-                ),
-                child: completed ? const Icon(Icons.check_rounded, size: 16, color: Colors.white) : Text('${date.day}', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 8.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600)),
-              ),
-            ]),
-          );
+          return Expanded(child: Column(children: [
+            Text(_dayName(date), maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.cairo(fontSize: 8.2, color: isToday ? AppColors.goldSoft : AppColors.inkSoft, fontWeight: isToday ? FontWeight.w800 : FontWeight.w500)),
+            const SizedBox(height: 4),
+            Container(width: 30, height: 30, decoration: BoxDecoration(shape: BoxShape.circle, color: completed ? AppColors.sage.withOpacity(0.80) : AppColors.ink.withOpacity(0.35), border: Border.all(color: isToday ? AppColors.gold : completed ? AppColors.sage : AppColors.paperLine, width: isToday ? 1.6 : 1)), child: completed ? const Icon(Icons.check_rounded, size: 16, color: Colors.white) : Text('${date.day}', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 8.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600))),
+          ]));
         }).toList()),
         const SizedBox(height: 10),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(color: AppColors.ink.withOpacity(.22), borderRadius: BorderRadius.circular(14)),
-          child: Row(children: [
-            const Icon(Icons.today_rounded, color: AppColors.goldSoft, size: 17),
-            const SizedBox(width: 6),
-            Expanded(child: Text('اليوم: ${_dayName(today)} — $done / $total صلوات', style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.ivory, fontWeight: FontWeight.w700))),
-            Text('${(progress * 100).round()}%', style: GoogleFonts.cairo(fontSize: 10, color: AppColors.goldSoft, fontWeight: FontWeight.w800)),
-          ]),
-        ),
+        Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), decoration: BoxDecoration(color: AppColors.ink.withOpacity(.22), borderRadius: BorderRadius.circular(14)), child: Row(children: [const Icon(Icons.today_rounded, color: AppColors.goldSoft, size: 17), const SizedBox(width: 6), Expanded(child: Text('اليوم: ${_dayName(today)} — $done / $total صلوات', style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.ivory, fontWeight: FontWeight.w700))), Text('${(progress * 100).round()}%', style: GoogleFonts.cairo(fontSize: 10, color: AppColors.goldSoft, fontWeight: FontWeight.w800))])),
       ]),
     );
   }

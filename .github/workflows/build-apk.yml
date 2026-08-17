@@ -18,6 +18,9 @@ jobs:
       - name: Apply Aqim branding
         run: python3 scripts/apply_aqim_branding.py
 
+      - name: Download and verify Tanzil Uthmani Quran
+        run: python3 scripts/download_tanzil_uthmani.py
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -36,6 +39,18 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Verify Quran asset
+        run: |
+          test -f assets/quran/quran-uthmani.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          lines = [x for x in Path('assets/quran/quran-uthmani.txt').read_text(encoding='utf-8-sig').splitlines() if x.strip()]
+          assert len(lines) == 6236, f'Expected 6236 ayat, got {len(lines)}'
+          assert lines[0].startswith('1|1|')
+          assert lines[-1].startswith('114|6|')
+          print(f'Quran verification passed: {len(lines)} ayat')
+          PY
 
       - name: Restore Android keystore
         run: |

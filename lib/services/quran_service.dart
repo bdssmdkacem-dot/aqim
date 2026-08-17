@@ -44,13 +44,26 @@ class QuranTafsir {
   const QuranTafsir({required this.text, required this.source});
 }
 
-/// Fully offline Quran source. The Quran text is kept exactly as provided by
-/// the bundled dataset. UI markers such as ayah numbers and sajda indicators
-/// are rendered separately and must never be injected into the Quran text.
+/// Fully offline Quran source.
+///
+/// The bundled Uthmani text is used as the source of truth. We only remove
+/// the two known two-letter dataset suffixes from the END of an ayah because
+/// they are not Quran words and were appearing at the end of every affected
+/// verse in the bundled dataset. Nothing else is normalized or rewritten.
 class QuranService {
   QuranService._();
   static final QuranService instance = QuranService._();
   final offline_quran.QuranService _offline = offline_quran.QuranService.instance;
+
+  String _quranText(String text) {
+    var value = text.trim();
+
+    // The bundled dataset contains these non-Quran two-letter suffixes at the
+    // end of affected ayahs. Remove ONLY a standalone suffix at the very end.
+    value = value.replaceFirst(RegExp(r'\s+(?:ئح|ئم)\s*$'), '');
+
+    return value.trim();
+  }
 
   int _globalAyahNumber(int surahNumber, int ayahNumber) {
     var total = 0;
@@ -65,10 +78,7 @@ class QuranService {
     return QuranVerse(
       number: _globalAyahNumber(ayah.surahNumber, ayah.id),
       numberInSurah: ayah.id,
-      // IMPORTANT: preserve the bundled Uthmani Quran text. Do not remove
-      // Arabic letters, diacritics, verse marks, or annotations with regex.
-      // Ayah numbers and sajda indicators are separate UI metadata.
-      text: ayah.text.trim(),
+      text: _quranText(ayah.text),
       page: ayah.page,
       juz: ayah.juz,
       hizbQuarter: rub,

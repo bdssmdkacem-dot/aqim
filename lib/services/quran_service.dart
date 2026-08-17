@@ -10,41 +10,15 @@ class QuranVerse {
   final int surahNumber;
   final String surahName;
 
-  const QuranVerse({
-    required this.number,
-    required this.numberInSurah,
-    required this.text,
-    required this.page,
-    required this.juz,
-    required this.hizbQuarter,
-    required this.surahNumber,
-    required this.surahName,
-  });
+  const QuranVerse({required this.number, required this.numberInSurah, required this.text, required this.page, required this.juz, required this.hizbQuarter, required this.surahNumber, required this.surahName});
 
-  bool get isSajda => const <String>{
-    '7:206',
-    '13:15',
-    '16:50',
-    '17:109',
-    '19:58',
-    '22:18',
-    '22:77',
-    '25:60',
-    '27:26',
-    '32:15',
-    '38:24',
-    '41:38',
-    '53:62',
-    '84:21',
-    '96:19',
-  }.contains('$surahNumber:$numberInSurah');
+  bool get isSajda => const <String>{'7:206','13:15','16:50','17:109','19:58','22:18','22:77','25:60','27:26','32:15','38:24','41:38','53:62','84:21','96:19'}.contains('$surahNumber:$numberInSurah');
 }
 
 class QuranPage {
   final int page;
   final List<QuranVerse> verses;
   const QuranPage({required this.page, required this.verses});
-
   String get surahName => verses.isEmpty ? '' : verses.first.surahName;
   int get surahNumber => verses.isEmpty ? 0 : verses.first.surahNumber;
   int get juz => verses.isEmpty ? 1 : verses.first.juz;
@@ -56,12 +30,7 @@ class QuranSurah {
   final String name;
   final String englishName;
   final int numberOfAyahs;
-  const QuranSurah({
-    required this.number,
-    required this.name,
-    required this.englishName,
-    required this.numberOfAyahs,
-  });
+  const QuranSurah({required this.number, required this.name, required this.englishName, required this.numberOfAyahs});
 }
 
 class QuranSearchResult {
@@ -75,22 +44,28 @@ class QuranTafsir {
   const QuranTafsir({required this.text, required this.source});
 }
 
-/// Offline-only Quran source. The bundled package contains the complete
-/// Uthmani Arabic text, so Quran reading/search never depends on internet.
+/// Fully offline Quran source. No network is used for Quran reading or search.
 class QuranService {
   QuranService._();
   static final QuranService instance = QuranService._();
-
-  final offline_quran.QuranService _offline =
-      offline_quran.QuranService.instance;
+  final offline_quran.QuranService _offline = offline_quran.QuranService.instance;
 
   String _cleanAyahText(String text) {
     var cleaned = text.trim();
-    cleaned = cleaned.replaceFirst(
-      RegExp(r'\s*(?:۝\s*[٠-٩0-9]*|۞|﴿\s*[٠-٩0-9]+\s*﴾|ئج|غج)\s*$'),
-      '',
-    );
+    // Remove only known trailing dataset ornaments/annotations. The app adds
+    // its own ayah number so unwanted duplicate markers cannot appear.
+    cleaned = cleaned.replaceFirst(RegExp(r'(?:\s*(?:۝\s*[٠-٩0-9]+|﴿\s*[٠-٩0-9]+\s*﴾|۩|٭|❊|\*|ئج|غج)\s*)+$'), '');
     return cleaned.trim();
+  }
+
+  String _arabicNumber(int number) {
+    const digits = '٠١٢٣٤٥٦٧٨٩';
+    return number.toString().split('').map((d) => digits[int.parse(d)]).join();
+  }
+
+  String _displayAyahText(String rawText, int ayahNumber) {
+    final clean = _cleanAyahText(rawText);
+    return '$clean ۝${_arabicNumber(ayahNumber)}';
   }
 
   int _globalAyahNumber(int surahNumber, int ayahNumber) {
@@ -103,11 +78,10 @@ class QuranService {
 
   QuranVerse _mapOfflineAyah(offline_quran.Ayah ayah) {
     final rub = _offline.getRubIndex(ayah.surahNumber, ayah.id) ?? 1;
-    final cleanText = _cleanAyahText(ayah.text);
     return QuranVerse(
       number: _globalAyahNumber(ayah.surahNumber, ayah.id),
       numberInSurah: ayah.id,
-      text: cleanText,
+      text: _displayAyahText(ayah.text, ayah.id),
       page: ayah.page,
       juz: ayah.juz,
       hizbQuarter: rub,
@@ -117,24 +91,12 @@ class QuranService {
   }
 
   Future<QuranPage> fetchPage(int page) async {
-    if (page < 1 || page > 604) {
-      throw ArgumentError.value(page, 'page', 'must be between 1 and 604');
-    }
+    if (page < 1 || page > 604) throw ArgumentError.value(page, 'page', 'must be between 1 and 604');
     final ayahs = _offline.getPage(page);
-    return QuranPage(
-      page: page,
-      verses: ayahs.map(_mapOfflineAyah).toList(growable: false),
-    );
+    return QuranPage(page: page, verses: ayahs.map(_mapOfflineAyah).toList(growable: false));
   }
 
-  Future<List<QuranSurah>> fetchSurahs() async {
-    return _offline.getAllSurahs().map((s) => QuranSurah(
-      number: s.number,
-      name: s.nameAr,
-      englishName: s.nameEn,
-      numberOfAyahs: s.ayahCount,
-    )).toList(growable: false);
-  }
+  Future<List<QuranSurah>> fetchSurahs() async => _offline.getAllSurahs().map((s) => QuranSurah(number: s.number, name: s.nameAr, englishName: s.nameEn, numberOfAyahs: s.ayahCount)).toList(growable: false);
 
   Future<int> fetchSurahStartPage(int surahNumber) async {
     for (var page = 1; page <= 604; page++) {
@@ -147,11 +109,7 @@ class QuranService {
   Future<List<QuranSearchResult>> search(String keyword) async {
     final query = keyword.trim();
     if (query.isEmpty) return const [];
-
-    return _offline
-        .search(query, limit: 50)
-        .map((ayah) => QuranSearchResult(verse: _mapOfflineAyah(ayah)))
-        .toList(growable: false);
+    return _offline.search(query, limit: 50).map((ayah) => QuranSearchResult(verse: _mapOfflineAyah(ayah))).toList(growable: false);
   }
 
   Future<QuranTafsir> fetchTafsir(int globalAyahNumber) async {
@@ -160,9 +118,7 @@ class QuranService {
       final count = _offline.getVerseCount(surah);
       if (remaining <= count) {
         final tafsir = _offline.getTafsir(surah)[remaining];
-        if (tafsir != null && tafsir.trim().isNotEmpty) {
-          return QuranTafsir(text: tafsir.trim(), source: 'التفسير الميسر');
-        }
+        if (tafsir != null && tafsir.trim().isNotEmpty) return QuranTafsir(text: tafsir.trim(), source: 'التفسير الميسر');
         break;
       }
       remaining -= count;

@@ -236,57 +236,87 @@ class _WeeklyProgressCard extends StatelessWidget {
   final AppState state;
   const _WeeklyProgressCard({required this.state});
 
-  static const _dayNames = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+  String _key(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-  DateTime _weekStart(DateTime date) {
-    final daysFromSaturday = (date.weekday + 1) % 7;
-    final d = DateTime(date.year, date.month, date.day);
-    return d.subtract(Duration(days: daysFromSaturday));
+  String _weekday(int weekday) {
+    const names = <String>['', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+    return names[weekday];
   }
-
-  String _dayName(DateTime date) => _dayNames[(date.weekday + 1) % 7];
-  int get _todayDone => state.activePrayers.where((p) => state.todayStatus[p] == PrayerStatus.done).length;
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final total = state.activePrayers.length;
-    final done = _todayDone;
-    final progress = total == 0 ? 0.0 : done / total;
-    final start = _weekStart(today);
-    final weekDates = List.generate(7, (i) => start.add(Duration(days: i)));
-    final weekPercents = weekDates.map((d) => state.percentForDate(d) ?? 0).toList();
-    final weekDonePrayers = weekPercents.map((p) => (p / 100 * total).round()).fold<int>(0, (a, b) => a + b);
-    final weekTarget = total * 7;
-    final weekProgress = weekTarget == 0 ? 0.0 : weekDonePrayers / weekTarget;
+    final now = DateTime.now();
+    final monday = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - DateTime.monday));
+    final days = List.generate(7, (i) => monday.add(Duration(days: i)));
+    final visibleDays = days.reversed.toList();
 
+    int progressFor(DateTime day) {
+      final key = _key(day);
+      if (key == _key(now)) {
+        final done = state.activePrayers.where((p) => state.todayStatus[p] == PrayerStatus.done).length;
+        return state.activePrayers.isEmpty ? 0 : ((done / state.activePrayers.length) * 100).round();
+      }
+      return state.dailyHistory[key] ?? 0;
+    }
+
+    final todayKey = _key(now);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-      decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [AppColors.surface, AppColors.surfaceDark]), border: Border.all(color: AppColors.gold.withOpacity(0.30)), borderRadius: BorderRadius.circular(22)),
-      child: Column(children: [
-        Row(children: [
-          Container(width: 40, height: 40, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.gold.withOpacity(0.75)), color: AppColors.gold.withOpacity(0.10)), child: const Icon(Icons.workspace_premium_rounded, color: AppColors.goldSoft, size: 22)),
-          const SizedBox(width: 9),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('الإنجاز هذا الأسبوع', style: GoogleFonts.amiri(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.ivory)), Text('$weekDonePrayers / $weekTarget صلاة', style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.inkSoft))])),
-          Text('${(weekProgress * 100).round()}%', style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.goldSoft)),
-        ]),
-        const SizedBox(height: 9),
-        ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: weekProgress.clamp(0, 1), minHeight: 7, backgroundColor: Colors.white.withOpacity(0.10), valueColor: const AlwaysStoppedAnimation<Color>(AppColors.gold))),
-        const SizedBox(height: 12),
-        Row(children: weekDates.map((date) {
-          final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
-          final percent = state.percentForDate(date) ?? 0;
-          final completed = percent >= 80;
-          return Expanded(child: Column(children: [
-            Text(_dayName(date), maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.cairo(fontSize: 8.2, color: isToday ? AppColors.goldSoft : AppColors.inkSoft, fontWeight: isToday ? FontWeight.w800 : FontWeight.w500)),
-            const SizedBox(height: 4),
-            Container(width: 30, height: 30, decoration: BoxDecoration(shape: BoxShape.circle, color: completed ? AppColors.sage.withOpacity(0.80) : AppColors.ink.withOpacity(0.35), border: Border.all(color: isToday ? AppColors.gold : completed ? AppColors.sage : AppColors.paperLine, width: isToday ? 1.6 : 1)), child: completed ? const Icon(Icons.check_rounded, size: 16, color: Colors.white) : Text('${date.day}', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 8.5, color: AppColors.inkSoft, fontWeight: FontWeight.w600))),
-          ]));
-        }).toList()),
-        const SizedBox(height: 10),
-        Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), decoration: BoxDecoration(color: AppColors.ink.withOpacity(.22), borderRadius: BorderRadius.circular(14)), child: Row(children: [const Icon(Icons.today_rounded, color: AppColors.goldSoft, size: 17), const SizedBox(width: 6), Expanded(child: Text('اليوم: ${_dayName(today)} — $done / $total صلوات', style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.ivory, fontWeight: FontWeight.w700))), Text('${(progress * 100).round()}%', style: GoogleFonts.cairo(fontSize: 10, color: AppColors.goldSoft, fontWeight: FontWeight.w800))])),
-      ]),
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark.withOpacity(.96),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.paperLine.withOpacity(.8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('هذا الأسبوع', textAlign: TextAlign.right, style: GoogleFonts.amiri(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.ivory)),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: visibleDays.map((day) {
+              final isToday = _key(day) == todayKey;
+              final pct = progressFor(day);
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_weekday(day.weekday), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 8.5, fontWeight: isToday ? FontWeight.w800 : FontWeight.w600, color: isToday ? AppColors.gold : AppColors.textMuted)),
+                      const SizedBox(height: 5),
+                      Text('${day.day}', style: GoogleFonts.tajawal(fontSize: 11, fontWeight: FontWeight.w800, color: isToday ? AppColors.gold : AppColors.inkSoft)),
+                      const SizedBox(height: 5),
+                      Container(
+                        height: 78,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: AppColors.ink.withOpacity(.38),
+                          borderRadius: BorderRadius.circular(17),
+                          border: Border.all(color: isToday ? AppColors.gold.withOpacity(.9) : AppColors.paperLine.withOpacity(.55), width: isToday ? 1.5 : 1),
+                        ),
+                        alignment: Alignment.bottomCenter,
+                        padding: const EdgeInsets.all(3),
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: FractionallySizedBox(
+                            heightFactor: ((pct / 100).clamp(0.0, 1.0)).toDouble(),
+                            widthFactor: 1,
+                            child: DecoratedBox(decoration: BoxDecoration(color: AppColors.gold.withOpacity(.72), borderRadius: BorderRadius.circular(13))),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text('$pct%', style: GoogleFonts.tajawal(fontSize: 9.5, fontWeight: FontWeight.w800, color: isToday ? AppColors.gold : AppColors.inkSoft)),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 }

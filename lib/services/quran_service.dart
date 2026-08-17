@@ -52,27 +52,22 @@ class QuranService {
 
   String _cleanAyahText(String text) {
     var cleaned = text.trim();
-    // The bundled source can contain a verse-end ornament or annotation after
-    // the actual ayah. Remove ONLY trailing ornaments; Quranic diacritics and
-    // all marks occurring inside the ayah remain untouched.
+
+    // The bundled dataset may contain an Arabic end-of-ayah ornament (U+06DD)
+    // or other decorative delimiters. They must never be rendered as part of
+    // the ayah. Remove them anywhere in the supplied verse, not only at the
+    // end, because some Quran fonts encode the ornament together with its
+    // following number.
+    cleaned = cleaned.replaceAll(RegExp(r'[۝۩﴿﴾٭❊۞]'), '');
+
+    // Remove trailing dataset-only annotations, while preserving all Quranic
+    // letters, diacritics and normal Arabic punctuation inside the ayah.
     cleaned = cleaned.replaceFirst(
-      RegExp(r'(?:\s*[۝۩﴿﴾٭❊*]|\s*[٠-٩0-9]+|\s*[ئجغج])+$'),
+      RegExp(r'(?:\s*[0-9٠-٩]+\s*)+$'),
       '',
     );
-    cleaned = cleaned.trim();
-    return cleaned;
-  }
 
-  String _arabicNumber(int number) {
-    const digits = '٠١٢٣٤٥٦٧٨٩';
-    return number.toString().split('').map((d) => digits[int.parse(d)]).join();
-  }
-
-  String _displayAyahText(String rawText, int ayahNumber) {
-    final clean = _cleanAyahText(rawText);
-    // Keep the ayah number, but do not add the intrusive ۝/other ornament.
-    // The number is plain Arabic text at the end of the ayah.
-    return '$clean ${_arabicNumber(ayahNumber)}';
+    return cleaned.trim();
   }
 
   int _globalAyahNumber(int surahNumber, int ayahNumber) {
@@ -88,7 +83,9 @@ class QuranService {
     return QuranVerse(
       number: _globalAyahNumber(ayah.surahNumber, ayah.id),
       numberInSurah: ayah.id,
-      text: _displayAyahText(ayah.text, ayah.id),
+      // IMPORTANT: do not append an ayah-end glyph or a second number here.
+      // The UI already displays the ayah number in its dedicated circle.
+      text: _cleanAyahText(ayah.text),
       page: ayah.page,
       juz: ayah.juz,
       hizbQuarter: rub,

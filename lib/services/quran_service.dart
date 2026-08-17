@@ -52,10 +52,15 @@ class QuranService {
 
   String _cleanAyahText(String text) {
     var cleaned = text.trim();
-    // Remove only known trailing dataset ornaments/annotations. The app adds
-    // its own ayah number so unwanted duplicate markers cannot appear.
-    cleaned = cleaned.replaceFirst(RegExp(r'(?:\s*(?:۝\s*[٠-٩0-9]+|﴿\s*[٠-٩0-9]+\s*﴾|۩|٭|❊|\*|ئج|غج)\s*)+$'), '');
-    return cleaned.trim();
+    // The bundled source can contain a verse-end ornament or annotation after
+    // the actual ayah. Remove ONLY trailing ornaments; Quranic diacritics and
+    // all marks occurring inside the ayah remain untouched.
+    cleaned = cleaned.replaceFirst(
+      RegExp(r'(?:\s*[۝۩﴿﴾٭❊*]|\s*[٠-٩0-9]+|\s*[ئجغج])+$'),
+      '',
+    );
+    cleaned = cleaned.trim();
+    return cleaned;
   }
 
   String _arabicNumber(int number) {
@@ -65,7 +70,9 @@ class QuranService {
 
   String _displayAyahText(String rawText, int ayahNumber) {
     final clean = _cleanAyahText(rawText);
-    return '$clean ۝${_arabicNumber(ayahNumber)}';
+    // Keep the ayah number, but do not add the intrusive ۝/other ornament.
+    // The number is plain Arabic text at the end of the ayah.
+    return '$clean ${_arabicNumber(ayahNumber)}';
   }
 
   int _globalAyahNumber(int surahNumber, int ayahNumber) {

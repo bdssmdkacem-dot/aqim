@@ -1,9 +1,8 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
-/// يشغّل ملفات الصوت التي سيسجّلها المستخدم لاحقًا ويضعها ضمن
-/// assets/audio/before/ و assets/audio/after/ (راجع README).
-/// إن لم يُضَف الملف بعد، يفشل التشغيل بهدوء ويظهر تنبيه بسيط بدل الانهيار.
+/// Plays bundled local audio for individual adhkar.
+/// Missing optional recordings are handled without crashing the screen.
 class AudioService {
   AudioService._();
   static final AudioService instance = AudioService._();
@@ -18,7 +17,7 @@ class AudioService {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('لم يُضَف التسجيل الصوتي لهذا الذكر بعد'),
+            content: Text('التسجيل الصوتي غير متوفر لهذا الذكر حاليًا'),
             duration: Duration(seconds: 2),
           ),
         );

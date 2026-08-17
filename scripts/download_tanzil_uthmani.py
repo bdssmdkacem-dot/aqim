@@ -1,60 +1,47 @@
 #!/usr/bin/env python3
-"""Download the verbatim Tanzil Uthmani v1.1 Quran text for Aqim.
-
-The file is fetched directly from Tanzil's official download endpoint.
-It is intentionally NOT transformed: only the SURA|AYA| prefix is removed
-when the app reads it. The Quran text itself is preserved verbatim.
-"""
-
+"""Fetch and verify Tanzil Uthmani v1.1 for Aqim."""
+import json
 from pathlib import Path
-from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-URL = "https://tanzil.net/pub/download/download.php"
+SOURCE_URL = "https://raw.githubusercontent.com/dotquran/corpus/main/processed/uthmani/quran-uthmani.json"
 OUTPUT = Path("assets/quran/quran-uthmani.txt")
 EXPECTED_AYAT = 6236
 
-payload = urlencode(
-    {
-        "quranType": "uthmani",
-        "outType": "txt",
-        "marks": "false",
-        "sajdah": "false",
-        "rub": "false",
-        "alef": "true",
-        "me_quran": "false",
-        "agree": "true",
-    }
-).encode("utf-8")
-
-request = Request(URL, data=payload, method="POST", headers={"User-Agent": "Aqim/1.0"})
+request = Request(SOURCE_URL, headers={"User-Agent": "Aqim/1.0"})
 with urlopen(request, timeout=60) as response:
-    data = response.read()
+    data = json.loads(response.read().decode("utf-8"))
 
-text = data.decode("utf-8-sig")
-lines = [line for line in text.splitlines() if line.strip()]
+metadata = data.get("metadata", {})
+if metadata.get("source") != "Tanzil Project":
+    raise SystemExit(f"Unexpected Quran source: {metadata.get('source')!r}")
+if metadata.get("version") != "Uthmani, Version 1.1":
+    raise SystemExit(f"Unexpected Quran version: {metadata.get('version')!r}")
+
+lines = []
+seen = set()
+for surah in data.get("surahs", []):
+    surah_number = int(surah["number"])
+    for ayah in surah.get("ayahs", []):
+        ayah_number = int(ayah["number"])
+        if ayah_number == 0:
+            continue
+        quran_text = ayah["text"]
+        if not isinstance(quran_text, str) or not quran_text:
+            raise SystemExit(f"Empty Quran text at {surah_number}:{ayah_number}")
+        key = (surah_number, ayah_number)
+        if key in seen:
+            raise SystemExit(f"Duplicate ayah key: {surah_number}:{ayah_number}")
+        seen.add(key)
+        lines.append(f"{surah_number}|{ayah_number}|{quran_text}")
 
 if len(lines) != EXPECTED_AYAT:
     raise SystemExit(f"Tanzil integrity check failed: expected {EXPECTED_AYAT} ayat, got {len(lines)}")
-
-seen = set()
-for line in lines:
-    parts = line.split("|", 2)
-    if len(parts) != 3:
-        raise SystemExit(f"Invalid Tanzil line format: {line[:80]!r}")
-    surah, ayah, quran_text = parts
-    key = (surah, ayah)
-    if key in seen:
-        raise SystemExit(f"Duplicate ayah key: {surah}:{ayah}")
-    if not quran_text:
-        raise SystemExit(f"Empty Quran text at {surah}:{ayah}")
-    seen.add(key)
-
 if lines[0].split("|", 2)[:2] != ["1", "1"]:
     raise SystemExit("Unexpected first ayah in Tanzil file")
 if lines[-1].split("|", 2)[:2] != ["114", "6"]:
     raise SystemExit("Unexpected last ayah in Tanzil file")
 
 OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-OUTPUT.write_text(text, encoding="utf-8")
-print(f"Downloaded Tanzil Uthmani v1.1: {len(lines)} ayat -> {OUTPUT}")
+OUTPUT.write_text("\n".join(lines) + "\n", encoding="utf-8")
+print(f"Verified Tanzil Uthmani v1.1: {len(lines)} ayat -> {OUTPUT}")

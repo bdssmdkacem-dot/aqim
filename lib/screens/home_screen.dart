@@ -284,7 +284,9 @@ class _WeeklyProgressCard extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('${_weekday(day.weekday)} ${day.day}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 10.5, fontWeight: isToday ? FontWeight.w800 : FontWeight.w700, color: isToday ? AppColors.gold : AppColors.ivory)),
+                      Text(_weekday(day.weekday), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 9.5, fontWeight: isToday ? FontWeight.w800 : FontWeight.w700, color: isToday ? AppColors.gold : AppColors.ivory)),
+                      const SizedBox(height: 2),
+                      Text('${day.day}/${day.month}', style: GoogleFonts.tajawal(fontSize: 9, fontWeight: isToday ? FontWeight.w800 : FontWeight.w600, color: isToday ? AppColors.goldSoft : AppColors.inkSoft)),
                       const SizedBox(height: 5),
                       Container(
                         height: 78,

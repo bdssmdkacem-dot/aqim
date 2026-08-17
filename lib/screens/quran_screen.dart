@@ -31,6 +31,12 @@ class _QuranScreenState extends State<QuranScreen> {
     _initialize();
   }
 
+  String _arabicDigits(int number) {
+    const western = '0123456789';
+    const arabic = '٠١٢٣٤٥٦٧٨٩';
+    return number.toString().split('').map((d) => arabic[western.indexOf(d)]).join();
+  }
+
   Future<void> _initialize() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getInt('quran_resume_page') ?? prefs.getInt('quran_next_page') ?? 1;
@@ -276,7 +282,7 @@ class _QuranScreenState extends State<QuranScreen> {
               return SingleChildScrollView(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   Row(children: [
-                    Container(width: 42, height: 42, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.gold.withOpacity(.12), border: Border.all(color: AppColors.gold.withOpacity(.35))), alignment: Alignment.center, child: Text('${verse.numberInSurah}', style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w800))),
+                    Container(width: 42, height: 42, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.gold.withOpacity(.12), border: Border.all(color: AppColors.gold.withOpacity(.35))), alignment: Alignment.center, child: Text(_arabicDigits(verse.numberInSurah), style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w800))),
                     const SizedBox(width: 12),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       Text('تفسير الآية', style: GoogleFonts.amiri(color: AppColors.ivory, fontSize: 22, fontWeight: FontWeight.w800)),
@@ -284,7 +290,7 @@ class _QuranScreenState extends State<QuranScreen> {
                     ])),
                   ]),
                   const SizedBox(height: 18),
-                  Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: AppColors.ink.withOpacity(.55), borderRadius: BorderRadius.circular(18), border: Border.all(color: AppColors.gold.withOpacity(.14))), child: Text(verse.text, textAlign: TextAlign.right, style: GoogleFonts.amiri(color: AppColors.ivory, fontSize: 23, height: 1.9))),
+                  Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: AppColors.ink.withOpacity(.55), borderRadius: BorderRadius.circular(18), border: Border.all(color: AppColors.gold.withOpacity(.14))), child: _buildVerseText(verse, fontSize: 23, lineHeight: 1.9)),
                   const SizedBox(height: 18),
                   Row(children: [const Icon(Icons.auto_awesome_rounded, color: AppColors.gold, size: 19), const SizedBox(width: 7), Text(tafsir.source, style: GoogleFonts.cairo(color: AppColors.gold, fontWeight: FontWeight.w800, fontSize: 13))]),
                   const SizedBox(height: 8),
@@ -293,6 +299,43 @@ class _QuranScreenState extends State<QuranScreen> {
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVerseText(QuranVerse verse, {double fontSize = 25, double lineHeight = 1.9}) {
+    final number = _arabicDigits(verse.numberInSurah);
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: RichText(
+        textAlign: TextAlign.right,
+        textDirection: TextDirection.rtl,
+        text: TextSpan(
+          style: GoogleFonts.amiri(fontSize: fontSize, height: lineHeight, color: AppColors.ivory),
+          children: [
+            TextSpan(text: verse.text),
+            const TextSpan(text: ' '),
+            if (verse.isSajda)
+              const TextSpan(
+                text: '۩ ',
+                style: TextStyle(fontSize: 25, fontWeight: FontWeight.w700),
+              ),
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: fontSize + 12,
+                height: fontSize + 12,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.gold.withOpacity(.75), width: 1.2),
+                ),
+                alignment: Alignment.center,
+                child: Text(number, style: GoogleFonts.amiri(color: AppColors.gold, fontSize: fontSize * .52, fontWeight: FontWeight.w700), textDirection: TextDirection.rtl),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -317,7 +360,7 @@ class _QuranScreenState extends State<QuranScreen> {
               ])),
             ]),
             const SizedBox(height: 18),
-            Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: AppColors.ink.withOpacity(.55), borderRadius: BorderRadius.circular(18), border: Border.all(color: AppColors.gold.withOpacity(.16))), child: Text(verse.text, textAlign: TextAlign.right, style: GoogleFonts.amiri(color: AppColors.ivory, fontSize: 22, height: 1.9))),
+            Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: AppColors.ink.withOpacity(.55), borderRadius: BorderRadius.circular(18), border: Border.all(color: AppColors.gold.withOpacity(.16))), child: _buildVerseText(verse, fontSize: 22, lineHeight: 1.9)),
             const SizedBox(height: 18),
             Text('كيف تؤدي سجدة التلاوة؟', textAlign: TextAlign.right, style: GoogleFonts.amiri(color: AppColors.gold, fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
@@ -410,33 +453,11 @@ class _QuranScreenState extends State<QuranScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
             child: Row(children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _page > 1 ? () => _changePage(-1) : null,
-                  icon: const Icon(Icons.chevron_right_rounded, size: 18),
-                  label: Text('السابقة', style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.w700)),
-                  style: OutlinedButton.styleFrom(minimumSize: const Size(0, 42), padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                ),
-              ),
+              Expanded(child: OutlinedButton.icon(onPressed: _page > 1 ? () => _changePage(-1) : null, icon: const Icon(Icons.chevron_right_rounded, size: 18), label: Text('السابقة', style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.w700)), style: OutlinedButton.styleFrom(minimumSize: const Size(0, 42), padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7), tapTargetSize: MaterialTapTargetSize.shrinkWrap))),
               const SizedBox(width: 8),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton.icon(
-                  onPressed: _saving ? null : _saveProgress,
-                  icon: Icon(isLastPage ? Icons.emoji_events_rounded : Icons.bookmark_add_rounded, size: 18),
-                  label: Text(_saving ? 'جارٍ الحفظ...' : (isLastPage ? 'أتممت الختمة' : 'حفظ التقدم'), style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.w800)),
-                  style: ElevatedButton.styleFrom(minimumSize: const Size(0, 42), padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                ),
-              ),
+              Expanded(flex: 2, child: ElevatedButton.icon(onPressed: _saving ? null : _saveProgress, icon: Icon(isLastPage ? Icons.emoji_events_rounded : Icons.bookmark_add_rounded, size: 18), label: Text(_saving ? 'جارٍ الحفظ...' : (isLastPage ? 'أتممت الختمة' : 'حفظ التقدم'), style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.w800)), style: ElevatedButton.styleFrom(minimumSize: const Size(0, 42), padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7), tapTargetSize: MaterialTapTargetSize.shrinkWrap))),
               const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _page < 604 ? () => _changePage(1) : null,
-                  icon: const Icon(Icons.chevron_left_rounded, size: 18),
-                  label: Text('التالية', style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.w700)),
-                  style: OutlinedButton.styleFrom(minimumSize: const Size(0, 42), padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                ),
-              ),
+              Expanded(child: OutlinedButton.icon(onPressed: _page < 604 ? () => _changePage(1) : null, icon: const Icon(Icons.chevron_left_rounded, size: 18), label: Text('التالية', style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.w700)), style: OutlinedButton.styleFrom(minimumSize: const Size(0, 42), padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7), tapTargetSize: MaterialTapTargetSize.shrinkWrap))),
             ]),
           ),
         ),
@@ -447,14 +468,7 @@ class _QuranScreenState extends State<QuranScreen> {
   Widget _buildPageBody(List<QuranVerse> verses) {
     if (_loading) return const Center(child: CircularProgressIndicator(color: AppColors.gold));
     if (_error != null) {
-      return Center(child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted)),
-          const SizedBox(height: 14),
-          ElevatedButton(onPressed: _loadPage, child: const Text('إعادة المحاولة')),
-        ]),
-      ));
+      return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textMuted)), const SizedBox(height: 14), ElevatedButton(onPressed: _loadPage, child: const Text('إعادة المحاولة'))])));
     }
     if (verses.isEmpty) return const Center(child: Text('لا توجد آيات في هذه الصفحة.', style: TextStyle(color: AppColors.textMuted)));
     return ListView.builder(
@@ -475,22 +489,12 @@ class _QuranScreenState extends State<QuranScreen> {
                 decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.gold.withOpacity(.14))),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   Row(children: [
-                    Container(width: 34, height: 34, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.gold.withOpacity(.10), border: Border.all(color: AppColors.gold.withOpacity(.28))), alignment: Alignment.center, child: Text('${verse.numberInSurah}', style: GoogleFonts.cairo(color: AppColors.gold, fontSize: 11, fontWeight: FontWeight.w800))),
-                    const Spacer(),
+                    Expanded(child: Text('${verse.surahName} • الصفحة ${verse.page}', textAlign: TextAlign.right, style: GoogleFonts.cairo(color: AppColors.textMuted, fontSize: 9))),
                     if (verse.isSajda)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: IconButton(
-                          onPressed: () => _showSajdaGuide(verse),
-                          tooltip: 'موضع سجدة التلاوة',
-                          visualDensity: VisualDensity.compact,
-                          icon: const Icon(Icons.self_improvement_rounded, color: AppColors.gold, size: 20),
-                        ),
-                      ),
-                    const Icon(Icons.menu_book_rounded, color: AppColors.textMuted, size: 17),
+                      IconButton(onPressed: () => _showSajdaGuide(verse), tooltip: 'موضع سجدة التلاوة', visualDensity: VisualDensity.compact, icon: const Text('۩', style: TextStyle(color: AppColors.gold, fontSize: 23))),
                   ]),
-                  const SizedBox(height: 8),
-                  Text(verse.text, textAlign: TextAlign.right, style: GoogleFonts.amiri(fontSize: 25, height: 1.9, color: AppColors.ivory)),
+                  const SizedBox(height: 6),
+                  _buildVerseText(verse),
                   const SizedBox(height: 5),
                   Text('اضغط على الآية لعرض التفسير', textAlign: TextAlign.left, style: GoogleFonts.cairo(color: AppColors.textMuted.withOpacity(.8), fontSize: 9)),
                 ]),

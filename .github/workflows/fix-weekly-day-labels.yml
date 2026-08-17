@@ -1,0 +1,37 @@
+name: Fix weekly day labels
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add visible weekday beside date
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('lib/screens/home_screen.dart')
+          s = p.read_text()
+          old = """                      Text(_weekday(day.weekday), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 8.5, fontWeight: isToday ? FontWeight.w800 : FontWeight.w600, color: isToday ? AppColors.gold : AppColors.textMuted)),\n                      const SizedBox(height: 5),\n                      Text('${day.day}', style: GoogleFonts.tajawal(fontSize: 11, fontWeight: FontWeight.w800, color: isToday ? AppColors.gold : AppColors.inkSoft)),"""
+          new = """                      Text('${_weekday(day.weekday)} ${day.day}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 10.5, fontWeight: isToday ? FontWeight.w800 : FontWeight.w700, color: isToday ? AppColors.gold : AppColors.ivory)),"""
+          if old not in s:
+              raise SystemExit('weekly weekday/date block not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit and remove helper workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib/screens/home_screen.dart .github/workflows/fix-weekly-day-labels.yml
+          git rm .github/workflows/fix-weekly-day-labels.yml
+          git commit -m 'Show weekday and date together in weekly progress'
+          git push

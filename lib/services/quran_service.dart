@@ -44,30 +44,13 @@ class QuranTafsir {
   const QuranTafsir({required this.text, required this.source});
 }
 
-/// Fully offline Quran source. No network is used for Quran reading or search.
+/// Fully offline Quran source. The Quran text is kept exactly as provided by
+/// the bundled dataset. UI markers such as ayah numbers and sajda indicators
+/// are rendered separately and must never be injected into the Quran text.
 class QuranService {
   QuranService._();
   static final QuranService instance = QuranService._();
   final offline_quran.QuranService _offline = offline_quran.QuranService.instance;
-
-  String _cleanAyahText(String text) {
-    var cleaned = text.trim();
-
-    // Remove decorative verse-end glyphs only. These are presentation marks,
-    // not part of the Quran text.
-    cleaned = cleaned.replaceAll(RegExp(r'[۝۩﴿﴾٭❊۞]'), '');
-
-    // The bundled dataset used by the previous build contains the unwanted
-    // two-letter suffixes "ئح" and "ئم" at the end of many ayahs. They are
-    // dataset artifacts and must NEVER be displayed as Quran text.
-    cleaned = cleaned.replaceFirst(RegExp(r'(?:\s*(?:ئح|ئم))+$'), '');
-
-    // Also remove a trailing numeric annotation if one exists in the bundled
-    // data. The UI displays the ayah number separately in its circle.
-    cleaned = cleaned.replaceFirst(RegExp(r'(?:\s*[0-9٠-٩]+\s*)+$'), '');
-
-    return cleaned.trim();
-  }
 
   int _globalAyahNumber(int surahNumber, int ayahNumber) {
     var total = 0;
@@ -82,8 +65,10 @@ class QuranService {
     return QuranVerse(
       number: _globalAyahNumber(ayah.surahNumber, ayah.id),
       numberInSurah: ayah.id,
-      // Do not append any ayah-end glyph, number, or annotation here.
-      text: _cleanAyahText(ayah.text),
+      // IMPORTANT: preserve the bundled Uthmani Quran text. Do not remove
+      // Arabic letters, diacritics, verse marks, or annotations with regex.
+      // Ayah numbers and sajda indicators are separate UI metadata.
+      text: ayah.text.trim(),
       page: ayah.page,
       juz: ayah.juz,
       hizbQuarter: rub,

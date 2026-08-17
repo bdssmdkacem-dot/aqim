@@ -45,10 +45,9 @@ class QuranTafsir {
   const QuranTafsir({required this.text, required this.source});
 }
 
-/// Quran text is sourced from quran_data_dart, which publishes the complete
-/// offline Tanzil Project Uthmani Minimal v1.1 text (6,236 ayat).
-/// quran_with_tafsir remains the source for page/juz/rub/tafsir metadata.
-/// No regex cleanup or manual rewriting is applied to Quran text.
+/// Quran text is sourced from the complete Tanzil Uthmani text through
+/// quran_data_dart. quran_with_tafsir is retained only for metadata and tafsir.
+/// No regex cleanup, suffix removal, or manual rewriting is applied to ayahs.
 class QuranService {
   QuranService._();
   static final QuranService instance = QuranService._();
@@ -57,9 +56,7 @@ class QuranService {
   final Map<String, String> _verifiedText = <String, String>{};
   Future<void>? _textLoadFuture;
 
-  Future<void> _ensureVerifiedText() {
-    return _textLoadFuture ??= _loadVerifiedText();
-  }
+  Future<void> _ensureVerifiedText() => _textLoadFuture ??= _loadVerifiedText();
 
   Future<void> _loadVerifiedText() async {
     await verified_quran.QuranService.initialize();
@@ -69,9 +66,8 @@ class QuranService {
         _verifiedText['$surahNumber:${ayah.id}'] = ayah.text.trim();
       }
     }
-
     if (_verifiedText.length != 6236) {
-      throw StateError('Verified Quran dataset integrity check failed: expected 6236 ayat, got ${_verifiedText.length}.');
+      throw StateError('Tanzil Quran integrity check failed: expected 6236 ayat, got ${_verifiedText.length}.');
     }
   }
 
@@ -86,9 +82,8 @@ class QuranService {
   QuranVerse _mapMetadataAyah(offline_quran.Ayah ayah) {
     final text = _verifiedText['${ayah.surahNumber}:${ayah.id}'];
     if (text == null || text.isEmpty) {
-      throw StateError('Verified Quran text missing for ${ayah.surahNumber}:${ayah.id}.');
+      throw StateError('Tanzil Quran text missing for ${ayah.surahNumber}:${ayah.id}.');
     }
-
     final rub = _metadata.getRubIndex(ayah.surahNumber, ayah.id) ?? 1;
     return QuranVerse(
       number: _globalAyahNumber(ayah.surahNumber, ayah.id),
@@ -126,11 +121,9 @@ class QuranService {
     final query = keyword.trim();
     if (query.isEmpty) return const [];
     await _ensureVerifiedText();
-
     final results = <QuranSearchResult>[];
     for (var surah = 1; surah <= 114 && results.length < 50; surah++) {
-      final ayahs = _metadata.getSurah(surah).verses;
-      for (final ayah in ayahs) {
+      for (final ayah in _metadata.getSurah(surah).verses) {
         final verse = _mapMetadataAyah(ayah);
         if (verse.text.contains(query)) {
           results.add(QuranSearchResult(verse: verse));

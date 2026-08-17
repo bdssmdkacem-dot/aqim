@@ -1,3 +1,4 @@
+import 'package:quran_data_dart/quran.dart' as verified_quran;
 import 'package:quran_with_tafsir/quran_with_tafsir.dart' as offline_quran;
 
 class QuranVerse {
@@ -44,60 +45,78 @@ class QuranTafsir {
   const QuranTafsir({required this.text, required this.source});
 }
 
-/// Fully offline Quran source.
-///
-/// The bundled Uthmani text is used as the source of truth. We only remove
-/// the two known two-letter dataset suffixes from the END of an ayah because
-/// they are not Quran words and were appearing at the end of every affected
-/// verse in the bundled dataset. Nothing else is normalized or rewritten.
+/// Quran text is sourced from quran_data_dart, which publishes the complete
+/// offline Tanzil Project Uthmani Minimal v1.1 text (6,236 ayat).
+/// quran_with_tafsir remains the source for page/juz/rub/tafsir metadata.
+/// No regex cleanup or manual rewriting is applied to Quran text.
 class QuranService {
   QuranService._();
   static final QuranService instance = QuranService._();
-  final offline_quran.QuranService _offline = offline_quran.QuranService.instance;
 
-  String _quranText(String text) {
-    var value = text.trim();
+  final offline_quran.QuranService _metadata = offline_quran.QuranService.instance;
+  final Map<String, String> _verifiedText = <String, String>{};
+  Future<void>? _textLoadFuture;
 
-    // The bundled dataset contains these non-Quran two-letter suffixes at the
-    // end of affected ayahs. Remove ONLY a standalone suffix at the very end.
-    value = value.replaceFirst(RegExp(r'\s+(?:ئح|ئم)\s*$'), '');
+  Future<void> _ensureVerifiedText() {
+    return _textLoadFuture ??= _loadVerifiedText();
+  }
 
-    return value.trim();
+  Future<void> _loadVerifiedText() async {
+    await verified_quran.QuranService.initialize();
+    for (var surahNumber = 1; surahNumber <= 114; surahNumber++) {
+      final surah = await verified_quran.QuranService.getSurah(surahNumber);
+      for (final ayah in surah.ayat) {
+        _verifiedText['$surahNumber:${ayah.id}'] = ayah.text.trim();
+      }
+    }
+
+    if (_verifiedText.length != 6236) {
+      throw StateError('Verified Quran dataset integrity check failed: expected 6236 ayat, got ${_verifiedText.length}.');
+    }
   }
 
   int _globalAyahNumber(int surahNumber, int ayahNumber) {
     var total = 0;
     for (var surah = 1; surah < surahNumber; surah++) {
-      total += _offline.getVerseCount(surah);
+      total += _metadata.getVerseCount(surah);
     }
     return total + ayahNumber;
   }
 
-  QuranVerse _mapOfflineAyah(offline_quran.Ayah ayah) {
-    final rub = _offline.getRubIndex(ayah.surahNumber, ayah.id) ?? 1;
+  QuranVerse _mapMetadataAyah(offline_quran.Ayah ayah) {
+    final text = _verifiedText['${ayah.surahNumber}:${ayah.id}'];
+    if (text == null || text.isEmpty) {
+      throw StateError('Verified Quran text missing for ${ayah.surahNumber}:${ayah.id}.');
+    }
+
+    final rub = _metadata.getRubIndex(ayah.surahNumber, ayah.id) ?? 1;
     return QuranVerse(
       number: _globalAyahNumber(ayah.surahNumber, ayah.id),
       numberInSurah: ayah.id,
-      text: _quranText(ayah.text),
+      text: text,
       page: ayah.page,
       juz: ayah.juz,
       hizbQuarter: rub,
       surahNumber: ayah.surahNumber,
-      surahName: _offline.getSurahNameArabic(ayah.surahNumber),
+      surahName: _metadata.getSurahNameArabic(ayah.surahNumber),
     );
   }
 
   Future<QuranPage> fetchPage(int page) async {
     if (page < 1 || page > 604) throw ArgumentError.value(page, 'page', 'must be between 1 and 604');
-    final ayahs = _offline.getPage(page);
-    return QuranPage(page: page, verses: ayahs.map(_mapOfflineAyah).toList(growable: false));
+    await _ensureVerifiedText();
+    final ayahs = _metadata.getPage(page);
+    return QuranPage(page: page, verses: ayahs.map(_mapMetadataAyah).toList(growable: false));
   }
 
-  Future<List<QuranSurah>> fetchSurahs() async => _offline.getAllSurahs().map((s) => QuranSurah(number: s.number, name: s.nameAr, englishName: s.nameEn, numberOfAyahs: s.ayahCount)).toList(growable: false);
+  Future<List<QuranSurah>> fetchSurahs() async {
+    await _ensureVerifiedText();
+    return _metadata.getAllSurahs().map((s) => QuranSurah(number: s.number, name: s.nameAr, englishName: s.nameEn, numberOfAyahs: s.ayahCount)).toList(growable: false);
+  }
 
   Future<int> fetchSurahStartPage(int surahNumber) async {
     for (var page = 1; page <= 604; page++) {
-      final ayahs = _offline.getPage(page);
+      final ayahs = _metadata.getPage(page);
       if (ayahs.any((ayah) => ayah.surahNumber == surahNumber)) return page;
     }
     throw Exception('Surah not found');
@@ -106,15 +125,28 @@ class QuranService {
   Future<List<QuranSearchResult>> search(String keyword) async {
     final query = keyword.trim();
     if (query.isEmpty) return const [];
-    return _offline.search(query, limit: 50).map((ayah) => QuranSearchResult(verse: _mapOfflineAyah(ayah))).toList(growable: false);
+    await _ensureVerifiedText();
+
+    final results = <QuranSearchResult>[];
+    for (var surah = 1; surah <= 114 && results.length < 50; surah++) {
+      final ayahs = _metadata.getSurah(surah).verses;
+      for (final ayah in ayahs) {
+        final verse = _mapMetadataAyah(ayah);
+        if (verse.text.contains(query)) {
+          results.add(QuranSearchResult(verse: verse));
+          if (results.length >= 50) break;
+        }
+      }
+    }
+    return results;
   }
 
   Future<QuranTafsir> fetchTafsir(int globalAyahNumber) async {
     var remaining = globalAyahNumber;
     for (var surah = 1; surah <= 114; surah++) {
-      final count = _offline.getVerseCount(surah);
+      final count = _metadata.getVerseCount(surah);
       if (remaining <= count) {
-        final tafsir = _offline.getTafsir(surah)[remaining];
+        final tafsir = _metadata.getTafsir(surah)[remaining];
         if (tafsir != null && tafsir.trim().isNotEmpty) return QuranTafsir(text: tafsir.trim(), source: 'التفسير الميسر');
         break;
       }

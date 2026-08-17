@@ -53,19 +53,18 @@ class QuranService {
   String _cleanAyahText(String text) {
     var cleaned = text.trim();
 
-    // The bundled dataset may contain an Arabic end-of-ayah ornament (U+06DD)
-    // or other decorative delimiters. They must never be rendered as part of
-    // the ayah. Remove them anywhere in the supplied verse, not only at the
-    // end, because some Quran fonts encode the ornament together with its
-    // following number.
+    // Remove decorative verse-end glyphs only. These are presentation marks,
+    // not part of the Quran text.
     cleaned = cleaned.replaceAll(RegExp(r'[۝۩﴿﴾٭❊۞]'), '');
 
-    // Remove trailing dataset-only annotations, while preserving all Quranic
-    // letters, diacritics and normal Arabic punctuation inside the ayah.
-    cleaned = cleaned.replaceFirst(
-      RegExp(r'(?:\s*[0-9٠-٩]+\s*)+$'),
-      '',
-    );
+    // The bundled dataset used by the previous build contains the unwanted
+    // two-letter suffixes "ئح" and "ئم" at the end of many ayahs. They are
+    // dataset artifacts and must NEVER be displayed as Quran text.
+    cleaned = cleaned.replaceFirst(RegExp(r'(?:\s*(?:ئح|ئم))+$'), '');
+
+    // Also remove a trailing numeric annotation if one exists in the bundled
+    // data. The UI displays the ayah number separately in its circle.
+    cleaned = cleaned.replaceFirst(RegExp(r'(?:\s*[0-9٠-٩]+\s*)+$'), '');
 
     return cleaned.trim();
   }
@@ -83,8 +82,7 @@ class QuranService {
     return QuranVerse(
       number: _globalAyahNumber(ayah.surahNumber, ayah.id),
       numberInSurah: ayah.id,
-      // IMPORTANT: do not append an ayah-end glyph or a second number here.
-      // The UI already displays the ayah number in its dedicated circle.
+      // Do not append any ayah-end glyph, number, or annotation here.
       text: _cleanAyahText(ayah.text),
       page: ayah.page,
       juz: ayah.juz,

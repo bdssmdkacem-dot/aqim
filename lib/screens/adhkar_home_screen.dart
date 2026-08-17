@@ -70,18 +70,6 @@ class AdhkarHomeScreen extends StatelessWidget {
             _card(context, Icons.restaurant_rounded, 'الطعام والشراب', 'ذكر الطعام وبعد الفراغ منه', foodAdhkar, 'food', false),
             _card(context, Icons.directions_car_rounded, 'السفر والركوب', 'دعاء الركوب والسفر والرجوع', travelAdhkar, 'travel', false),
             _card(context, Icons.shield_rounded, 'الحفظ والكرب', 'أذكار الاستعاذة والتوكل والتحصين', protectionAdhkar, 'protection', false),
-            const SizedBox(height: 18),
-            Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(color: AppColors.surfaceDark.withOpacity(.72), borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.paperLine)),
-              child: Row(
-                children: [
-                  const Icon(Icons.volume_up_rounded, color: AppColors.gold, size: 23),
-                  const SizedBox(width: 11),
-                  Expanded(child: Text('لكل ذكر زر استماع مستقل. أضف ملفات الصوت بالأسماء المحددة في القائمة أدناه داخل مجلد الصوت الخاص بالقسم.', style: GoogleFonts.cairo(fontSize: 11, color: AppColors.inkSoft, height: 1.65))),
-                ],
-              ),
-            ),
           ],
         ),
       ),

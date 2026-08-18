@@ -24,11 +24,14 @@ class NotificationService {
   static const _jumuahAlarmSound = 'alarm_jomoaa';
   static const _missedPrefix = 'missed:';
   static const _quranPrefix = 'quran:';
-  // Bump channel ids whenever notification sound/timing behaviour changes.
-  // Android keeps channel sound settings once a channel has been created.
-  static const _channelVersion = 'v8';
+  static const _witrPrefix = 'witr:';
+  static const _channelVersion = 'v9';
   static const _weeklySummaryId = 9001;
-  static const _quranDailyId = 9002;
+  static const _quranFajrId = 9002;
+  static const _quranDhuhrId = 9003;
+  static const _quranAsrId = 9004;
+  static const _quranMaghribId = 9005;
+  static const _witrId = 9010;
 
   Future<void> init() {
     if (_initialized) return Future.value();
@@ -158,10 +161,6 @@ class NotificationService {
 
   String _alarmChannel(String sound) => 'aqim_alarm_${_channelVersion}_$sound';
 
-  // Inexact Android alarms are explicitly allowed to drift around their target.
-  // When exact alarms are unavailable we move critical notifications forward,
-  // never backward, so the adhan/missed-prayer alert cannot be intentionally
-  // scheduled before the prayer time. Exact alarms remain the normal path.
   DateTime _safeFallbackDate(DateTime scheduledDate) {
     if (exactAlarmPermissionGranted) return scheduledDate;
     return scheduledDate.add(const Duration(minutes: 2));
@@ -199,10 +198,6 @@ class NotificationService {
       throw StateError('NOTIFICATIONS_PERMISSION_REQUIRED');
     }
 
-    // Ask for exact alarms when the OS supports it. This is required for the
-    // adhan to fire at the prayer minute instead of using Android's inexact
-    // alarm window. If the user declines, the safe +2 minute fallback above
-    // prevents an early adhan/missed alert.
     await refreshExactAlarmPermission();
     if (!exactAlarmPermissionGranted) {
       await requestExactAlarmPermission();
@@ -255,7 +250,13 @@ class NotificationService {
 
     final prefs = await SharedPreferences.getInstance();
     final savedPage = prefs.getInt('quran_resume_page') ?? prefs.getInt('quran_next_page') ?? 1;
-    await scheduleQuranDaily(savedPage, afterFajr: realTimes[Prayer.fajr]);
+
+    // Four Quran reminders spread through the day. The first is the Fajr Quran
+    // reminder; the others are independent daily reading opportunities.
+    await _scheduleQuranReminders(realTimes, savedPage);
+
+    // Shaf' and Witr reminder: exactly five minutes after Isha.
+    await _scheduleShafWitrReminder(realTimes[Prayer.isha]);
   }
 
   NotificationDetails _alarmDetails({
@@ -278,6 +279,22 @@ class NotificationService {
         sound: soundName == null ? null : RawResourceAndroidNotificationSound(soundName),
         audioAttributesUsage: AudioAttributesUsage.alarm,
         channelBypassDnd: notificationPolicyAccessGranted,
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
+      ),
+    );
+  }
+
+  NotificationDetails _reminderDetails({required String channelId, required String channelName, required String description}) {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        channelId,
+        channelName,
+        channelDescription: description,
+        importance: Importance.high,
+        priority: Priority.high,
+        category: AndroidNotificationCategory.reminder,
+        playSound: true,
         enableVibration: true,
         visibility: NotificationVisibility.public,
       ),
@@ -377,6 +394,53 @@ class NotificationService {
     );
   }
 
+  Future<void> _scheduleQuranReminders(Map<Prayer, DateTime> times, int page) async {
+    final slots = <int, (DateTime?, String, String)>{
+      _quranFajrId: (times[Prayer.fajr]?.add(const Duration(minutes: 15)), 'قرآن الفجر — أقم', 'اجعل بعد الفجر وردًا ثابتًا من كتاب الله.'),
+      _quranDhuhrId: (times[Prayer.dhuhr]?.add(const Duration(minutes: 30)), 'ورد القرآن — وقت الظهر', 'خذ دقائق هادئة لقراءة القرآن وأكمل من الصفحة $page.'),
+      _quranAsrId: (times[Prayer.asr]?.add(const Duration(minutes: 30)), 'ورد القرآن — وقت العصر', 'تذكير لطيف لقراءة ما تيسر من القرآن اليوم.'),
+      _quranMaghribId: (times[Prayer.maghrib]?.add(const Duration(minutes: 30)), 'ورد القرآن — بعد المغرب', 'قبل أن ينتهي اليوم، افتح القرآن وأكمل وردك.'),
+    };
+
+    for (final entry in slots.entries) {
+      await _plugin.cancel(id: entry.key);
+      final scheduled = entry.value.$1;
+      if (scheduled == null || !scheduled.isAfter(DateTime.now())) continue;
+      await _scheduleExact(
+        id: entry.key,
+        title: entry.value.$2,
+        body: entry.value.$3,
+        scheduledDate: scheduled,
+        payload: '$_quranPrefix$page',
+        details: _reminderDetails(
+          channelId: 'aqim_quran_reading_${_channelVersion}',
+          channelName: 'قراءة القرآن',
+          description: 'تذكيرات يومية متفرقة لقراءة القرآن الكريم',
+        ),
+      );
+    }
+  }
+
+  Future<void> _scheduleShafWitrReminder(DateTime? isha) async {
+    await _plugin.cancel(id: _witrId);
+    if (isha == null) return;
+    final scheduled = isha.add(const Duration(minutes: 5));
+    if (!scheduled.isAfter(DateTime.now())) return;
+
+    await _scheduleExact(
+      id: _witrId,
+      title: 'الشفع والوتر',
+      body: 'بعد صلاة العشاء، حان وقت صلاة الشفع والوتر بإذن الله.',
+      scheduledDate: scheduled,
+      payload: '$_witrPrefix${isha.toIso8601String()}',
+      details: _reminderDetails(
+        channelId: 'aqim_witr_${_channelVersion}',
+        channelName: 'الشفع والوتر',
+        description: 'تذكير بعد صلاة العشاء بخمس دقائق بصلاة الشفع والوتر',
+      ),
+    );
+  }
+
   Future<void> scheduleWeeklySummary(String text) async {
     await init();
     final now = tz.TZDateTime.now(tz.local);
@@ -407,52 +471,23 @@ class NotificationService {
     );
   }
 
-  /// Quran reminder: every day after Fajr, using the user's saved Quran page.
   Future<void> scheduleQuranDaily(int page, {DateTime? afterFajr}) async {
     await init();
     final safePage = page.clamp(1, 604);
-    await _plugin.cancel(id: _quranDailyId);
-
-    final now = DateTime.now();
-    DateTime scheduled;
-
-    if (afterFajr != null) {
-      scheduled = afterFajr.add(const Duration(minutes: 15));
-      if (!scheduled.isAfter(now)) {
-        scheduled = scheduled.add(const Duration(days: 1));
-      }
-    } else {
-      final tomorrow = now.add(const Duration(days: 1));
-      scheduled = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 6, 30);
-    }
-
-    final progress = (((safePage - 1) / 604) * 100).round();
-    final body = safePage >= 604
-        ? 'أتممت صفحات الختمة. افتح القرآن لبدء ختمة جديدة بإذن الله.'
-        : 'أكمل وردك من الصفحة $safePage — تقدمك نحو ختم القرآن $progress٪. افتح القرآن وتابع من حيث توقفت.';
-
-    final safeDate = _safeFallbackDate(scheduled);
-    await _plugin.zonedSchedule(
-      id: _quranDailyId,
-      title: 'ورد القرآن — أقم',
-      body: body,
-      scheduledDate: tz.TZDateTime.from(safeDate, tz.local),
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'aqim_quran_reading_v3',
-          'قراءة القرآن',
-          channelDescription: 'تذكير يومي بورد القرآن بعد صلاة الفجر',
-          importance: Importance.high,
-          priority: Priority.high,
-          category: AndroidNotificationCategory.reminder,
-          playSound: true,
-          enableVibration: true,
-          visibility: NotificationVisibility.public,
-        ),
-      ),
-      androidScheduleMode: _scheduleMode,
-      matchDateTimeComponents: DateTimeComponents.time,
+    await _plugin.cancel(id: _quranFajrId);
+    final scheduled = afterFajr?.add(const Duration(minutes: 15));
+    if (scheduled == null || !scheduled.isAfter(DateTime.now())) return;
+    await _scheduleExact(
+      id: _quranFajrId,
+      title: 'قرآن الفجر — أقم',
+      body: 'أكمل وردك من الصفحة $safePage — دقائق قليلة مع القرآن.',
+      scheduledDate: scheduled,
       payload: '$_quranPrefix$safePage',
+      details: _reminderDetails(
+        channelId: 'aqim_quran_reading_${_channelVersion}',
+        channelName: 'قراءة القرآن',
+        description: 'تذكير يومي بقراءة القرآن الكريم',
+      ),
     );
   }
 
@@ -473,6 +508,10 @@ class NotificationService {
       final page = int.tryParse(payload.substring(_quranPrefix.length));
       Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => QuranScreen(initialPage: page),
+      ));
+    } else if (payload.startsWith(_witrPrefix)) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => const PrePrayerScreen(prayer: Prayer.isha),
       ));
     } else if (payload.isNotEmpty) {
       final prayer = Prayer.values.where((p) => p.name == payload).firstOrNull;

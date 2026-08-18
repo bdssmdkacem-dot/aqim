@@ -32,6 +32,36 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
   double get itemProgress => current.repeat <= 0 ? 0 : (count / current.repeat).clamp(0.0, 1.0);
   double get totalProgress => ((index + itemProgress) / widget.items.length).clamp(0.0, 1.0);
 
+  /// Converts the Quran surahs already included in the adhkar lists from the
+  /// old '*' separators to proper Quran-style ayah numbers. The Quran source
+  /// itself is never modified; this is display-only metadata.
+  String _quranAwareText(AdhkarItem item) {
+    final id = item.id;
+    final isIkhlas = id == 'al_ikhlas' || id == 'morning_ikhlas' || id.contains('evening_ikhlas');
+    final isFalaq = id == 'al_falaq' || id == 'morning_falaq' || id.contains('evening_falaq');
+    final isNas = id == 'an_nas' || id == 'morning_nas' || id.contains('evening_nas');
+
+    if (id == 'ayat_kursi' || id == 'morning_ayat_kursi' || id.contains('evening_ayat_kursi')) {
+      return '${item.text.trim()} ﴿٢٥٥﴾';
+    }
+
+    if (!isIkhlas && !isFalaq && !isNas) return item.text;
+
+    final parts = item.text.split('*').map((part) => part.trim()).where((part) => part.isNotEmpty).toList(growable: false);
+    final count = isIkhlas ? 4 : (isFalaq ? 5 : 6);
+    if (parts.length != count) return item.text;
+
+    return List<String>.generate(
+      parts.length,
+      (i) => '${parts[i]} ﴿${_arabicNumber(i + 1)}﴾',
+    ).join(' ');
+  }
+
+  String _arabicNumber(int value) {
+    const digits = <String>['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+    return value.toString().split('').map((d) => digits[int.parse(d)]).join();
+  }
+
   void _next() {
     if (isLast) {
       if (widget.nextScreenBuilder != null) {
@@ -68,6 +98,7 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
   @override
   Widget build(BuildContext context) {
     final item = current;
+    final displayText = _quranAwareText(item);
 
     return Scaffold(
       backgroundColor: AppColors.ink,
@@ -151,8 +182,9 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
                                     ),
                                     const SizedBox(height: 18),
                                     Text(
-                                      item.text,
+                                      displayText,
                                       textAlign: TextAlign.center,
+                                      textDirection: TextDirection.rtl,
                                       style: GoogleFonts.amiri(fontSize: 22, height: 2.0, color: AppColors.ivory, fontWeight: FontWeight.w600),
                                     ),
                                     if (item.note != null) ...[

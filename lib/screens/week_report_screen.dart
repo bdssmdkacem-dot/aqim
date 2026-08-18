@@ -43,7 +43,13 @@ class WeekReportScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
                 decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [AppColors.surfaceElevated, AppColors.surfaceDark]), borderRadius: BorderRadius.circular(24), border: Border.all(color: AppColors.gold.withOpacity(.38))),
                 child: Row(children: [
-                  Container(width: 52, height: 52, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.gold.withOpacity(.10), border: Border.all(color: AppColors.gold.withOpacity(.55))), child: const Icon(Icons.auto_awesome_rounded, color: AppColors.goldSoft, size: 27)),
+                  Container(
+                    width: 52,
+                    height: 52,
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.gold.withOpacity(.10), border: Border.all(color: AppColors.gold.withOpacity(.55))),
+                    child: ClipOval(child: Image.asset('assets/images/aqim_logo_transparent_512.png', fit: BoxFit.contain)),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('رحلتك مع أقم', style: Theme.of(context).textTheme.titleLarge), const SizedBox(height: 3), Text('تابع صلاتك يومًا بيوم، وخطوة بخطوة.', style: Theme.of(context).textTheme.bodySmall)])),
                 ]),
@@ -85,7 +91,7 @@ class WeekReportScreen extends StatelessWidget {
                 final s = state.todayStatus[p];
                 final isDone = s == PrayerStatus.done;
                 final isMissed = s == PrayerStatus.missed;
-                return ListTile(dense: true, title: Text(p.arabicName, style: Theme.of(context).textTheme.titleMedium), trailing: CircleAvatar(radius: 12, backgroundColor: isDone ? AppColors.sage : isMissed ? AppColors.ember : AppColors.paperLine, child: Text(isDone ? '✓' : (isMissed ? '✕' : ''), style: const TextStyle(fontSize: 11, color: Colors.white))));
+                return ListTile(dense: true, title: Text(p.arabicName, style: Theme.of(context).textTheme.titleMedium), trailing: CircleAvatar(radius: 12, backgroundColor: isDone ? AppColors.sage : isMissed ? AppColors.ember : AppColors.paperLine, child: Text(isDone ? '✓' : (isMissed ? '✕' : ''), style: const TextStyle(fontSize: 11, color: Colors.white)));
               }).toList()))),
               if (weakest != null) ...[
                 const SizedBox(height: 12),

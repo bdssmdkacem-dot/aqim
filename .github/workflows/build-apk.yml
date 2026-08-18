@@ -15,8 +15,8 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Apply Aqim branding
-        run: python3 scripts/apply_aqim_branding.py
+      - name: Apply Aqim branding and Quran navigation fixes
+        run: python3 scripts/apply_aqim_branding.py && python3 scripts/apply_quran_and_logo_fixes.py
 
       - name: Download and verify Tanzil Uthmani Quran
         run: python3 scripts/download_tanzil_uthmani.py
@@ -51,6 +51,9 @@ jobs:
           assert lines[-1].startswith('114|6|')
           print(f'Quran verification passed: {len(lines)} ayat')
           PY
+
+      - name: Verify exact Aqim logo
+        run: test -f android/app/src/main/res/drawable/aqim_logo_transparent_512.png
 
       - name: Restore Android keystore
         run: |

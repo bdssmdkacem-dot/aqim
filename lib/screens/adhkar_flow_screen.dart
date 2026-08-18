@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/adhkar.dart';
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/aqim_logo.dart';
 import 'prayer_guide_screen.dart';
 
 class AdhkarFlowScreen extends StatefulWidget {
@@ -32,9 +33,6 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
   double get itemProgress => current.repeat <= 0 ? 0 : (count / current.repeat).clamp(0.0, 1.0);
   double get totalProgress => ((index + itemProgress) / widget.items.length).clamp(0.0, 1.0);
 
-  /// Converts the Quran surahs already included in the adhkar lists from the
-  /// old '*' separators to proper Quran-style ayah numbers. The Quran source
-  /// itself is never modified; this is display-only metadata.
   String _quranAwareText(AdhkarItem item) {
     final id = item.id;
     final isIkhlas = id == 'al_ikhlas' || id == 'morning_ikhlas' || id.contains('evening_ikhlas');
@@ -65,9 +63,7 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
   void _next() {
     if (isLast) {
       if (widget.nextScreenBuilder != null) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => widget.nextScreenBuilder!()),
-        );
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => widget.nextScreenBuilder!()));
       } else {
         Navigator.of(context).pop();
       }
@@ -90,9 +86,7 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
   }
 
   void _openPrayerGuide() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const PrayerGuideScreen()),
-    );
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PrayerGuideScreen()));
   }
 
   @override
@@ -170,16 +164,9 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
                                 ),
                                 child: Column(
                                   children: [
-                                    Container(
-                                      width: 62,
-                                      height: 62,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: AppColors.gold.withOpacity(.09),
-                                        border: Border.all(color: AppColors.gold.withOpacity(.5)),
-                                      ),
-                                      child: const Icon(Icons.auto_awesome_rounded, color: AppColors.gold, size: 28),
-                                    ),
+                                    // Use the exact same Aqim brand mark used on
+                                    // the Home screen instead of a generic circle icon.
+                                    const AqimLogo(size: 62),
                                     const SizedBox(height: 18),
                                     Text(
                                       displayText,
@@ -249,12 +236,7 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
               ),
               Row(
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _next,
-                      child: Text(isLast ? 'إنهاء' : 'تخطي'),
-                    ),
-                  ),
+                  Expanded(child: OutlinedButton(onPressed: _next, child: Text(isLast ? 'إنهاء' : 'تخطي'))),
                   const SizedBox(width: 10),
                   Expanded(
                     flex: 2,

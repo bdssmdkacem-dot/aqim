@@ -35,8 +35,9 @@ class AdhkarHomeScreen extends StatelessWidget {
                   Container(
                     width: 56,
                     height: 56,
+                    padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.gold.withOpacity(.12), border: Border.all(color: AppColors.gold.withOpacity(.55))),
-                    child: const Icon(Icons.auto_awesome_rounded, color: AppColors.gold, size: 28),
+                    child: ClipOval(child: Image.asset('assets/images/aqim_logo_transparent_512.png', fit: BoxFit.contain)),
                   ),
                   const SizedBox(width: 14),
                   Expanded(

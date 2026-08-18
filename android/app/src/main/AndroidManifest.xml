@@ -18,7 +18,7 @@
     <application
         android:name="${applicationName}"
         android:label="أقم"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@drawable/ic_aqim_logo">
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

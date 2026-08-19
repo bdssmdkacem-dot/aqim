@@ -49,7 +49,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.comptaflow.aqim"
+        applicationId "com.aqim.app"
         // flutter_local_notifications 21 requires Android 7.0 / API 24+.
         minSdk 24
         targetSdk 36

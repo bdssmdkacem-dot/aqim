@@ -20,9 +20,10 @@
         android:label="أقم"
         android:icon="@drawable/ic_aqim_logo">
 
+        <!-- Aqim production AdMob App ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-1377346158677931~6762437167"/>
 
         <activity
             android:name=".MainActivity"

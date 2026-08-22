@@ -29,6 +29,33 @@ premium_title = """                  const _SectionTitle(
 """
 s = s.replace(premium_title, '')
 s = re.sub(r"\n  Widget _buildPremiumCard\(AppState state\) \{.*?\n  \}\n\}\n\nclass _SectionTitle", "\n}\n\nclass _SectionTitle", s, flags=re.S)
+
+# Replace the old version/location footer with the Aqim mark only.
+s = re.sub(
+    r"\n                  Card\(\n                    child: ListTile\(\n                      leading: const Icon\(Icons.info_outline_rounded, color: AppColors.gold\),.*?\n                  \),",
+    """
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Column(
+                      children: [
+                        Image.asset(
+                          'assets/images/aqim_logo_transparent_512.png',
+                          width: 74,
+                          height: 74,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'أقم — لأجل صلاة في وقتها',
+                          style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+""",
+    s,
+    flags=re.S,
+)
 settings.write_text(s, encoding='utf-8')
 
 # Keep the stored preference key consistent between Settings and notifications.
@@ -37,4 +64,27 @@ ns = notification.read_text(encoding='utf-8')
 ns = ns.replace("prefs.getString('prayer_alert_mode')", "prefs.getString('pre_prayer_alert_mode')")
 notification.write_text(ns, encoding='utf-8')
 
-print('Aqim adhan settings migration completed successfully.')
+# Upgrade the existing monthly agenda to an interactive month navigator.
+report = ROOT / 'lib/screens/week_report_screen.dart'
+r = report.read_text(encoding='utf-8')
+if "../widgets/monthly_agenda.dart" not in r:
+    r = r.replace("import '../theme/app_theme.dart';", "import '../theme/app_theme.dart';\nimport '../widgets/monthly_agenda.dart';")
+r = re.sub(
+    r"\n    final firstOfMonth = DateTime\(today\.year, today\.month, 1\);.*?\n    final calendarCells = .*?\n\n    return Scaffold",
+    "\n    return Scaffold",
+    r,
+    flags=re.S,
+)
+r = re.sub(
+    r"              Text\('أجندة هذا الشهر'.*?\n              if \(upcomingEvents\.isNotEmpty\) \.\.\.\[",
+    """              Text('أجندة هذا الشهر', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              const MonthlyAgenda(),
+              if (upcomingEvents.isNotEmpty) ...[""",
+    r,
+    count=1,
+    flags=re.S,
+)
+report.write_text(r, encoding='utf-8')
+
+print('Aqim settings and interactive monthly agenda migration completed successfully.')

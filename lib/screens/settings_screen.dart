@@ -31,7 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   };
 
   static const _alertModes = <String, String>{
-    'adhan': 'الأذان المختار',
+    'adhan': 'تنبيه صوتي',
     'ringtone': 'رنة الهاتف',
     'vibrate': 'هزاز فقط',
   };
@@ -67,6 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    AudioService.instance.stop();
     super.dispose();
   }
 
@@ -97,10 +98,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('pre_prayer_enabled', _prePrayerEnabled);
     await prefs.setString('pre_prayer_alert_mode', _prePrayerMode);
-    await prefs.setStringList(
-      'pre_prayer_prayers',
-      _prePrayerPrayers.toList(),
-    );
+    await prefs.setStringList('pre_prayer_prayers', _prePrayerPrayers.toList());
     if (mounted) await context.read<AppState>().loadPrayerTimes();
   }
 
@@ -118,12 +116,18 @@ class _SettingsScreenState extends State<SettingsScreen>
       if (mounted) setState(() => _playingAdhan = false);
       return;
     }
+
+    if (_loadingAudio) return;
     setState(() => _playingAdhan = true);
-    await AudioService.instance.playAsset(
-      context,
-      'adhan/$_selectedAdhan.mp3',
-    );
-    if (mounted) setState(() => _playingAdhan = false);
+
+    try {
+      await AudioService.instance.playAsset(
+        context,
+        'adhan/$_selectedAdhan.mp3',
+      );
+    } finally {
+      if (mounted) setState(() => _playingAdhan = false);
+    }
   }
 
   Future<void> _checkBattery() async {
@@ -153,10 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     final state = context.watch<AppState>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الإعدادات'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('الإعدادات'), centerTitle: true),
       body: SafeArea(
         child: Column(
           children: [
@@ -177,14 +178,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                   _buildPrePrayerCard(),
                   const SizedBox(height: 12),
                   _buildAdhanCard(state),
-                  const SizedBox(height: 22),
-                  const _SectionTitle(
-                    icon: Icons.workspace_premium_rounded,
-                    title: 'أقم بدون إعلانات',
-                    subtitle: 'تجربة هادئة ومركّزة على الصلاة.',
-                  ),
-                  const SizedBox(height: 10),
-                  _buildPremiumCard(state),
                   const SizedBox(height: 22),
                   const _SectionTitle(
                     icon: Icons.battery_saver_rounded,
@@ -212,10 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   const SizedBox(height: 12),
                   Card(
                     child: ListTile(
-                      leading: const Icon(
-                        Icons.info_outline_rounded,
-                        color: AppColors.gold,
-                      ),
+                      leading: const Icon(Icons.info_outline_rounded, color: AppColors.gold),
                       title: const Text('أقم — رفيق الصلاة'),
                       subtitle: Text(
                         'الإصدار الحالي • ${state.cityName ?? 'الموقع غير محدد'}',
@@ -240,15 +230,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'وقت التذكير قبل الصلاة',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
+            const Text('وقت التذكير قبل الصلاة', style: TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 6),
-            const Text(
-              'متى تريد أن يذكّرك أقم بالاستعداد؟',
-              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
+            const Text('متى تريد أن يذكّرك أقم بالاستعداد؟', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -258,16 +242,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                 return ChoiceChip(
                   label: Text('$minutes د'),
                   selected: selected,
-                  onSelected: (_) =>
-                      state.updateReminderTiming(before: minutes),
+                  onSelected: (_) => state.updateReminderTiming(before: minutes),
                 );
               }).toList(),
             ),
             const Divider(height: 28),
-            const Text(
-              'تذكير «هل صليت؟»',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
+            const Text('تذكير «هل صليت؟»', style: TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -277,8 +257,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 return ChoiceChip(
                   label: Text('$minutes د'),
                   selected: selected,
-                  onSelected: (_) =>
-                      state.updateReminderTiming(after: minutes),
+                  onSelected: (_) => state.updateReminderTiming(after: minutes),
                 );
               }).toList(),
             ),
@@ -301,23 +280,14 @@ class _SettingsScreenState extends State<SettingsScreen>
                 setState(() => _prePrayerEnabled = value);
                 await _savePrePrayerSettings();
               },
-              title: const Text(
-                'تنبيه صوتي قبل الصلاة',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-              subtitle: const Text(
-                'اختر الصلوات وطريقة التنبيه التي تناسبك.',
-                style: TextStyle(fontSize: 12),
-              ),
+              title: const Text('تنبيه صوتي قبل الصلاة', style: TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: const Text('اختر الصلوات وطريقة التنبيه التي تناسبك.', style: TextStyle(fontSize: 12)),
             ),
             if (_prePrayerEnabled) ...[
               const Divider(height: 20),
               const Align(
                 alignment: Alignment.centerRight,
-                child: Text(
-                  'الصلاة التي تريد التنبيه لها',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
+                child: Text('الصلاة التي تريد التنبيه لها', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
               const SizedBox(height: 10),
               Wrap(
@@ -339,14 +309,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                   labelText: 'طريقة التنبيه قبل الصلاة',
                   prefixIcon: Icon(Icons.volume_up_rounded),
                 ),
-                items: _alertModes.entries
-                    .map(
-                      (entry) => DropdownMenuItem(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      ),
-                    )
-                    .toList(),
+                items: _alertModes.entries.map((entry) {
+                  return DropdownMenuItem(value: entry.key, child: Text(entry.value));
+                }).toList(),
                 onChanged: (value) async {
                   if (value == null) return;
                   setState(() => _prePrayerMode = value);
@@ -356,14 +321,11 @@ class _SettingsScreenState extends State<SettingsScreen>
               const SizedBox(height: 8),
               Text(
                 _prePrayerMode == 'adhan'
-                    ? 'سيستخدم الأذان الذي اخترته في الأسفل.'
+                    ? 'سيستخدم الأذان الذي اخترته في قسم الأذان أدناه.'
                     : _prePrayerMode == 'ringtone'
                         ? 'سيستخدم رنة الإشعارات الافتراضية للهاتف.'
                         : 'سيكون التنبيه بالاهتزاز فقط دون صوت.',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textMuted,
-                ),
+                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
             ],
           ],
@@ -383,20 +345,11 @@ class _SettingsScreenState extends State<SettingsScreen>
               contentPadding: EdgeInsets.zero,
               value: state.adhanEnabled,
               onChanged: state.setAdhanEnabled,
-              title: const Text(
-                'الأذان عند دخول وقت الصلاة',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-              subtitle: const Text(
-                'يمكنك إيقاف الأذان مع إبقاء التنبيهات الأخرى.',
-                style: TextStyle(fontSize: 12),
-              ),
+              title: const Text('الأذان عند دخول وقت الصلاة', style: TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: const Text('يمكنك إيقاف الأذان مع إبقاء التنبيه قبل الصلاة.', style: TextStyle(fontSize: 12)),
             ),
             const Divider(height: 20),
-            const Text(
-              'الأذان المفضل',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
+            const Text('صوت الأذان', style: TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             if (_loadingAudio)
               const LinearProgressIndicator()
@@ -407,14 +360,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                   labelText: 'اختر صوت الأذان',
                   prefixIcon: Icon(Icons.mosque_rounded),
                 ),
-                items: _adhanSounds.entries
-                    .map(
-                      (entry) => DropdownMenuItem(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      ),
-                    )
-                    .toList(),
+                items: _adhanSounds.entries.map((entry) {
+                  return DropdownMenuItem(value: entry.key, child: Text(entry.value));
+                }).toList(),
                 onChanged: (value) {
                   if (value != null) _selectAdhan(value);
                 },
@@ -422,119 +370,14 @@ class _SettingsScreenState extends State<SettingsScreen>
             const SizedBox(height: 10),
             OutlinedButton.icon(
               onPressed: _loadingAudio ? null : _previewAdhan,
-              icon: Icon(
-                _playingAdhan
-                    ? Icons.stop_circle_outlined
-                    : Icons.play_circle_outline_rounded,
-              ),
-              label: Text(_playingAdhan ? 'إيقاف المعاينة' : 'تجربة الأذان'),
+              icon: Icon(_playingAdhan ? Icons.stop_circle_rounded : Icons.play_circle_fill_rounded),
+              label: Text(_playingAdhan ? 'إيقاف التنبيه الصوتي' : 'تجربة التنبيه الصوتي'),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPremiumCard(AppState state) {
-    if (state.adsRemoved) {
-      return Card(
-        color: AppColors.sage.withOpacity(.08),
-        child: const ListTile(
-          leading: Icon(Icons.verified_rounded, color: AppColors.sage),
-          title: Text(
-            'أقم بدون إعلانات مفعّل',
-            style: TextStyle(fontWeight: FontWeight.w800),
-          ),
-          subtitle: Text('شكرًا لدعمك أقم.'),
-        ),
-      );
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: AppColors.gold.withOpacity(.14),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.workspace_premium_rounded,
-                    color: AppColors.gold,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'أقم بدون إعلانات',
-                        style: TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                      SizedBox(height: 3),
-                      Text(
-                        'إعلانات أقل تشتيتًا، وتجربة أكثر هدوءًا.',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.ink.withOpacity(.04),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'اشتراك شهري',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  Text(
-                    state.removeAdsPriceLabel == r'\$19'
-                        ? '29 د.م./شهر'
-                        : '${state.removeAdsPriceLabel}/شهر',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 18,
-                      color: AppColors.gold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () => state.buyRemoveAds(),
-              icon: const Icon(Icons.lock_open_rounded),
-              label: const Text('إزالة الإعلانات — 29 د.م./شهر'),
-            ),
-            TextButton(
-              onPressed: () => state.restorePurchases(),
-              child: const Text('استعادة الاشتراك'),
-            ),
+            const SizedBox(height: 6),
             const Text(
-              'يمكن إدارة الاشتراك أو إلغاؤه من Google Play. السعر المعروض في المتجر هو السعر النهائي للمستخدم.',
+              'اضغط للتأكد من الصوت قبل اعتماده. يمكنك إيقافه في أي وقت.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.textMuted,
-                height: 1.45,
-              ),
+              style: TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
           ],
         ),
@@ -548,11 +391,7 @@ class _SectionTitle extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _SectionTitle({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
+  const _SectionTitle({required this.icon, required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -564,18 +403,9 @@ class _SectionTitle extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.w900),
-              ),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
               const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textMuted,
-                ),
-              ),
+              Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
             ],
           ),
         ),
@@ -586,54 +416,30 @@ class _SectionTitle extends StatelessWidget {
 
 class _StatusCard extends StatelessWidget {
   final AppState state;
-
   const _StatusCard({required this.state});
 
   @override
   Widget build(BuildContext context) {
     final active = state.notificationsActive;
     return Card(
-      color: active
-          ? AppColors.sage.withOpacity(.08)
-          : AppColors.ember.withOpacity(.08),
+      color: active ? AppColors.sage.withOpacity(.08) : AppColors.ember.withOpacity(.08),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(
-              active
-                  ? Icons.notifications_active_rounded
-                  : Icons.notifications_off_rounded,
-              color: active ? AppColors.sage : AppColors.ember,
-              size: 24,
-            ),
+            Icon(active ? Icons.notifications_active_rounded : Icons.notifications_off_rounded, color: active ? AppColors.sage : AppColors.ember, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    active ? 'تنبيهات أقم تعمل' : 'تنبيهات أقم تحتاج إلى تفعيل',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: active ? AppColors.sage : AppColors.ember,
-                    ),
-                  ),
+                  Text(active ? 'تنبيهات أقم تعمل' : 'تنبيهات أقم تحتاج إلى تفعيل', style: TextStyle(fontWeight: FontWeight.w900, color: active ? AppColors.sage : AppColors.ember)),
                   const SizedBox(height: 4),
-                  Text(
-                    state.cityName == null
-                        ? 'حدّد موقعك للحصول على أوقات الصلاة الدقيقة.'
-                        : 'الموقع: ${state.cityName}',
-                    style: const TextStyle(fontSize: 12),
-                  ),
+                  Text(state.cityName == null ? 'حدّد موقعك للحصول على أوقات الصلاة الدقيقة.' : 'الموقع: ${state.cityName}', style: const TextStyle(fontSize: 12)),
                 ],
               ),
             ),
-            IconButton(
-              tooltip: 'تحديث',
-              onPressed: state.loadPrayerTimes,
-              icon: const Icon(Icons.refresh_rounded),
-            ),
+            IconButton(tooltip: 'تحديث', onPressed: state.loadPrayerTimes, icon: const Icon(Icons.refresh_rounded)),
           ],
         ),
       ),
@@ -649,22 +455,11 @@ class _BatteryCard extends StatelessWidget {
   final VoidCallback onOpenAutoStart;
   final VoidCallback onOpenManufacturer;
 
-  const _BatteryCard({
-    required this.ready,
-    required this.checking,
-    required this.onCheck,
-    required this.onOpenAll,
-    required this.onOpenAutoStart,
-    required this.onOpenManufacturer,
-  });
+  const _BatteryCard({required this.ready, required this.checking, required this.onCheck, required this.onOpenAll, required this.onOpenAutoStart, required this.onOpenManufacturer});
 
   @override
   Widget build(BuildContext context) {
-    final ok = ready && !checking;
     return Card(
-      color: ok
-          ? AppColors.sage.withOpacity(.07)
-          : AppColors.ember.withOpacity(.07),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -672,64 +467,20 @@ class _BatteryCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  ok
-                      ? Icons.verified_user_rounded
-                      : Icons.battery_alert_rounded,
-                  color: ok ? AppColors.sage : AppColors.gold,
-                ),
+                Icon(ready ? Icons.check_circle_rounded : Icons.warning_amber_rounded, color: ready ? AppColors.sage : AppColors.ember),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    checking
-                        ? 'جارٍ فحص البطارية...'
-                        : ok
-                            ? 'التشغيل في الخلفية مفعّل'
-                            : 'اسمح لأقم بالعمل في الخلفية',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: ok ? AppColors.sage : AppColors.gold,
-                    ),
-                  ),
-                ),
+                Expanded(child: Text(ready ? 'إعدادات الخلفية مناسبة' : 'قد تتأخر التنبيهات', style: const TextStyle(fontWeight: FontWeight.w800))),
+                if (checking) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) else IconButton(onPressed: onCheck, icon: const Icon(Icons.refresh_rounded)),
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              ok
-                  ? 'يمكن لأقم متابعة التنبيهات حتى عند إغلاق الشاشة.'
-                  : 'بعض الهواتف قد تؤخر التنبيهات إذا قيّدت تشغيل أقم في الخلفية.',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textMuted,
-                height: 1.5,
-              ),
-            ),
-            if (!ok) ...[
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: checking ? null : onOpenAll,
-                icon: const Icon(Icons.battery_saver_rounded),
-                label: const Text('السماح بالتشغيل الكامل'),
-              ),
-              const SizedBox(height: 7),
-              OutlinedButton.icon(
-                onPressed: onOpenAutoStart,
-                icon: const Icon(Icons.autorenew_rounded),
-                label: const Text('تفعيل التشغيل التلقائي'),
-              ),
-              const SizedBox(height: 5),
-              TextButton.icon(
-                onPressed: onOpenManufacturer,
-                icon: const Icon(Icons.settings_suggest_rounded, size: 18),
-                label: const Text('إعدادات الشركة المصنّعة'),
-              ),
-            ],
-            TextButton.icon(
-              onPressed: onCheck,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('فحص الحالة الآن'),
-            ),
+            Text(ready ? 'يمكن لأقم العمل في الخلفية وإرسال التنبيهات في وقتها.' : 'لضمان وصول تنبيهات الصلاة، اسمح لأقم بالعمل دون قيود من البطارية.', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(onPressed: onOpenAll, icon: const Icon(Icons.settings_rounded), label: const Text('إعدادات البطارية')),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(onPressed: onOpenAutoStart, icon: const Icon(Icons.play_arrow_rounded), label: const Text('التشغيل التلقائي')),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(onPressed: onOpenManufacturer, icon: const Icon(Icons.phone_android_rounded), label: const Text('إعدادات الشركة المصنّعة')),
           ],
         ),
       ),

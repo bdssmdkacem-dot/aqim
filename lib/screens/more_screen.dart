@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import '../ads/app_interstitial_ad.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import 'nearby_mosques_screen.dart';
@@ -29,6 +30,7 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     context.watch<AppState>();
+    AppInterstitialAd.preload();
 
     return Scaffold(
       backgroundColor: AppColors.ink,
@@ -63,9 +65,14 @@ class MoreScreen extends StatelessWidget {
             _MenuTile(
               icon: Icons.bar_chart_rounded,
               title: 'التقرير الأسبوعي',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const WeekReportScreen()),
-              ),
+              onTap: () {
+                // Safe non-worship transition: Quran, Adhkar and prayer flows
+                // never trigger this interstitial.
+                AppInterstitialAd.showIfEligible();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const WeekReportScreen()),
+                );
+              },
             ),
             _MenuTile(
               icon: Icons.settings_outlined,

@@ -2,16 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'ad_ids.dart';
 
-/// Lightweight interstitial manager for non-worship transitions only.
+/// Interstitial manager for non-worship transitions only.
 ///
-/// It is intentionally throttled so ads never appear on the Quran, Adhkar,
-/// prayer, Qibla, or prayer-guide screens.
+/// The ad is never shown automatically. Call showIfEligible() only from a
+/// user action such as opening the weekly report. There is no artificial
+/// 10-minute cooldown: each user action may show the currently preloaded ad.
 class AppInterstitialAd {
   static InterstitialAd? _ad;
-  static DateTime? _lastShown;
   static bool _loading = false;
-
-  static const Duration _cooldown = Duration(minutes: 10);
 
   static void preload() {
     if (_ad != null || _loading) return;
@@ -47,8 +45,8 @@ class AppInterstitialAd {
     );
   }
 
-  /// Shows at most once every 10 minutes and only when explicitly requested
-  /// by a safe, non-worship transition.
+  /// Shows the preloaded interstitial when available, then prepares another
+  /// one. No 10-minute cooldown is applied.
   static void showIfEligible() {
     final ad = _ad;
     if (ad == null) {
@@ -56,13 +54,8 @@ class AppInterstitialAd {
       return;
     }
 
-    final now = DateTime.now();
-    if (_lastShown != null && now.difference(_lastShown!) < _cooldown) {
-      return;
-    }
-
-    _lastShown = now;
     _ad = null;
     ad.show();
+    preload();
   }
 }

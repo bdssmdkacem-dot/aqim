@@ -6,6 +6,7 @@ import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 
 const _dayLabels = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const _calendarDayLabels = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
 
 class WeekReportScreen extends StatelessWidget {
   const WeekReportScreen({super.key});
@@ -20,8 +21,8 @@ class WeekReportScreen extends StatelessWidget {
 
   String _monthName(int month) {
     const names = [
-      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+      'يناير', 'فبراير', 'مارس', 'أبريل', 'ماي', 'يونيو',
+      'يوليوز', 'غشت', 'شتنبر', 'أكتوبر', 'نونبر', 'دجنبر',
     ];
     return names[month - 1];
   }
@@ -40,7 +41,7 @@ class WeekReportScreen extends StatelessWidget {
 
     final firstOfMonth = DateTime(today.year, today.month, 1);
     final daysInMonth = DateTime(today.year, today.month + 1, 0).day;
-    final firstOffset = firstOfMonth.weekday % 7;
+    final firstOffset = (firstOfMonth.weekday + 1) % 7;
     final calendarCells = List<DateTime?>.generate(firstOffset, (_) => null)
       ..addAll(List.generate(daysInMonth, (i) => DateTime(today.year, today.month, i + 1)));
 
@@ -65,7 +66,7 @@ class WeekReportScreen extends StatelessWidget {
               const SizedBox(height: 14),
               Row(children: [Expanded(child: _StatCard(title: 'متوسط الأسبوع', value: '$average%', icon: Icons.insights_rounded)), const SizedBox(width: 9), Expanded(child: _StatCard(title: 'أيام مكتملة', value: '$completedDays / 7', icon: Icons.check_circle_outline_rounded))]),
               const SizedBox(height: 16),
-              Text('هذا الشهر', style: Theme.of(context).textTheme.titleMedium),
+              Text('أجندة هذا الشهر', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
@@ -73,7 +74,7 @@ class WeekReportScreen extends StatelessWidget {
                 child: Column(children: [
                   Text('${_monthName(today.month)} ${today.year}', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.goldSoft, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 10),
-                  Row(children: _dayLabels.map((d) => Expanded(child: Text(d.substring(0, 1), textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: AppColors.inkSoft, fontWeight: FontWeight.w700)))).toList()),
+                  Row(children: _calendarDayLabels.map((d) => Expanded(child: Text(d, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.clip, style: const TextStyle(fontSize: 8.5, color: AppColors.inkSoft, fontWeight: FontWeight.w700)))).toList()),
                   const SizedBox(height: 6),
                   GridView.builder(
                     shrinkWrap: true,
@@ -139,6 +140,8 @@ class WeekReportScreen extends StatelessWidget {
                 child: Row(children: [const Icon(Icons.today_rounded, color: AppColors.goldSoft, size: 25), const SizedBox(width: 10), Expanded(child: Text('إنجاز اليوم: $todayPercent% — ${_dayName(today)} ${today.day}/${today.month}', style: Theme.of(context).textTheme.bodyMedium))]),
               ),
               const SizedBox(height: 14),
+              Text('أجندة اليوم', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

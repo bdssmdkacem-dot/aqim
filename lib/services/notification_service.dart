@@ -269,7 +269,7 @@ class NotificationService {
   Future<void> _scheduleAdhan({required int id, required String title, required String body, required DateTime scheduledDate, required String payload}) async {
     final prefs = await SharedPreferences.getInstance();
     final selectedSound = prefs.getString('adhan_sound') ?? 'azan_maroc_1';
-    final alertMode = prefs.getString('prayer_alert_mode') ?? 'adhan';
+    final alertMode = prefs.getString('pre_prayer_alert_mode') ?? 'adhan';
     final String channelSuffix;
     final String? soundName;
     final bool enableVibration;

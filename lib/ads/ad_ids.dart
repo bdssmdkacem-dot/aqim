@@ -1,10 +1,6 @@
 import 'dart:io';
 
-/// معرّفات AdMob.
-///
-/// البانر الحالي يستخدم معرّف AdMob الخاص بالتطبيق على Android.
-/// الـInterstitial يستخدم معرّفات الاختبار الرسمية من Google إلى أن يتم
-/// استبدالها بمعرّف وحدة الإعلان الحقيقي الخاص بالتطبيق قبل النشر.
+/// AdMob identifiers for Aqim.
 class AdIds {
   static String get bannerAdUnitId {
     if (Platform.isAndroid) {
@@ -15,8 +11,8 @@ class AdIds {
 
   static String get interstitialAdUnitId {
     if (Platform.isAndroid) {
-      // Google official test interstitial ID.
-      return 'ca-app-pub-3940256099942544/1033173712';
+      // Aqim production interstitial ad unit.
+      return 'ca-app-pub-1377346158677931/6832048914';
     }
     // Google official iOS test interstitial ID.
     return 'ca-app-pub-3940256099942544/4411468910';

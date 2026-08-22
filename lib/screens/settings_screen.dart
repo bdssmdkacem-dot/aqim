@@ -203,16 +203,25 @@ class _SettingsScreenState extends State<SettingsScreen>
                     },
                   ),
                   const SizedBox(height: 12),
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.info_outline_rounded, color: AppColors.gold),
-                      title: const Text('أقم — رفيق الصلاة'),
-                      subtitle: Text(
-                        'الإصدار الحالي • ${state.cityName ?? 'الموقع غير محدد'}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Column(
+                      children: [
+                        Image.asset(
+                          'assets/images/aqim_logo_transparent_512.png',
+                          width: 74,
+                          height: 74,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'أقم — لأجل صلاة في وقتها',
+                          style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                        ),
+                      ],
                     ),
                   ),
+
                 ],
               ),
             ),

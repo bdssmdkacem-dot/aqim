@@ -5,6 +5,7 @@ import '../models/prayer.dart';
 import '../services/religious_events_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/monthly_agenda.dart';
 
 const _dayLabels = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const _calendarDayLabels = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
@@ -44,12 +45,6 @@ class WeekReportScreen extends StatelessWidget {
         .take(4)
         .toList();
 
-    final firstOfMonth = DateTime(today.year, today.month, 1);
-    final daysInMonth = DateTime(today.year, today.month + 1, 0).day;
-    final firstOffset = (firstOfMonth.weekday + 1) % 7;
-    final calendarCells = List<DateTime?>.generate(firstOffset, (_) => null)
-      ..addAll(List.generate(daysInMonth, (i) => DateTime(today.year, today.month, i + 1)));
-
     return Scaffold(
       backgroundColor: AppColors.ink,
       appBar: AppBar(title: const Text('لوحة الحياة'), centerTitle: true, backgroundColor: AppColors.ink),
@@ -73,51 +68,7 @@ class WeekReportScreen extends StatelessWidget {
               const SizedBox(height: 16),
               Text('أجندة هذا الشهر', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
-                decoration: BoxDecoration(color: AppColors.surfaceDark, borderRadius: BorderRadius.circular(22), border: Border.all(color: AppColors.paperLine.withOpacity(.75))),
-                child: Column(children: [
-                  Text('${_monthName(today.month)} ${today.year}', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.goldSoft, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 10),
-                  Row(children: _calendarDayLabels.map((d) => Expanded(child: Text(d, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.clip, style: const TextStyle(fontSize: 8.5, color: AppColors.inkSoft, fontWeight: FontWeight.w700)))).toList()),
-                  const SizedBox(height: 6),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: calendarCells.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, mainAxisSpacing: 5, crossAxisSpacing: 5, childAspectRatio: .88),
-                    itemBuilder: (_, index) {
-                      final date = calendarCells[index];
-                      if (date == null) return const SizedBox.shrink();
-                      final percent = state.percentForDate(date) ?? 0;
-                      final hasPrayerHistory = state.dailyPrayerHistory.containsKey('${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}');
-                      final event = ReligiousEventsService.eventOn(date);
-                      final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
-                      final done = percent >= 80;
-                      return Tooltip(
-                        message: event == null ? '' : ReligiousEventsService.labelForDate(date),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: event != null ? AppColors.gold.withOpacity(.10) : done ? AppColors.sage.withOpacity(.16) : AppColors.ink.withOpacity(.24),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: isToday ? AppColors.gold : event != null ? AppColors.gold.withOpacity(.65) : AppColors.paperLine.withOpacity(.65), width: isToday ? 1.4 : 1),
-                          ),
-                          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                            Text('${date.day}', style: TextStyle(fontSize: 11, fontWeight: isToday ? FontWeight.w900 : FontWeight.w600, color: isToday ? AppColors.gold : AppColors.ivory)),
-                            const SizedBox(height: 2),
-                            Icon(event != null ? Icons.event_available_rounded : hasPrayerHistory && done ? Icons.check_circle_rounded : hasPrayerHistory ? Icons.circle_rounded : Icons.remove_circle_outline, size: 10, color: event != null ? AppColors.gold : done ? AppColors.sage : hasPrayerHistory ? AppColors.gold : AppColors.textMuted),
-                          ]),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 9),
-                  const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(Icons.check_circle_rounded, size: 11, color: AppColors.sage), SizedBox(width: 4), Text('يوم مكتمل', style: TextStyle(fontSize: 9, color: AppColors.inkSoft)),
-                    SizedBox(width: 12), Icon(Icons.event_available_rounded, size: 11, color: AppColors.gold), SizedBox(width: 4), Text('مناسبة دينية', style: TextStyle(fontSize: 9, color: AppColors.inkSoft)),
-                  ]),
-                ]),
-              ),
+              const MonthlyAgenda(),
               if (upcomingEvents.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 Text('المناسبات القادمة', style: Theme.of(context).textTheme.titleMedium),

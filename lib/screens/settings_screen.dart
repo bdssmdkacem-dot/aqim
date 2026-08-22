@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/audio_service.dart';
 import '../services/battery_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
@@ -17,12 +19,24 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
   bool _batteryReady = false;
   bool _checkingBattery = true;
+  static const _adhanSounds = <String, String>{
+    'azan_maroc_1': 'الأذان المغربي 1',
+    'azan_1': 'الأذان 1',
+    'azan_2': 'الأذان 2',
+    'azan_3': 'الأذان 3',
+    'azan_abdebast': 'الأذان — عبد الباسط',
+    'azan_maroc_2': 'الأذان المغربي 2',
+  };
+  String _selectedAdhan = 'azan_maroc_1';
+  bool _loadingAdhan = true;
+  bool _playingAdhan = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkBattery();
+    _loadAdhanSelection();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<AppState>().refreshNotificationStatus();
     });
@@ -40,6 +54,33 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       _checkBattery();
       if (mounted) context.read<AppState>().refreshNotificationStatus();
     }
+  }
+
+
+  Future<void> _loadAdhanSelection() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _selectedAdhan = prefs.getString('adhan_sound') ?? 'azan_maroc_1';
+      _loadingAdhan = false;
+    });
+  }
+
+  Future<void> _selectAdhan(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('adhan_sound', value);
+    if (!mounted) return;
+    setState(() => _selectedAdhan = value);
+    await context.read<AppState>().loadPrayerTimes();
+  }
+
+  Future<void> _previewAdhan() async {
+    setState(() => _playingAdhan = true);
+    await AudioService.instance.playAsset(
+      context,
+      'adhan/$_selectedAdhan.mp3',
+    );
+    if (mounted) setState(() => _playingAdhan = false);
   }
 
   Future<void> _checkBattery() async {
@@ -84,7 +125,43 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             const SizedBox(height: 20),
             Text('الأذان', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
-            Card(child: SwitchListTile(title: const Text('صوت الأذان عند وقت كل صلاة'), subtitle: const Text('إشعار بصوت الأذان لحظة دخول الوقت', style: TextStyle(fontSize: 12)), value: state.adhanEnabled, onChanged: state.setAdhanEnabled)),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('صوت الأذان عند وقت كل صلاة'),
+                    subtitle: const Text('يعمل تلقائيًا عند دخول وقت الصلاة', style: TextStyle(fontSize: 12)),
+                    value: state.adhanEnabled,
+                    onChanged: state.setAdhanEnabled,
+                  ),
+                  const Divider(height: 24),
+                  const Text('صوت الأذان', style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  if (_loadingAdhan)
+                    const LinearProgressIndicator()
+                  else
+                    DropdownButtonFormField<String>(
+                      value: _selectedAdhan,
+                      decoration: const InputDecoration(labelText: 'اختر الأذان المفضل'),
+                      items: _adhanSounds.entries.map((entry) => DropdownMenuItem(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      )).toList(),
+                      onChanged: (value) {
+                        if (value != null) _selectAdhan(value);
+                      },
+                    ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: _loadingAdhan ? null : _previewAdhan,
+                    icon: Icon(_playingAdhan ? Icons.stop_rounded : Icons.play_arrow_rounded),
+                    label: Text(_playingAdhan ? 'إيقاف المعاينة' : 'تجربة الأذان'),
+                  ),
+                ]),
+              ),
+            ),
             const SizedBox(height: 20),
             Text('التشغيل في الخلفية', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),

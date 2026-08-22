@@ -25,7 +25,7 @@ class NotificationService {
   static const _missedPrefix = 'missed:';
   static const _quranPrefix = 'quran:';
   static const _witrPrefix = 'witr:';
-  static const _channelVersion = 'v9';
+  static const _channelVersion = 'v10';
   static const _weeklySummaryId = 9001;
   static const _quranFajrId = 9002;
   static const _quranDhuhrId = 9003;
@@ -356,6 +356,8 @@ class NotificationService {
     required DateTime scheduledDate,
     required String payload,
   }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final selectedSound = prefs.getString('adhan_sound') ?? 'azan_maroc_1';
     await _scheduleExact(
       id: id,
       title: title,
@@ -363,10 +365,10 @@ class NotificationService {
       scheduledDate: scheduledDate,
       payload: payload,
       details: _alarmDetails(
-        channelId: 'aqim_adhan_${_channelVersion}',
+        channelId: 'aqim_adhan_${_channelVersion}_$selectedSound',
         channelName: 'الأذان',
-        channelDescription: 'الأذان عند دخول وقت الصلاة — صوت منبّه',
-        soundName: 'adhan',
+        channelDescription: 'الأذان عند دخول وقت الصلاة — الصوت المختار من الإعدادات',
+        soundName: selectedSound,
         category: AndroidNotificationCategory.alarm,
       ),
     );

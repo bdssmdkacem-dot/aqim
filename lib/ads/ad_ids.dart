@@ -1,22 +1,24 @@
 import 'dart:io';
 
-/// معرّفات AdMob. القيم الحالية هي **معرّفات اختبار رسمية من Google**
-/// (تعمل دائمًا وتُظهر إعلانات وهمية بلا أي عائد مالي حقيقي).
+/// معرّفات AdMob.
 ///
-/// ⚠️ قبل نشر التطبيق على المتجر، استبدل:
-/// 1. القيم أدناه بمعرّفات إعلاناتك الحقيقية من حساب AdMob الخاص بك.
-/// 2. قيمة `com.google.android.gms.ads.APPLICATION_ID` في
-///    android/app/src/main/AndroidManifest.xml بمعرّف تطبيقك الحقيقي.
-///
-/// لا حاجة لإخفاء هذه القيم أو معاملتها كسرّ — معرّفات الإعلانات ليست
-/// حساسة، وتُضمَّن أصلًا داخل أي تطبيق منشور على المتجر.
+/// البانر الحالي يستخدم معرّف AdMob الخاص بالتطبيق على Android.
+/// الـInterstitial يستخدم معرّفات الاختبار الرسمية من Google إلى أن يتم
+/// استبدالها بمعرّف وحدة الإعلان الحقيقي الخاص بالتطبيق قبل النشر.
 class AdIds {
   static String get bannerAdUnitId {
     if (Platform.isAndroid) {
-      // معرّف بانر حقيقي (Home Banner) من حساب AdMob الخاص بالمستخدم.
       return 'ca-app-pub-1377346158677931/7344891091';
     }
-    // iOS test banner — للتوسّع المستقبلي إن أضفت منصة iOS.
     return 'ca-app-pub-3940256099942544/2934735716';
+  }
+
+  static String get interstitialAdUnitId {
+    if (Platform.isAndroid) {
+      // Google official test interstitial ID.
+      return 'ca-app-pub-3940256099942544/1033173712';
+    }
+    // Google official iOS test interstitial ID.
+    return 'ca-app-pub-3940256099942544/4411468910';
   }
 }

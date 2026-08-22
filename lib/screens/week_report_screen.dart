@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../ads/app_banner_ad.dart';
 import '../models/prayer.dart';
+import '../services/religious_events_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 
@@ -38,6 +39,10 @@ class WeekReportScreen extends StatelessWidget {
     final weekPercents = weekDates.map((d) => state.percentForDate(d) ?? 0).toList();
     final average = weekPercents.isEmpty ? 0 : (weekPercents.reduce((a, b) => a + b) / weekPercents.length).round();
     final completedDays = weekPercents.where((v) => v >= 80).length;
+    final upcomingEvents = ReligiousEventsService.upcoming(from: today, years: 1)
+        .where((e) => !e.date.isAfter(today.add(const Duration(days: 90))))
+        .take(4)
+        .toList();
 
     final firstOfMonth = DateTime(today.year, today.month, 1);
     final daysInMonth = DateTime(today.year, today.month + 1, 0).day;
@@ -86,29 +91,50 @@ class WeekReportScreen extends StatelessWidget {
                       if (date == null) return const SizedBox.shrink();
                       final percent = state.percentForDate(date) ?? 0;
                       final hasPrayerHistory = state.dailyPrayerHistory.containsKey('${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}');
+                      final event = ReligiousEventsService.eventOn(date);
                       final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
                       final done = percent >= 80;
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: done ? AppColors.sage.withOpacity(.16) : AppColors.ink.withOpacity(.24),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: isToday ? AppColors.gold : AppColors.paperLine.withOpacity(.65), width: isToday ? 1.4 : 1),
+                      return Tooltip(
+                        message: event == null ? '' : ReligiousEventsService.labelForDate(date),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: event != null ? AppColors.gold.withOpacity(.10) : done ? AppColors.sage.withOpacity(.16) : AppColors.ink.withOpacity(.24),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: isToday ? AppColors.gold : event != null ? AppColors.gold.withOpacity(.65) : AppColors.paperLine.withOpacity(.65), width: isToday ? 1.4 : 1),
+                          ),
+                          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Text('${date.day}', style: TextStyle(fontSize: 11, fontWeight: isToday ? FontWeight.w900 : FontWeight.w600, color: isToday ? AppColors.gold : AppColors.ivory)),
+                            const SizedBox(height: 2),
+                            Icon(event != null ? Icons.event_available_rounded : hasPrayerHistory && done ? Icons.check_circle_rounded : hasPrayerHistory ? Icons.circle_rounded : Icons.remove_circle_outline, size: 10, color: event != null ? AppColors.gold : done ? AppColors.sage : hasPrayerHistory ? AppColors.gold : AppColors.textMuted),
+                          ]),
                         ),
-                        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Text('${date.day}', style: TextStyle(fontSize: 11, fontWeight: isToday ? FontWeight.w900 : FontWeight.w600, color: isToday ? AppColors.gold : AppColors.ivory)),
-                          const SizedBox(height: 2),
-                          Icon(hasPrayerHistory && done ? Icons.check_circle_rounded : hasPrayerHistory ? Icons.circle_rounded : Icons.remove_circle_outline, size: 10, color: done ? AppColors.sage : hasPrayerHistory ? AppColors.gold : AppColors.textMuted),
-                        ]),
                       );
                     },
                   ),
                   const SizedBox(height: 9),
                   const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Icon(Icons.check_circle_rounded, size: 11, color: AppColors.sage), SizedBox(width: 4), Text('يوم مكتمل', style: TextStyle(fontSize: 9, color: AppColors.inkSoft)),
-                    SizedBox(width: 12), Icon(Icons.circle_rounded, size: 9, color: AppColors.gold), SizedBox(width: 4), Text('تم تسجيل الصلاة', style: TextStyle(fontSize: 9, color: AppColors.inkSoft)),
+                    SizedBox(width: 12), Icon(Icons.event_available_rounded, size: 11, color: AppColors.gold), SizedBox(width: 4), Text('مناسبة دينية', style: TextStyle(fontSize: 9, color: AppColors.inkSoft)),
                   ]),
                 ]),
               ),
+              if (upcomingEvents.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Text('المناسبات القادمة', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(color: AppColors.surfaceDark, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.gold.withOpacity(.24))),
+                  child: Column(children: upcomingEvents.map((event) {
+                    final dateLabel = '${event.date.day} ${_monthName(event.date.month)} ${event.date.year}';
+                    return ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.event_rounded, color: AppColors.goldSoft),
+                      title: Text(event.title, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w800)),
+                      subtitle: Text('${event.hijri} • $dateLabel${event.provisional ? ' • موعد متوقع' : ''}', style: Theme.of(context).textTheme.bodySmall),
+                    );
+                  }).toList()),
+                ),
+              ],
               const SizedBox(height: 16),
               Text('هذا الأسبوع', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
@@ -119,13 +145,18 @@ class WeekReportScreen extends StatelessWidget {
                   final percent = state.percentForDate(date) ?? 0;
                   final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
                   final complete = percent >= 80;
+                  final event = ReligiousEventsService.eventOn(date);
                   return Expanded(child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 2),
                     child: Column(children: [
                       Text(_dayName(date), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(fontSize: 9.5, fontWeight: isToday ? FontWeight.w800 : FontWeight.w600, color: isToday ? AppColors.goldSoft : AppColors.inkSoft)),
                       const SizedBox(height: 2),
                       Text('${date.day}/${date.month}', style: TextStyle(fontSize: 9, fontWeight: isToday ? FontWeight.w800 : FontWeight.w500, color: isToday ? AppColors.gold : AppColors.inkSoft)),
-                      const SizedBox(height: 7),
+                      if (event != null) ...[
+                        const SizedBox(height: 2),
+                        const Icon(Icons.event_available_rounded, size: 9, color: AppColors.gold),
+                      ],
+                      const SizedBox(height: 5),
                       Container(width: 34, height: 54, alignment: Alignment.bottomCenter, decoration: BoxDecoration(color: AppColors.ink.withOpacity(.28), borderRadius: BorderRadius.circular(12), border: Border.all(color: isToday ? AppColors.gold : AppColors.paperLine)), child: FractionallySizedBox(heightFactor: (percent / 100).clamp(.08, 1.0).toDouble(), child: Container(decoration: BoxDecoration(color: complete ? AppColors.sage : AppColors.gold.withOpacity(.55), borderRadius: BorderRadius.circular(10))))),
                       const SizedBox(height: 6),
                       Text('$percent%', style: TextStyle(fontSize: 9, color: isToday ? AppColors.goldSoft : AppColors.inkSoft)),

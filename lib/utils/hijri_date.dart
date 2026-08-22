@@ -1,9 +1,9 @@
 /// تحويل التاريخ الميلادي إلى الهجري.
 ///
 /// بالنسبة لسنة 1448هـ نستخدم بدايات الأشهر الخاصة بالتقويم المغربي
-/// المنشور والمتوافق مع إعلان وزارة الأوقاف حيث تتوفر المعطيات، بدل الاعتماد
-/// على الحساب الجدولي وحده. خارج هذه الفترة نستخدم الحساب الجدولي كحل احتياطي.
-/// هذا مهم لأن بداية الشهر الهجري في المغرب قد تختلف عن الحساب الفلكي بيوم.
+/// المنشور والمتوافق مع المعطيات الرسمية حيث تتوفر، بدل الاعتماد على الحساب
+/// الجدولي وحده. خارج هذه الفترة نستخدم الحساب الجدولي كحل احتياطي.
+/// بداية الشهر الهجري في المغرب قد تختلف عن الحساب الفلكي بيوم.
 class HijriDate {
   final int day;
   final int month;
@@ -46,12 +46,16 @@ class HijriDate {
 
   factory HijriDate.fromGregorian(DateTime date) {
     final localDate = DateTime(date.year, date.month, date.day);
+    final lastVerifiedStart = _morocco1448.last.gregorian;
+    final lastVerifiedEnd = lastVerifiedStart.add(const Duration(days: 30));
 
-    for (var i = _morocco1448.length - 1; i >= 0; i--) {
-      final start = _morocco1448[i];
-      if (!localDate.isBefore(start.gregorian)) {
-        final day = localDate.difference(start.gregorian).inDays + 1;
-        return HijriDate(day, start.month, start.year);
+    if (!localDate.isBefore(_morocco1448.first.gregorian) && localDate.isBefore(lastVerifiedEnd)) {
+      for (var i = _morocco1448.length - 1; i >= 0; i--) {
+        final start = _morocco1448[i];
+        if (!localDate.isBefore(start.gregorian)) {
+          final day = localDate.difference(start.gregorian).inDays + 1;
+          return HijriDate(day, start.month, start.year);
+        }
       }
     }
 

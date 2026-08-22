@@ -27,7 +27,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     'azan_abdebast': 'أذان 5',
     'azan_maroc_2': 'أذان 6',
   };
+  static const _alertModes = <String, String>{
+    'adhan': 'صوت الأذان المختار',
+    'ringtone': 'رنة الهاتف',
+    'vibrate': 'اهتزاز فقط',
+  };
   String _selectedAdhan = 'azan_maroc_1';
+  String _alertMode = 'adhan';
   bool _loadingAdhan = true;
   bool _playingAdhan = false;
 
@@ -61,6 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     if (!mounted) return;
     setState(() {
       _selectedAdhan = prefs.getString('adhan_sound') ?? 'azan_maroc_1';
+      _alertMode = prefs.getString('prayer_alert_mode') ?? 'adhan';
       _loadingAdhan = false;
     });
   }
@@ -70,6 +77,14 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     await prefs.setString('adhan_sound', value);
     if (!mounted) return;
     setState(() => _selectedAdhan = value);
+    await context.read<AppState>().loadPrayerTimes();
+  }
+
+  Future<void> _selectAlertMode(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('prayer_alert_mode', value);
+    if (!mounted) return;
+    setState(() => _alertMode = value);
     await context.read<AppState>().loadPrayerTimes();
   }
 
@@ -111,11 +126,20 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     Wrap(spacing: 8, runSpacing: 8, children: _afterOptions.map((m) { final selected = state.afterMinutes == m; return ChoiceChip(label: Text('$m دقيقة'), selected: selected, onSelected: (_) => state.updateReminderTiming(after: m), selectedColor: AppColors.gold.withOpacity(.25), labelStyle: TextStyle(color: selected ? AppColors.ink : AppColors.inkSoft, fontWeight: selected ? FontWeight.w700 : FontWeight.w500)); }).toList()),
                   ]))),
                   const SizedBox(height: 20),
-                  Text('الأذان', style: Theme.of(context).textTheme.labelSmall),
+                  Text('الأذان والتنبيه', style: Theme.of(context).textTheme.labelSmall),
                   const SizedBox(height: 8),
                   Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                     SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('صوت الأذان عند وقت كل صلاة'), subtitle: const Text('يعمل تلقائيًا عند دخول وقت الصلاة', style: TextStyle(fontSize: 12)), value: state.adhanEnabled, onChanged: state.setAdhanEnabled),
                     const Divider(height: 24),
+                    const Text('طريقة التنبيه عند دخول وقت الصلاة', style: TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(value: _alertMode, decoration: const InputDecoration(labelText: 'اختر طريقة التنبيه'), items: _alertModes.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(), onChanged: (value) { if (value != null) _selectAlertMode(value); }),
+                    const SizedBox(height: 6),
+                    Text(
+                      _alertMode == 'vibrate' ? 'سيظهر التنبيه مع الاهتزاز بدون صوت.' : _alertMode == 'ringtone' ? 'سيستخدم رنة الإشعارات الافتراضية للهاتف.' : 'سيستخدم الأذان الذي اخترته أدناه.',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted, height: 1.4),
+                    ),
+                    const SizedBox(height: 18),
                     const Text('صوت الأذان', style: TextStyle(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 8),
                     if (_loadingAdhan) const LinearProgressIndicator() else DropdownButtonFormField<String>(value: _selectedAdhan, decoration: const InputDecoration(labelText: 'اختر الأذان المفضل'), items: _adhanSounds.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(), onChanged: (value) { if (value != null) _selectAdhan(value); }),

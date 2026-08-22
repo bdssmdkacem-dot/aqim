@@ -8,9 +8,9 @@ old = """    await _plugin.cancelAll();
     for (final entry in realTimes.entries) {"""
 new = """    await _plugin.cancelAll();
     final now = DateTime.now();
-    final prefs = await SharedPreferences.getInstance();
-    final prePrayerEnabled = prefs.getBool('pre_prayer_enabled') ?? true;
-    final selectedPrePrayerPrayers = prefs.getStringList('pre_prayer_prayers') ??
+    final notificationPrefs = await SharedPreferences.getInstance();
+    final prePrayerEnabled = notificationPrefs.getBool('pre_prayer_enabled') ?? true;
+    final selectedPrePrayerPrayers = notificationPrefs.getStringList('pre_prayer_prayers') ??
         Prayer.values.map((p) => p.name).toList();
     for (final entry in realTimes.entries) {"""
 if old not in text:

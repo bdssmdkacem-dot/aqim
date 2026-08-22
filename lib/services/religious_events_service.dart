@@ -40,7 +40,7 @@ class ReligiousEventsService {
   ];
 
   /// Morocco-confirmed 2026 dates plus the currently published 2027
-  /// astronomical estimates.  The app never presents a future estimate as
+  /// astronomical estimates. The app never presents a future estimate as
   /// an official confirmation.
   static List<ReligiousEvent> eventsForYear(int year) {
     switch (year) {
@@ -50,7 +50,7 @@ class ReligiousEventsService {
             id: 'mawlid-1448',
             title: 'المولد النبوي الشريف',
             hijri: '12 ربيع الأول 1448 هـ',
-            date: DateTime(2026, 8, 25),
+            date: const DateTime(2026, 8, 25),
           ),
         ];
       case 2027:
@@ -59,28 +59,28 @@ class ReligiousEventsService {
             id: 'ramadan-1448',
             title: 'بداية شهر رمضان',
             hijri: '1 رمضان 1448 هـ',
-            date: DateTime(2027, 2, 8),
+            date: const DateTime(2027, 2, 8),
             provisional: true,
           ),
           ReligiousEvent(
             id: 'fitr-1448',
             title: 'عيد الفطر المبارك',
             hijri: '1 شوال 1448 هـ',
-            date: DateTime(2027, 3, 9),
+            date: const DateTime(2027, 3, 9),
             provisional: true,
           ),
           ReligiousEvent(
             id: 'adha-1448',
             title: 'عيد الأضحى المبارك',
             hijri: '10 ذو الحجة 1448 هـ',
-            date: DateTime(2027, 5, 16),
+            date: const DateTime(2027, 5, 16),
             provisional: true,
           ),
           ReligiousEvent(
             id: 'mawlid-1449',
             title: 'المولد النبوي الشريف',
             hijri: '12 ربيع الأول 1449 هـ',
-            date: DateTime(2027, 8, 14),
+            date: const DateTime(2027, 8, 14),
             provisional: true,
           ),
         ];
@@ -96,7 +96,9 @@ class ReligiousEventsService {
       events.addAll(eventsForYear(year));
     }
     events.sort((a, b) => a.date.compareTo(b.date));
-    return events.where((e) => !e.date.add(const Duration(days: 1)).isBefore(start)).toList();
+    return events
+        .where((e) => !e.date.add(const Duration(days: 1)).isBefore(start))
+        .toList();
   }
 
   static ReligiousEvent? eventOn(DateTime date) {

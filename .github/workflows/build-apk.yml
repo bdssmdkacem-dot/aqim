@@ -18,6 +18,9 @@ jobs:
       - name: Apply Aqim branding and Quran navigation fixes
         run: python3 scripts/apply_aqim_branding.py && python3 scripts/apply_quran_and_logo_fixes.py
 
+      - name: Apply Aqim notification preferences
+        run: python3 scripts/apply_pre_prayer_notification_settings.py
+
       - name: Download and verify Tanzil Uthmani Quran
         run: python3 scripts/download_tanzil_uthmani.py
 

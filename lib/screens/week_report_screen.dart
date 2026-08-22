@@ -18,6 +18,14 @@ class WeekReportScreen extends StatelessWidget {
 
   String _dayName(DateTime date) => _dayLabels[date.weekday % 7];
 
+  String _monthName(int month) {
+    const names = [
+      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+    ];
+    return names[month - 1];
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -29,6 +37,12 @@ class WeekReportScreen extends StatelessWidget {
     final weekPercents = weekDates.map((d) => state.percentForDate(d) ?? 0).toList();
     final average = weekPercents.isEmpty ? 0 : (weekPercents.reduce((a, b) => a + b) / weekPercents.length).round();
     final completedDays = weekPercents.where((v) => v >= 80).length;
+
+    final firstOfMonth = DateTime(today.year, today.month, 1);
+    final daysInMonth = DateTime(today.year, today.month + 1, 0).day;
+    final firstOffset = firstOfMonth.weekday % 7;
+    final calendarCells = List<DateTime?>.generate(firstOffset, (_) => null)
+      ..addAll(List.generate(daysInMonth, (i) => DateTime(today.year, today.month, i + 1)));
 
     return Scaffold(
       backgroundColor: AppColors.ink,
@@ -50,6 +64,50 @@ class WeekReportScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Row(children: [Expanded(child: _StatCard(title: 'متوسط الأسبوع', value: '$average%', icon: Icons.insights_rounded)), const SizedBox(width: 9), Expanded(child: _StatCard(title: 'أيام مكتملة', value: '$completedDays / 7', icon: Icons.check_circle_outline_rounded))]),
+              const SizedBox(height: 16),
+              Text('هذا الشهر', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
+                decoration: BoxDecoration(color: AppColors.surfaceDark, borderRadius: BorderRadius.circular(22), border: Border.all(color: AppColors.paperLine.withOpacity(.75))),
+                child: Column(children: [
+                  Text('${_monthName(today.month)} ${today.year}', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.goldSoft, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 10),
+                  Row(children: _dayLabels.map((d) => Expanded(child: Text(d.substring(0, 1), textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: AppColors.inkSoft, fontWeight: FontWeight.w700)))).toList()),
+                  const SizedBox(height: 6),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: calendarCells.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, mainAxisSpacing: 5, crossAxisSpacing: 5, childAspectRatio: .88),
+                    itemBuilder: (_, index) {
+                      final date = calendarCells[index];
+                      if (date == null) return const SizedBox.shrink();
+                      final percent = state.percentForDate(date) ?? 0;
+                      final hasPrayerHistory = state.dailyPrayerHistory.containsKey('${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}');
+                      final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
+                      final done = percent >= 80;
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: done ? AppColors.sage.withOpacity(.16) : AppColors.ink.withOpacity(.24),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: isToday ? AppColors.gold : AppColors.paperLine.withOpacity(.65), width: isToday ? 1.4 : 1),
+                        ),
+                        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Text('${date.day}', style: TextStyle(fontSize: 11, fontWeight: isToday ? FontWeight.w900 : FontWeight.w600, color: isToday ? AppColors.gold : AppColors.ivory)),
+                          const SizedBox(height: 2),
+                          Icon(hasPrayerHistory && done ? Icons.check_circle_rounded : hasPrayerHistory ? Icons.circle_rounded : Icons.remove_circle_outline, size: 10, color: done ? AppColors.sage : hasPrayerHistory ? AppColors.gold : AppColors.textMuted),
+                        ]),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 9),
+                  const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(Icons.check_circle_rounded, size: 11, color: AppColors.sage), SizedBox(width: 4), Text('يوم مكتمل', style: TextStyle(fontSize: 9, color: AppColors.inkSoft)),
+                    SizedBox(width: 12), Icon(Icons.circle_rounded, size: 9, color: AppColors.gold), SizedBox(width: 4), Text('تم تسجيل الصلاة', style: TextStyle(fontSize: 9, color: AppColors.inkSoft)),
+                  ]),
+                ]),
+              ),
               const SizedBox(height: 16),
               Text('هذا الأسبوع', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
@@ -84,25 +142,12 @@ class WeekReportScreen extends StatelessWidget {
               Card(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: Column(
-                    children: state.activePrayers.map((p) {
-                      final s = state.todayStatus[p];
-                      final isDone = s == PrayerStatus.done;
-                      final isMissed = s == PrayerStatus.missed;
-                      return ListTile(
-                        dense: true,
-                        title: Text(p.arabicName, style: Theme.of(context).textTheme.titleMedium),
-                        trailing: CircleAvatar(
-                          radius: 12,
-                          backgroundColor: isDone ? AppColors.sage : isMissed ? AppColors.ember : AppColors.paperLine,
-                          child: Text(
-                            isDone ? '✓' : (isMissed ? '✕' : ''),
-                            style: const TextStyle(fontSize: 11, color: Colors.white),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                  child: Column(children: state.activePrayers.map((p) {
+                    final s = state.todayStatus[p];
+                    final isDone = s == PrayerStatus.done;
+                    final isMissed = s == PrayerStatus.missed;
+                    return ListTile(dense: true, title: Text(p.arabicName, style: Theme.of(context).textTheme.titleMedium), trailing: CircleAvatar(radius: 12, backgroundColor: isDone ? AppColors.sage : isMissed ? AppColors.ember : AppColors.paperLine, child: Text(isDone ? '✓' : (isMissed ? '✕' : ''), style: const TextStyle(fontSize: 11, color: Colors.white))));
+                  }).toList()),
                 ),
               ),
               if (weakest != null) ...[

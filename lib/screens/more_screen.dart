@@ -28,9 +28,6 @@ class MoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Keep AppState here because ads are still intentionally shown on the
-    // home screen and weekly report. The paid "remove ads" entry itself is
-    // no longer exposed in the More screen.
     context.watch<AppState>();
 
     return Scaffold(
@@ -87,10 +84,7 @@ class MoreScreen extends StatelessWidget {
             const Center(
               child: Text(
                 'أقم — لأجل صلاة في وقتها',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: AppColors.textMuted,
-                ),
+                style: TextStyle(fontSize: 11.5, color: AppColors.textMuted),
               ),
             ),
           ],
@@ -132,29 +126,41 @@ class _MenuTile extends StatelessWidget {
               Icon(icon, color: AppColors.gold, size: 21),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          subtitle!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.left,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            color: AppColors.gold,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              if (subtitle != null)
-                Flexible(
-                  child: Text(
-                    subtitle!,
-                    textAlign: TextAlign.left,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      color: AppColors.gold,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               const Icon(
                 Icons.arrow_back_ios_new,
                 size: 13,

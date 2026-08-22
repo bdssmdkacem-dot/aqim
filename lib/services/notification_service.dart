@@ -25,7 +25,7 @@ class NotificationService {
   static const _missedPrefix = 'missed:';
   static const _quranPrefix = 'quran:';
   static const _witrPrefix = 'witr:';
-  static const _channelVersion = 'v10';
+  static const _channelVersion = 'v11';
   static const _weeklySummaryId = 9001;
   static const _quranFajrId = 9002;
   static const _quranDhuhrId = 9003;
@@ -250,12 +250,7 @@ class NotificationService {
 
     final prefs = await SharedPreferences.getInstance();
     final savedPage = prefs.getInt('quran_resume_page') ?? prefs.getInt('quran_next_page') ?? 1;
-
-    // Four Quran reminders spread through the day. The first is the Fajr Quran
-    // reminder; the others are independent daily reading opportunities.
     await _scheduleQuranReminders(realTimes, savedPage);
-
-    // Shaf' and Witr reminder: exactly five minutes after Isha.
     await _scheduleShafWitrReminder(realTimes[Prayer.isha]);
   }
 
@@ -358,18 +353,61 @@ class NotificationService {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final selectedSound = prefs.getString('adhan_sound') ?? 'azan_maroc_1';
+    final alertMode = prefs.getString('prayer_alert_mode') ?? 'adhan';
+
+    final String channelSuffix;
+    final String? soundName;
+    final bool enableVibration;
+    final bool playSound;
+
+    switch (alertMode) {
+      case 'vibrate':
+        channelSuffix = 'vibrate';
+        soundName = null;
+        enableVibration = true;
+        playSound = false;
+        break;
+      case 'ringtone':
+        channelSuffix = 'ringtone';
+        soundName = null;
+        enableVibration = true;
+        playSound = true;
+        break;
+      case 'adhan':
+      default:
+        channelSuffix = 'adhan_$selectedSound';
+        soundName = selectedSound;
+        enableVibration = true;
+        playSound = true;
+        break;
+    }
+
     await _scheduleExact(
       id: id,
       title: title,
       body: body,
       scheduledDate: scheduledDate,
       payload: payload,
-      details: _alarmDetails(
-        channelId: 'aqim_adhan_${_channelVersion}_$selectedSound',
-        channelName: 'الأذان',
-        channelDescription: 'الأذان عند دخول وقت الصلاة — الصوت المختار من الإعدادات',
-        soundName: selectedSound,
-        category: AndroidNotificationCategory.alarm,
+      details: NotificationDetails(
+        android: AndroidNotificationDetails(
+          'aqim_adhan_${_channelVersion}_$channelSuffix',
+          'الأذان',
+          channelDescription: alertMode == 'vibrate'
+              ? 'تنبيه دخول وقت الصلاة بالاهتزاز فقط'
+              : alertMode == 'ringtone'
+                  ? 'تنبيه دخول وقت الصلاة برنة الهاتف'
+                  : 'الأذان عند دخول وقت الصلاة — الصوت المختار من الإعدادات',
+          importance: Importance.max,
+          priority: Priority.max,
+          category: AndroidNotificationCategory.alarm,
+          fullScreenIntent: true,
+          playSound: playSound,
+          sound: soundName == null ? null : RawResourceAndroidNotificationSound(soundName),
+          audioAttributesUsage: AudioAttributesUsage.alarm,
+          channelBypassDnd: notificationPolicyAccessGranted,
+          enableVibration: enableVibration,
+          visibility: NotificationVisibility.public,
+        ),
       ),
     );
   }

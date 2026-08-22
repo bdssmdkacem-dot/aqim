@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/apply_adhan_selection.py'
+      - 'scripts/adhan_selection_trigger.txt'
       - 'lib/services/notification_service.dart'
       - 'lib/screens/settings_screen.dart'
       - 'pubspec.yaml'

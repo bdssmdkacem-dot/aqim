@@ -19,12 +19,12 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   bool _batteryReady = false;
   bool _checkingBattery = true;
   static const _adhanSounds = <String, String>{
-    'azan_maroc_1': 'الأذان المغربي 1',
-    'azan_1': 'الأذان 1',
-    'azan_2': 'الأذان 2',
-    'azan_3': 'الأذان 3',
-    'azan_abdebast': 'الأذان — عبد الباسط',
-    'azan_maroc_2': 'الأذان المغربي 2',
+    'azan_maroc_1': 'أذان 1',
+    'azan_1': 'أذان 2',
+    'azan_2': 'أذان 3',
+    'azan_3': 'أذان 4',
+    'azan_abdebast': 'أذان 5',
+    'azan_maroc_2': 'أذان 6',
   };
   String _selectedAdhan = 'azan_maroc_1';
   bool _loadingAdhan = true;
@@ -119,24 +119,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               OutlinedButton.icon(onPressed: _loadingAdhan ? null : _previewAdhan, icon: Icon(_playingAdhan ? Icons.stop_rounded : Icons.play_arrow_rounded), label: Text(_playingAdhan ? 'إيقاف المعاينة' : 'تجربة الأذان')),
             ]))),
             const SizedBox(height: 20),
-            Text('البوصلة والقبلة', style: Theme.of(context).textTheme.labelSmall),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  textDirection: TextDirection.ltr,
-                  children: const [
-                    Expanded(child: _SettingsAction(icon: Icons.explore_rounded, title: 'البوصلة')),
-                    Expanded(child: _SettingsAction(icon: Icons.mosque_rounded, title: 'القبلة')),
-                    Expanded(child: _SettingsAction(icon: Icons.navigation_rounded, title: 'جهة حية')),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
             Text('التشغيل في الخلفية', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
             _BatteryCard(ready: _batteryReady, checking: _checkingBattery, onCheck: _checkBattery, onOpenAll: () async { await BatteryService.openSettings(); await _checkBattery(); }, onOpenAutoStart: () async { await BatteryService.openAutoStartSettings(); await _checkBattery(); }, onOpenManufacturer: () async { await BatteryService.openManufacturerSettings(); await _checkBattery(); }),
@@ -147,17 +129,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       ),
     );
   }
-}
-
-class _SettingsAction extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  const _SettingsAction({required this.icon, required this.title});
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-    child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [Icon(icon, size: 20, color: AppColors.gold), const SizedBox(width: 6), Flexible(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.left))]),
-  );
 }
 
 class _BatteryCard extends StatelessWidget {

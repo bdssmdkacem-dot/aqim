@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../ads/app_banner_ad.dart';
 import '../services/audio_service.dart';
 import '../services/battery_service.dart';
 import '../state/app_state.dart';
@@ -90,40 +91,47 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     return Scaffold(
       appBar: AppBar(title: const Text('الإعدادات')),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+        child: Column(
           children: [
-            _StatusCard(state: state),
-            const SizedBox(height: 20),
-            Text('توقيت التذكيرات', style: Theme.of(context).textTheme.labelSmall),
-            const SizedBox(height: 8),
-            Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('التذكير قبل الصلاة', style: TextStyle(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              Wrap(spacing: 8, runSpacing: 8, children: _beforeOptions.map((m) { final selected = state.beforeMinutes == m; return ChoiceChip(label: Text('$m دقيقة'), selected: selected, onSelected: (_) => state.updateReminderTiming(before: m), selectedColor: AppColors.gold.withOpacity(.25), labelStyle: TextStyle(color: selected ? AppColors.ink : AppColors.inkSoft, fontWeight: selected ? FontWeight.w700 : FontWeight.w500)); }).toList()),
-              const SizedBox(height: 18),
-              const Text('تذكير «هل صليت؟» بعد الصلاة', style: TextStyle(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              Wrap(spacing: 8, runSpacing: 8, children: _afterOptions.map((m) { final selected = state.afterMinutes == m; return ChoiceChip(label: Text('$m دقيقة'), selected: selected, onSelected: (_) => state.updateReminderTiming(after: m), selectedColor: AppColors.gold.withOpacity(.25), labelStyle: TextStyle(color: selected ? AppColors.ink : AppColors.inkSoft, fontWeight: selected ? FontWeight.w700 : FontWeight.w500)); }).toList()),
-            ]))),
-            const SizedBox(height: 20),
-            Text('الأذان', style: Theme.of(context).textTheme.labelSmall),
-            const SizedBox(height: 8),
-            Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('صوت الأذان عند وقت كل صلاة'), subtitle: const Text('يعمل تلقائيًا عند دخول وقت الصلاة', style: TextStyle(fontSize: 12)), value: state.adhanEnabled, onChanged: state.setAdhanEnabled),
-              const Divider(height: 24),
-              const Text('صوت الأذان', style: TextStyle(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              if (_loadingAdhan) const LinearProgressIndicator() else DropdownButtonFormField<String>(value: _selectedAdhan, decoration: const InputDecoration(labelText: 'اختر الأذان المفضل'), items: _adhanSounds.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(), onChanged: (value) { if (value != null) _selectAdhan(value); }),
-              const SizedBox(height: 10),
-              OutlinedButton.icon(onPressed: _loadingAdhan ? null : _previewAdhan, icon: Icon(_playingAdhan ? Icons.stop_rounded : Icons.play_arrow_rounded), label: Text(_playingAdhan ? 'إيقاف المعاينة' : 'تجربة الأذان')),
-            ]))),
-            const SizedBox(height: 20),
-            Text('التشغيل في الخلفية', style: Theme.of(context).textTheme.labelSmall),
-            const SizedBox(height: 8),
-            _BatteryCard(ready: _batteryReady, checking: _checkingBattery, onCheck: _checkBattery, onOpenAll: () async { await BatteryService.openSettings(); await _checkBattery(); }, onOpenAutoStart: () async { await BatteryService.openAutoStartSettings(); await _checkBattery(); }, onOpenManufacturer: () async { await BatteryService.openManufacturerSettings(); await _checkBattery(); }),
-            const SizedBox(height: 16),
-            Card(color: AppColors.sage.withOpacity(.06), child: const ListTile(leading: Icon(Icons.favorite_rounded, color: AppColors.gold), title: Text('أقم مجاني للجميع'), subtitle: Text('لا توجد رسوم لإزالة الإعلانات ولا اشتراك مدفوع. كل الميزات الأساسية متاحة مجانًا.', style: TextStyle(fontSize: 12, height: 1.5)))),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+                children: [
+                  _StatusCard(state: state),
+                  const SizedBox(height: 20),
+                  Text('توقيت التذكيرات', style: Theme.of(context).textTheme.labelSmall),
+                  const SizedBox(height: 8),
+                  Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('التذكير قبل الصلاة', style: TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    Wrap(spacing: 8, runSpacing: 8, children: _beforeOptions.map((m) { final selected = state.beforeMinutes == m; return ChoiceChip(label: Text('$m دقيقة'), selected: selected, onSelected: (_) => state.updateReminderTiming(before: m), selectedColor: AppColors.gold.withOpacity(.25), labelStyle: TextStyle(color: selected ? AppColors.ink : AppColors.inkSoft, fontWeight: selected ? FontWeight.w700 : FontWeight.w500)); }).toList()),
+                    const SizedBox(height: 18),
+                    const Text('تذكير «هل صليت؟» بعد الصلاة', style: TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    Wrap(spacing: 8, runSpacing: 8, children: _afterOptions.map((m) { final selected = state.afterMinutes == m; return ChoiceChip(label: Text('$m دقيقة'), selected: selected, onSelected: (_) => state.updateReminderTiming(after: m), selectedColor: AppColors.gold.withOpacity(.25), labelStyle: TextStyle(color: selected ? AppColors.ink : AppColors.inkSoft, fontWeight: selected ? FontWeight.w700 : FontWeight.w500)); }).toList()),
+                  ]))),
+                  const SizedBox(height: 20),
+                  Text('الأذان', style: Theme.of(context).textTheme.labelSmall),
+                  const SizedBox(height: 8),
+                  Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('صوت الأذان عند وقت كل صلاة'), subtitle: const Text('يعمل تلقائيًا عند دخول وقت الصلاة', style: TextStyle(fontSize: 12)), value: state.adhanEnabled, onChanged: state.setAdhanEnabled),
+                    const Divider(height: 24),
+                    const Text('صوت الأذان', style: TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    if (_loadingAdhan) const LinearProgressIndicator() else DropdownButtonFormField<String>(value: _selectedAdhan, decoration: const InputDecoration(labelText: 'اختر الأذان المفضل'), items: _adhanSounds.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(), onChanged: (value) { if (value != null) _selectAdhan(value); }),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(onPressed: _loadingAdhan ? null : _previewAdhan, icon: Icon(_playingAdhan ? Icons.stop_rounded : Icons.play_arrow_rounded), label: Text(_playingAdhan ? 'إيقاف المعاينة' : 'تجربة الأذان')),
+                  ]))),
+                  const SizedBox(height: 20),
+                  Text('التشغيل في الخلفية', style: Theme.of(context).textTheme.labelSmall),
+                  const SizedBox(height: 8),
+                  _BatteryCard(ready: _batteryReady, checking: _checkingBattery, onCheck: _checkBattery, onOpenAll: () async { await BatteryService.openSettings(); await _checkBattery(); }, onOpenAutoStart: () async { await BatteryService.openAutoStartSettings(); await _checkBattery(); }, onOpenManufacturer: () async { await BatteryService.openManufacturerSettings(); await _checkBattery(); }),
+                  const SizedBox(height: 16),
+                  Card(color: AppColors.sage.withOpacity(.06), child: const ListTile(leading: Icon(Icons.favorite_rounded, color: AppColors.gold), title: Text('أقم مجاني للجميع'), subtitle: Text('لا توجد رسوم لإزالة الإعلانات ولا اشتراك مدفوع. كل الميزات الأساسية متاحة مجانًا.', style: TextStyle(fontSize: 12, height: 1.5)))),
+                ],
+              ),
+            ),
+            const AppBannerAd(),
           ],
         ),
       ),

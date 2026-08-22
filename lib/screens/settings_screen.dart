@@ -56,7 +56,6 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     }
   }
 
-
   Future<void> _loadAdhanSelection() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
@@ -76,10 +75,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
   Future<void> _previewAdhan() async {
     setState(() => _playingAdhan = true);
-    await AudioService.instance.playAsset(
-      context,
-      'adhan/$_selectedAdhan.mp3',
-    );
+    await AudioService.instance.playAsset(context, 'adhan/$_selectedAdhan.mp3');
     if (mounted) setState(() => _playingAdhan = false);
   }
 
@@ -145,13 +141,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     DropdownButtonFormField<String>(
                       value: _selectedAdhan,
                       decoration: const InputDecoration(labelText: 'اختر الأذان المفضل'),
-                      items: _adhanSounds.entries.map((entry) => DropdownMenuItem(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      )).toList(),
-                      onChanged: (value) {
-                        if (value != null) _selectAdhan(value);
-                      },
+                      items: _adhanSounds.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
+                      onChanged: (value) { if (value != null) _selectAdhan(value); },
                     ),
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
@@ -160,6 +151,23 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                     label: Text(_playingAdhan ? 'إيقاف المعاينة' : 'تجربة الأذان'),
                   ),
                 ]),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text('البوصلة والقبلة', style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(height: 8),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                child: Row(
+                  children: [
+                    Expanded(child: _SettingsAction(icon: Icons.explore_rounded, title: 'البوصلة', onTap: () {})),
+                    const SizedBox(width: 8),
+                    Expanded(child: _SettingsAction(icon: Icons.mosque_rounded, title: 'القبلة', onTap: () {})),
+                    const SizedBox(width: 8),
+                    Expanded(child: _SettingsAction(icon: Icons.navigation_rounded, title: 'جهة حية', onTap: () {})),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -182,6 +190,32 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 subtitle: Text('لا توجد رسوم لإزالة الإعلانات ولا اشتراك مدفوع. كل الميزات الأساسية متاحة مجانًا.', style: TextStyle(fontSize: 12, height: 1.5)),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsAction extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  const _SettingsAction({required this.icon, required this.title, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Icon(icon, size: 20, color: AppColors.gold),
+            const SizedBox(width: 6),
+            Flexible(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.left)),
           ],
         ),
       ),

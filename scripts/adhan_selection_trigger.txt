@@ -1,1 +1,1 @@
-trigger adhan selection support
+trigger adhan selection support v2

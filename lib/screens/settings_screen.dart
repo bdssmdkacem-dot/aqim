@@ -203,25 +203,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     },
                   ),
                   const SizedBox(height: 12),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Column(
-                      children: [
-                        Image.asset(
-                          'assets/images/aqim_logo_transparent_512.png',
-                          width: 74,
-                          height: 74,
-                          fit: BoxFit.contain,
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'أقم — لأجل صلاة في وقتها',
-                          style: TextStyle(fontSize: 11, color: AppColors.textMuted),
-                        ),
-                      ],
-                    ),
-                  ),
-
+                  const _AqimBrandCard(),
                 ],
               ),
             ),
@@ -387,6 +369,49 @@ class _SettingsScreenState extends State<SettingsScreen>
               'اضغط للتأكد من الصوت قبل اعتماده. يمكنك إيقافه في أي وقت.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AqimBrandCard extends StatelessWidget {
+  const _AqimBrandCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Image.asset(
+                'assets/images/aqim_logo_transparent_512.png',
+                width: 64,
+                height: 64,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'أقم',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'رفيقك للصلاة في وقتها',
+                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

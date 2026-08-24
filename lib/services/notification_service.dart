@@ -27,7 +27,7 @@ class NotificationService {
   static const _quranPrefix = 'quran:';
   static const _witrPrefix = 'witr:';
   static const _religiousPrefix = 'religious:';
-  static const _channelVersion = 'v12';
+  static const _channelVersion = 'v13';
   static const _weeklySummaryId = 9001;
   static const _quranFajrId = 9002;
   static const _quranDhuhrId = 9003;
@@ -255,7 +255,34 @@ class NotificationService {
 
   NotificationDetails _reminderDetails({required String channelId, required String channelName, required String description}) => NotificationDetails(android: AndroidNotificationDetails(channelId, channelName, channelDescription: description, importance: Importance.high, priority: Priority.high, category: AndroidNotificationCategory.reminder, playSound: true, enableVibration: true, visibility: NotificationVisibility.public));
 
-  Future<void> _scheduleWakeAlarm({required int id, required String title, required String body, required DateTime scheduledDate, required String soundName, required String payload}) async => _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: _alarmDetails(channelId: _alarmChannel(soundName), channelName: soundName == _jumuahAlarmSound ? 'منبّه صلاة الجمعة' : 'منبّه الاستعداد للصلاة', channelDescription: 'تنبيه صوتي قبل الصلاة — يعمل كمنبّه', soundName: soundName, category: AndroidNotificationCategory.alarm));
+  Future<void> _scheduleWakeAlarm({required int id, required String title, required String body, required DateTime scheduledDate, required String soundName, required String payload}) async {
+    final details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'aqim_pre_prayer_${_channelVersion}',
+        'التنبيه قبل الصلاة',
+        channelDescription: 'تنبيه صوتي قبل الصلاة — ليس أذانًا',
+        importance: Importance.max,
+        priority: Priority.max,
+        category: AndroidNotificationCategory.alarm,
+        fullScreenIntent: true,
+        playSound: true,
+        sound: null,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        channelBypassDnd: notificationPolicyAccessGranted,
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
+      ),
+    );
+    await _scheduleExact(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      soundName: soundName,
+      payload: payload,
+      details: details,
+    );
+  }
 
   Future<void> _scheduleFajrWakeAlarms({required DateTime finalAlarmTime, required int beforeMinutes, required DateTime now}) async {
     final stages = [(10, 'alarm_fajr_1', 'اقترب وقت الفجر', 0), (5, 'alarm_fajr_2', 'استعد لصلاة الفجر', 3), (0, 'alarm_fajr_3', 'حان الاستعداد الأخير لصلاة الفجر', 4)];
@@ -269,7 +296,7 @@ class NotificationService {
   Future<void> _scheduleAdhan({required int id, required String title, required String body, required DateTime scheduledDate, required String payload}) async {
     final prefs = await SharedPreferences.getInstance();
     final selectedSound = prefs.getString('adhan_sound') ?? 'azan_maroc_1';
-    final alertMode = prefs.getString('pre_prayer_alert_mode') ?? 'adhan';
+    final alertMode = prefs.getString('adhan_alert_mode') ?? 'adhan';
     final String channelSuffix;
     final String? soundName;
     final bool enableVibration;

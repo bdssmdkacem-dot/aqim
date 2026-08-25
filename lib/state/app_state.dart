@@ -56,10 +56,27 @@ class AppState extends ChangeNotifier {
   double? get lastKnownLongitude => _prefs.getDouble('last_lng');
   List<Prayer> get activePrayers => _allPrayers;
 
+  /// Returns the first prayer whose real time is still ahead of now.
+  /// Completed/missed prayers are skipped. If all prayers have passed,
+  /// Fajr is returned because it is the next prayer on the following day.
   Prayer? get nextPrayer {
+    final times = realTimes;
+    if (times != null) {
+      final now = DateTime.now();
+      for (final p in activePrayers) {
+        final status = todayStatus[p];
+        final time = times[p];
+        if (time == null || status == PrayerStatus.done || status == PrayerStatus.missed) {
+          continue;
+        }
+        if (time.isAfter(now)) return p;
+      }
+      return Prayer.fajr;
+    }
+
     for (final p in activePrayers) {
-      final s = todayStatus[p];
-      if (s == PrayerStatus.pending || s == PrayerStatus.upcoming) return p;
+      final status = todayStatus[p];
+      if (status == PrayerStatus.upcoming) return p;
     }
     return Prayer.fajr;
   }

@@ -239,7 +239,7 @@ class _AqimBrandCard extends StatelessWidget {
   Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), child: Row(children: [
     ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.asset('assets/images/aqim_logo_transparent_512.png', width: 64, height: 64, fit: BoxFit.contain)), const SizedBox(width: 14),
     const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('أقم', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)), SizedBox(height: 3), Text('رفيقك للصلاة في وقتها', style: TextStyle(fontSize: 12, color: AppColors.textMuted))])),
-  ]));
+  ])));
 }
 
 class _SectionTitle extends StatelessWidget {

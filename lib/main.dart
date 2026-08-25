@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' hide AppState;
-import 'package:provider/provider.dart';
+import 'ads/app_interstitial_ad.dart';
 import 'navigation/nav_key.dart';
 import 'screens/main_shell.dart';
 import 'screens/onboarding_screen.dart';
@@ -12,6 +12,8 @@ import 'theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await MobileAds.instance.initialize();
+  // يبدأ تحميل الـInterstitial بعد تهيئة AdMob مباشرة، دون انتظار ضغط المستخدم.
+  AppInterstitialAd.preload();
 
   // لا نطلب صلاحية الإشعارات قبل رسم واجهة أقم.
   // طلب الصلاحية مبكرًا كان يجعل Android 13+ يعرض نافذة النظام فوق شاشة سوداء.

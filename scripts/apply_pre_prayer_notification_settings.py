@@ -33,7 +33,33 @@ if old not in text:
     raise SystemExit('pre-prayer scheduling block not found')
 text = text.replace(old, new, 1)
 
-old = """  Future<void> _scheduleWakeAlarm({required int id, required String title, required String body, required DateTime scheduledDate, required String soundName, required String payload}) async => _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: _alarmDetails(channelId: _alarmChannel(soundName), channelName: soundName == _jumuahAlarmSound ? 'منبّه صلاة الجمعة' : 'منبّه الاستعداد للصلاة', channelDescription: 'تنبيه صوتي قبل الصلاة — يعمل كمنبّه', soundName: soundName, category: AndroidNotificationCategory.alarm));"""
+old = """  Future<void> _scheduleWakeAlarm({required int id, required String title, required String body, required DateTime scheduledDate, required String soundName, required String payload}) async {
+    final details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'aqim_pre_prayer_${_channelVersion}',
+        'التنبيه قبل الصلاة',
+        channelDescription: 'تنبيه صوتي قبل الصلاة — ليس أذانًا',
+        importance: Importance.max,
+        priority: Priority.max,
+        category: AndroidNotificationCategory.alarm,
+        fullScreenIntent: true,
+        playSound: true,
+        sound: null,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        channelBypassDnd: notificationPolicyAccessGranted,
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
+      ),
+    );
+    await _scheduleExact(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      payload: payload,
+      details: details,
+    );
+  }"""
 new = """  Future<void> _scheduleWakeAlarm({required int id, required String title, required String body, required DateTime scheduledDate, required String soundName, required String payload}) async {
     final prefs = await SharedPreferences.getInstance();
     final mode = prefs.getString('pre_prayer_alert_mode') ?? 'adhan';
@@ -97,7 +123,7 @@ new = """  Future<void> _scheduleWakeAlarm({required int id, required String tit
     );
   }"""
 if old not in text:
-    raise SystemExit('wake alarm function not found')
+    raise SystemExit('current wake alarm function not found')
 text = text.replace(old, new, 1)
 
 path.write_text(text, encoding='utf-8')

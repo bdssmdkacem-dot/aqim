@@ -324,7 +324,9 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     unawaited(loadPrayerTimes());
     unawaited(PurchaseService.instance.init(onAdsRemoved: _markAdsRemoved));
-    if (onboardingComplete && currentWeek >= 2) {
+    if (onboardingComplete) {
+      // Google Play decides whether the official review dialog is actually
+      // shown. Aqim only attempts the request (max 4 attempts/day).
       unawaited(ReviewService.instance.maybeRequestReview(currentWeek: currentWeek));
     }
   }
@@ -333,9 +335,15 @@ class AppState extends ChangeNotifier {
     _clockTimer?.cancel();
     _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) async {
       final oldDate = lastOpenDate;
+      final oldWeek = currentWeek;
       _rolloverIfNewDay();
       if (oldDate != lastOpenDate) await loadPrayerTimes();
       _recomputeUpcoming();
+      if (currentWeek != oldWeek) {
+        // A completed week is a second review opportunity. Google Play still
+        // controls whether a dialog is displayed.
+        unawaited(ReviewService.instance.maybeRequestReview(currentWeek: currentWeek));
+      }
       notifyListeners();
     });
   }

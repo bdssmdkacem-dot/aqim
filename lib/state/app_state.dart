@@ -403,12 +403,29 @@ class AppState extends ChangeNotifier {
 
   void _recomputeUpcoming() {
     if (realTimes == null) return;
+
     final now = DateTime.now();
+    Prayer? next;
+
+    // Exactly one prayer can be marked as upcoming: the first eligible
+    // prayer after now. This keeps the home arc focused on the next prayer.
     for (final p in activePrayers) {
-      final t = realTimes![p];
-      if (t == null) continue;
-      if (todayStatus[p] == PrayerStatus.done || todayStatus[p] == PrayerStatus.missed) continue;
-      todayStatus[p] = t.isAfter(now) ? PrayerStatus.upcoming : PrayerStatus.pending;
+      final time = realTimes![p];
+      if (time == null) continue;
+      final status = todayStatus[p];
+      if (status == PrayerStatus.done || status == PrayerStatus.missed) continue;
+      if (time.isAfter(now)) {
+        next = p;
+        break;
+      }
+    }
+
+    for (final p in activePrayers) {
+      final time = realTimes![p];
+      if (time == null) continue;
+      final status = todayStatus[p];
+      if (status == PrayerStatus.done || status == PrayerStatus.missed) continue;
+      todayStatus[p] = p == next ? PrayerStatus.upcoming : PrayerStatus.pending;
     }
   }
 

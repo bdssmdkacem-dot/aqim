@@ -3,128 +3,52 @@ from pathlib import Path
 path = Path('lib/services/notification_service.dart')
 text = path.read_text(encoding='utf-8')
 
-old = """    await _plugin.cancelAll();
-    final now = DateTime.now();
-    for (final entry in realTimes.entries) {"""
-new = """    await _plugin.cancelAll();
-    final now = DateTime.now();
-    final notificationPrefs = await SharedPreferences.getInstance();
-    final prePrayerEnabled = notificationPrefs.getBool('pre_prayer_enabled') ?? true;
-    final selectedPrePrayerPrayers = notificationPrefs.getStringList('pre_prayer_prayers') ??
-        Prayer.values.map((p) => p.name).toList();
-    for (final entry in realTimes.entries) {"""
-if old not in text:
-    raise SystemExit('scheduleAllForToday anchor not found')
-text = text.replace(old, new, 1)
+# This script is intentionally idempotent: the notification service may already
+# contain part or all of the pre-prayer preference changes.
 
-old = """      if (prayer == Prayer.fajr) {
-        await _scheduleFajrWakeAlarms(finalAlarmTime: alarmTime, beforeMinutes: beforeMinutes, now: now);
-      } else if (alarmTime.isAfter(now)) {
-        await _scheduleWakeAlarm(id: _idFor(prayer, 0), title: isJumuah ? 'استعد لصلاة الجمعة' : 'استعد لصلاة ${prayer.arabicName}', body: isJumuah ? 'تبقّى $beforeMinutes دقيقة على صلاة الجمعة.' : 'تبقّى $beforeMinutes دقيقة على ${prayer.arabicName}.', scheduledDate: alarmTime, soundName: _wakeAlarmSoundFor(prayer, prayerTime), payload: prayer.name);
-      }"""
-new = """      final shouldSchedulePrePrayer =
-          prePrayerEnabled && selectedPrePrayerPrayers.contains(prayer.name);
-      if (shouldSchedulePrePrayer && prayer == Prayer.fajr) {
-        await _scheduleFajrWakeAlarms(finalAlarmTime: alarmTime, beforeMinutes: beforeMinutes, now: now);
-      } else if (shouldSchedulePrePrayer && alarmTime.isAfter(now)) {
-        await _scheduleWakeAlarm(id: _idFor(prayer, 0), title: isJumuah ? 'استعد لصلاة الجمعة' : 'استعد لصلاة ${prayer.arabicName}', body: isJumuah ? 'تبقّى $beforeMinutes دقيقة على صلاة الجمعة.' : 'تبقّى $beforeMinutes دقيقة على ${prayer.arabicName}.', scheduledDate: alarmTime, soundName: _wakeAlarmSoundFor(prayer, prayerTime), payload: prayer.name);
-      }"""
-if old not in text:
-    raise SystemExit('pre-prayer scheduling block not found')
-text = text.replace(old, new, 1)
+prefs_block = """    final prefs = await SharedPreferences.getInstance();
+    final prePrayerEnabled = prefs.getBool('pre_prayer_enabled') ?? true;
+    final selectedPrePrayers = (prefs.getStringList('pre_prayer_prayers') ??
+        Prayer.values.map((p) => p.name).toList()).toSet();
+"""
 
-old = """  Future<void> _scheduleWakeAlarm({required int id, required String title, required String body, required DateTime scheduledDate, required String soundName, required String payload}) async {
-    final details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        'aqim_pre_prayer_${_channelVersion}',
-        'التنبيه قبل الصلاة',
-        channelDescription: 'تنبيه صوتي قبل الصلاة — ليس أذانًا',
-        importance: Importance.max,
-        priority: Priority.max,
-        category: AndroidNotificationCategory.alarm,
-        fullScreenIntent: true,
-        playSound: true,
-        sound: null,
-        audioAttributesUsage: AudioAttributesUsage.alarm,
-        channelBypassDnd: notificationPolicyAccessGranted,
-        enableVibration: true,
-        visibility: NotificationVisibility.public,
-      ),
-    );
-    await _scheduleExact(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: scheduledDate,
-      payload: payload,
-      details: details,
-    );
-  }"""
-new = """  Future<void> _scheduleWakeAlarm({required int id, required String title, required String body, required DateTime scheduledDate, required String soundName, required String payload}) async {
-    final prefs = await SharedPreferences.getInstance();
-    final mode = prefs.getString('pre_prayer_alert_mode') ?? 'adhan';
-    final selectedAdhan = prefs.getString('adhan_sound') ?? 'azan_maroc_1';
-    final String? notificationSound;
-    final bool playSound;
-    final bool vibration;
-    final String channelSuffix;
-    switch (mode) {
-      case 'ringtone':
-        notificationSound = null;
-        playSound = true;
-        vibration = true;
-        channelSuffix = 'ringtone';
-        break;
-      case 'vibrate':
-        notificationSound = null;
-        playSound = false;
-        vibration = true;
-        channelSuffix = 'vibrate';
-        break;
-      case 'adhan':
-      default:
-        notificationSound = selectedAdhan;
-        playSound = true;
-        vibration = true;
-        channelSuffix = 'adhan_$selectedAdhan';
-        break;
-    }
-    final channelId = 'aqim_pre_prayer_${_channelVersion}_$channelSuffix';
-    final details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        channelId,
-        'التنبيه قبل الصلاة',
-        channelDescription: mode == 'vibrate'
-            ? 'تنبيه قبل الصلاة بالاهتزاز فقط'
-            : mode == 'ringtone'
-                ? 'تنبيه قبل الصلاة برنة الهاتف'
-                : 'تنبيه قبل الصلاة بالأذان المختار',
-        importance: Importance.max,
-        priority: Priority.max,
-        category: AndroidNotificationCategory.alarm,
-        fullScreenIntent: true,
-        playSound: playSound,
-        sound: notificationSound == null
-            ? null
-            : RawResourceAndroidNotificationSound(notificationSound),
-        audioAttributesUsage: AudioAttributesUsage.alarm,
-        channelBypassDnd: notificationPolicyAccessGranted,
-        enableVibration: vibration,
-        visibility: NotificationVisibility.public,
-      ),
-    );
-    await _scheduleExact(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: scheduledDate,
-      payload: payload,
-      details: details,
-    );
-  }"""
-if old not in text:
-    raise SystemExit('current wake alarm function not found')
-text = text.replace(old, new, 1)
+if 'final prePrayerEnabled = prefs.getBool(\'pre_prayer_enabled\')' not in text:
+    anchor = """    await _plugin.cancelAll();
+    final now = DateTime.now();
+"""
+    if anchor not in text:
+        raise SystemExit('scheduleAllForToday preferences anchor not found')
+    text = text.replace(anchor, anchor + prefs_block, 1)
+    print('Added pre-prayer preference loading.')
+else:
+    print('Pre-prayer preference loading already present.')
+
+# The schedule loop must respect the global switch and selected prayers.
+required_schedule = """      if (prePrayerEnabled && selectedPrePrayers.contains(prayer.name)) {
+"""
+if required_schedule not in text:
+    old_schedule = """      if (prayer == Prayer.fajr) {
+          await _scheduleFajrWakeAlarms(finalAlarmTime: alarmTime, beforeMinutes: beforeMinutes, now: now);
+        } else if (alarmTime.isAfter(now)) {
+          await _scheduleWakeAlarm(id: _idFor(prayer, 0), title: isJumuah ? 'استعد لصلاة الجمعة' : 'استعد لصلاة ${prayer.arabicName}', body: isJumuah ? 'تبقّى $beforeMinutes دقيقة على صلاة الجمعة.' : 'تبقّى $beforeMinutes دقيقة على ${prayer.arabicName}.', scheduledDate: alarmTime, soundName: _wakeAlarmSoundFor(prayer, prayerTime), payload: prayer.name);
+        }
+"""
+    if old_schedule in text:
+        text = text.replace(old_schedule, required_schedule + old_schedule, 1)
+        print('Added pre-prayer prayer-selection guard.')
+    else:
+        raise SystemExit('pre-prayer scheduling block not found')
+else:
+    print('Pre-prayer prayer-selection guard already present.')
+
+# The wake-alarm function should use the pre-prayer mode:
+# alarm = prayer-specific alarm sound, ringtone = phone/default notification sound,
+# vibrate = no sound. The current service already implements this behavior.
+required_alarm_mode = """    final mode = prefs.getString('pre_prayer_alert_mode') ?? 'alarm';
+    final selectedSound = mode == 'alarm' ? soundName : null;
+"""
+if required_alarm_mode not in text:
+    raise SystemExit('pre-prayer alert-mode implementation not found')
 
 path.write_text(text, encoding='utf-8')
-print('Applied Aqim pre-prayer notification preferences.')
+print('Pre-prayer notification settings verified successfully.')

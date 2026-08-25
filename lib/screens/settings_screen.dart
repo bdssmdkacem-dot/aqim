@@ -30,8 +30,14 @@ class _SettingsScreenState extends State<SettingsScreen>
     'azan_abdebast': 'أذان عبد الباسط',
   };
 
-  static const _alertModes = <String, String>{
-    'adhan': 'تنبيه صوتي',
+  static const _prePrayerModes = <String, String>{
+    'alarm': 'منبه الصلاة',
+    'ringtone': 'رنة الهاتف',
+    'vibrate': 'هزاز فقط',
+  };
+
+  static const _adhanModes = <String, String>{
+    'adhan': 'صوت المؤذن',
     'ringtone': 'رنة الهاتف',
     'vibrate': 'هزاز فقط',
   };
@@ -47,9 +53,10 @@ class _SettingsScreenState extends State<SettingsScreen>
   bool _batteryReady = false;
   bool _checkingBattery = true;
   bool _prePrayerEnabled = true;
-  String _prePrayerMode = 'adhan';
+  String _prePrayerMode = 'alarm';
   Set<String> _prePrayerPrayers = Prayer.values.map((p) => p.name).toSet();
   String _selectedAdhan = 'azan_maroc_1';
+  String _adhanAlertMode = 'adhan';
   bool _loadingAudio = true;
   bool _playingAdhan = false;
 
@@ -84,8 +91,9 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (!mounted) return;
     setState(() {
       _prePrayerEnabled = prefs.getBool('pre_prayer_enabled') ?? true;
-      _prePrayerMode = prefs.getString('pre_prayer_alert_mode') ?? 'adhan';
+      _prePrayerMode = prefs.getString('pre_prayer_alert_mode') ?? 'alarm';
       _selectedAdhan = prefs.getString('adhan_sound') ?? 'azan_maroc_1';
+      _adhanAlertMode = prefs.getString('adhan_alert_mode') ?? 'adhan';
       final saved = prefs.getStringList('pre_prayer_prayers');
       _prePrayerPrayers = saved == null || saved.isEmpty
           ? Prayer.values.map((p) => p.name).toSet()
@@ -107,6 +115,14 @@ class _SettingsScreenState extends State<SettingsScreen>
     await prefs.setString('adhan_sound', value);
     if (!mounted) return;
     setState(() => _selectedAdhan = value);
+    await context.read<AppState>().loadPrayerTimes();
+  }
+
+  Future<void> _selectAdhanMode(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('adhan_alert_mode', value);
+    if (!mounted) return;
+    setState(() => _adhanAlertMode = value);
     await context.read<AppState>().loadPrayerTimes();
   }
 
@@ -300,7 +316,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   labelText: 'طريقة التنبيه قبل الصلاة',
                   prefixIcon: Icon(Icons.volume_up_rounded),
                 ),
-                items: _alertModes.entries.map((entry) {
+                items: _prePrayerModes.entries.map((entry) {
                   return DropdownMenuItem(value: entry.key, child: Text(entry.value));
                 }).toList(),
                 onChanged: (value) async {
@@ -311,8 +327,8 @@ class _SettingsScreenState extends State<SettingsScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                _prePrayerMode == 'adhan'
-                    ? 'سيستخدم الأذان الذي اخترته في قسم الأذان أدناه.'
+                _prePrayerMode == 'alarm'
+                    ? 'سيستخدم المنبه الصوتي المخصص للصلاة القادمة، وليس الأذان.'
                     : _prePrayerMode == 'ringtone'
                         ? 'سيستخدم رنة الإشعارات الافتراضية للهاتف.'
                         : 'سيكون التنبيه بالاهتزاز فقط دون صوت.',
@@ -340,7 +356,22 @@ class _SettingsScreenState extends State<SettingsScreen>
               subtitle: const Text('يمكنك إيقاف الأذان مع إبقاء التنبيه قبل الصلاة.', style: TextStyle(fontSize: 12)),
             ),
             const Divider(height: 20),
-            const Text('صوت الأذان', style: TextStyle(fontWeight: FontWeight.w800)),
+            DropdownButtonFormField<String>(
+              initialValue: _adhanAlertMode,
+              decoration: const InputDecoration(
+                labelText: 'طريقة تنبيه وقت الصلاة',
+                prefixIcon: Icon(Icons.notifications_active_rounded),
+              ),
+              items: _adhanModes.entries.map((entry) {
+                return DropdownMenuItem(value: entry.key, child: Text(entry.value));
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) _selectAdhanMode(value);
+              },
+            ),
+            const SizedBox(height: 12),
+            if (_adhanAlertMode == 'adhan') ...[
+              const Text('صوت المؤذن', style: TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             if (_loadingAudio)
               const LinearProgressIndicator()
@@ -360,7 +391,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               ),
             const SizedBox(height: 10),
             OutlinedButton.icon(
-              onPressed: _loadingAudio ? null : _previewAdhan,
+              onPressed: _loadingAudio || _adhanAlertMode != 'adhan' ? null : _previewAdhan,
               icon: Icon(_playingAdhan ? Icons.stop_circle_rounded : Icons.play_circle_fill_rounded),
               label: Text(_playingAdhan ? 'إيقاف التنبيه الصوتي' : 'تجربة التنبيه الصوتي'),
             ),
@@ -370,6 +401,14 @@ class _SettingsScreenState extends State<SettingsScreen>
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
+            ] else
+              Text(
+                _adhanAlertMode == 'ringtone'
+                    ? 'سيستخدم رنة الإشعارات الافتراضية للهاتف.'
+                    : 'سيكون التنبيه بالاهتزاز فقط دون صوت.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+              ),
           ],
         ),
       ),

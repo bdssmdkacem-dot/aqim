@@ -256,20 +256,32 @@ class NotificationService {
   NotificationDetails _reminderDetails({required String channelId, required String channelName, required String description}) => NotificationDetails(android: AndroidNotificationDetails(channelId, channelName, channelDescription: description, importance: Importance.high, priority: Priority.high, category: AndroidNotificationCategory.reminder, playSound: true, enableVibration: true, visibility: NotificationVisibility.public));
 
   Future<void> _scheduleWakeAlarm({required int id, required String title, required String body, required DateTime scheduledDate, required String soundName, required String payload}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final mode = prefs.getString('pre_prayer_alert_mode') ?? 'alarm';
+    final bool playSound = mode != 'vibrate';
+    final bool vibration = true;
+    final String? selectedSound = mode == 'alarm' ? soundName : null;
+    final channelSuffix = mode == 'alarm' ? 'alarm_$soundName' : mode;
     final details = NotificationDetails(
       android: AndroidNotificationDetails(
-        'aqim_pre_prayer_${_channelVersion}',
+        'aqim_pre_prayer_${_channelVersion}_$channelSuffix',
         'التنبيه قبل الصلاة',
-        channelDescription: 'تنبيه صوتي قبل الصلاة — ليس أذانًا',
+        channelDescription: mode == 'alarm'
+            ? 'منبه صوتي قبل الصلاة — ليس أذانًا'
+            : mode == 'ringtone'
+                ? 'تنبيه قبل الصلاة برنة الهاتف'
+                : 'تنبيه قبل الصلاة بالاهتزاز فقط',
         importance: Importance.max,
         priority: Priority.max,
         category: AndroidNotificationCategory.alarm,
         fullScreenIntent: true,
-        playSound: true,
-        sound: null,
+        playSound: playSound,
+        sound: selectedSound == null
+            ? null
+            : RawResourceAndroidNotificationSound(selectedSound),
         audioAttributesUsage: AudioAttributesUsage.alarm,
         channelBypassDnd: notificationPolicyAccessGranted,
-        enableVibration: true,
+        enableVibration: vibration,
         visibility: NotificationVisibility.public,
       ),
     );
@@ -294,7 +306,11 @@ class NotificationService {
 
   Future<void> _scheduleAdhan({required int id, required String title, required String body, required DateTime scheduledDate, required String payload}) async {
     final prefs = await SharedPreferences.getInstance();
+    final mode = prefs.getString('adhan_alert_mode') ?? 'adhan';
     final selectedSound = prefs.getString('adhan_sound') ?? 'azan_maroc_1';
+    final bool playSound = mode != 'vibrate';
+    final String? notificationSound = mode == 'adhan' ? selectedSound : null;
+    final channelSuffix = mode == 'adhan' ? 'adhan_$selectedSound' : mode;
     await _scheduleExact(
       id: id,
       title: title,
@@ -303,15 +319,21 @@ class NotificationService {
       payload: payload,
       details: NotificationDetails(
         android: AndroidNotificationDetails(
-          'aqim_adhan_${_channelVersion}_$selectedSound',
+          'aqim_adhan_${_channelVersion}_$channelSuffix',
           'الأذان',
-          channelDescription: 'الأذان عند دخول وقت الصلاة — الصوت المختار من الإعدادات',
+          channelDescription: mode == 'adhan'
+              ? 'الأذان عند دخول وقت الصلاة — المؤذن المختار'
+              : mode == 'ringtone'
+                  ? 'تنبيه وقت الصلاة برنة الهاتف'
+                  : 'تنبيه وقت الصلاة بالاهتزاز فقط',
           importance: Importance.max,
           priority: Priority.max,
           category: AndroidNotificationCategory.alarm,
           fullScreenIntent: true,
-          playSound: true,
-          sound: RawResourceAndroidNotificationSound(selectedSound),
+          playSound: playSound,
+          sound: notificationSound == null
+              ? null
+              : RawResourceAndroidNotificationSound(notificationSound),
           audioAttributesUsage: AudioAttributesUsage.alarm,
           channelBypassDnd: notificationPolicyAccessGranted,
           enableVibration: true,

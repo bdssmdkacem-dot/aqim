@@ -2,7 +2,7 @@ name: aqim
 description: "Aqim — Personal Prayer Habit Coach"
 publish_to: "none"
 
-version: 1.0.8+12
+version: 1.0.9+13
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -29,6 +29,7 @@ dependencies:
   disable_battery_optimization: ^1.1.2
   url_launcher: ^6.3.2
   in_app_purchase: ^3.3.0
+  in_app_review: ^2.0.12
   quran_with_tafsir: ^1.0.1
   share_plus: ^11.1.0
 

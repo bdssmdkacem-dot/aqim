@@ -27,7 +27,7 @@ class NotificationService {
   static const _quranPrefix = 'quran:';
   static const _witrPrefix = 'witr:';
   static const _religiousPrefix = 'religious:';
-  static const _channelVersion = 'v13';
+  static const _channelVersion = 'v14';
   static const _weeklySummaryId = 9001;
   static const _quranFajrId = 9002;
   static const _quranDhuhrId = 9003;
@@ -162,8 +162,6 @@ class NotificationService {
     }
   }
 
-  String _alarmChannel(String sound) => 'aqim_alarm_${_channelVersion}_$sound';
-
   DateTime _safeFallbackDate(DateTime scheduledDate) {
     if (exactAlarmPermissionGranted) return scheduledDate;
     return scheduledDate.add(const Duration(minutes: 2));
@@ -219,7 +217,7 @@ class NotificationService {
         await _scheduleWakeAlarm(id: _idFor(prayer, 0), title: isJumuah ? 'استعد لصلاة الجمعة' : 'استعد لصلاة ${prayer.arabicName}', body: isJumuah ? 'تبقّى $beforeMinutes دقيقة على صلاة الجمعة.' : 'تبقّى $beforeMinutes دقيقة على ${prayer.arabicName}.', scheduledDate: alarmTime, soundName: _wakeAlarmSoundFor(prayer, prayerTime), payload: prayer.name);
       }
       if (adhanEnabled && prayerTime.isAfter(now)) {
-        await _scheduleAdhan(id: _idFor(prayer, 2), title: isJumuah ? 'حان وقت صلاة الجمعة' : 'حان وقت ${prayer.arabicName}', body: 'حيّ على الصلاة، حيّ على الفلاح.', scheduledDate: prayerTime, payload: prayer.name);
+        await _scheduleAdhan(prayer: prayer, id: _idFor(prayer, 2), title: isJumuah ? 'حان وقت صلاة الجمعة' : 'حان وقت ${prayer.arabicName}', body: 'حيّ على الصلاة، حيّ على الفلاح.', scheduledDate: prayerTime, payload: prayer.name);
       }
       if (missedTime.isAfter(now)) {
         await _scheduleCheckIn(id: _idFor(prayer, 1), title: isJumuah ? 'فاتتك صلاة الجمعة' : 'فاتتك صلاة ${prayer.arabicName}', body: 'اضغط هنا لتجيب مباشرة: هل صليتها أم لا؟', scheduledDate: missedTime, payload: '$_missedPrefix${prayer.name}');
@@ -259,40 +257,10 @@ class NotificationService {
     final prefs = await SharedPreferences.getInstance();
     final mode = prefs.getString('pre_prayer_alert_mode') ?? 'alarm';
     final bool playSound = mode != 'vibrate';
-    final bool vibration = true;
     final String? selectedSound = mode == 'alarm' ? soundName : null;
     final channelSuffix = mode == 'alarm' ? 'alarm_$soundName' : mode;
-    final details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        'aqim_pre_prayer_${_channelVersion}_$channelSuffix',
-        'التنبيه قبل الصلاة',
-        channelDescription: mode == 'alarm'
-            ? 'منبه صوتي قبل الصلاة — ليس أذانًا'
-            : mode == 'ringtone'
-                ? 'تنبيه قبل الصلاة برنة الهاتف'
-                : 'تنبيه قبل الصلاة بالاهتزاز فقط',
-        importance: Importance.max,
-        priority: Priority.max,
-        category: AndroidNotificationCategory.alarm,
-        fullScreenIntent: true,
-        playSound: playSound,
-        sound: selectedSound == null
-            ? null
-            : RawResourceAndroidNotificationSound(selectedSound),
-        audioAttributesUsage: AudioAttributesUsage.alarm,
-        channelBypassDnd: notificationPolicyAccessGranted,
-        enableVibration: vibration,
-        visibility: NotificationVisibility.public,
-      ),
-    );
-    await _scheduleExact(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: scheduledDate,
-      payload: payload,
-      details: details,
-    );
+    final details = NotificationDetails(android: AndroidNotificationDetails('aqim_pre_prayer_${_channelVersion}_$channelSuffix', 'التنبيه قبل الصلاة', channelDescription: mode == 'alarm' ? 'منبه صوتي قبل الصلاة — ليس أذانًا' : mode == 'ringtone' ? 'تنبيه قبل الصلاة برنة الهاتف' : 'تنبيه قبل الصلاة بالاهتزاز فقط', importance: Importance.max, priority: Priority.max, category: AndroidNotificationCategory.alarm, fullScreenIntent: true, playSound: playSound, sound: selectedSound == null ? null : RawResourceAndroidNotificationSound(selectedSound), audioAttributesUsage: AudioAttributesUsage.alarm, channelBypassDnd: notificationPolicyAccessGranted, enableVibration: true, visibility: NotificationVisibility.public));
+    await _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: details);
   }
 
   Future<void> _scheduleFajrWakeAlarms({required DateTime finalAlarmTime, required int beforeMinutes, required DateTime now}) async {
@@ -304,43 +272,14 @@ class NotificationService {
     }
   }
 
-  Future<void> _scheduleAdhan({required int id, required String title, required String body, required DateTime scheduledDate, required String payload}) async {
+  Future<void> _scheduleAdhan({required Prayer prayer, required int id, required String title, required String body, required DateTime scheduledDate, required String payload}) async {
     final prefs = await SharedPreferences.getInstance();
     final mode = prefs.getString('adhan_alert_mode') ?? 'adhan';
-    final selectedSound = prefs.getString('adhan_sound') ?? 'azan_maroc_1';
+    final selectedSound = prayer == Prayer.fajr ? (prefs.getString('adhan_fajr_sound') ?? 'azan-fajr') : (prefs.getString('adhan_sound') ?? 'azan_maroc_1');
     final bool playSound = mode != 'vibrate';
     final String? notificationSound = mode == 'adhan' ? selectedSound : null;
-    final channelSuffix = mode == 'adhan' ? 'adhan_$selectedSound' : mode;
-    await _scheduleExact(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: scheduledDate,
-      payload: payload,
-      details: NotificationDetails(
-        android: AndroidNotificationDetails(
-          'aqim_adhan_${_channelVersion}_$channelSuffix',
-          'الأذان',
-          channelDescription: mode == 'adhan'
-              ? 'الأذان عند دخول وقت الصلاة — المؤذن المختار'
-              : mode == 'ringtone'
-                  ? 'تنبيه وقت الصلاة برنة الهاتف'
-                  : 'تنبيه وقت الصلاة بالاهتزاز فقط',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.alarm,
-          fullScreenIntent: true,
-          playSound: playSound,
-          sound: notificationSound == null
-              ? null
-              : RawResourceAndroidNotificationSound(notificationSound),
-          audioAttributesUsage: AudioAttributesUsage.alarm,
-          channelBypassDnd: notificationPolicyAccessGranted,
-          enableVibration: true,
-          visibility: NotificationVisibility.public,
-        ),
-      ),
-    );
+    final channelSuffix = mode == 'adhan' ? 'adhan_${prayer.name}_$selectedSound' : mode;
+    await _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: NotificationDetails(android: AndroidNotificationDetails('aqim_adhan_${_channelVersion}_$channelSuffix', 'الأذان', channelDescription: mode == 'adhan' ? (prayer == Prayer.fajr ? 'أذان الفجر — المؤذن المختار للفجر' : 'أذان الصلوات الأخرى — المؤذن المختار') : mode == 'ringtone' ? 'تنبيه وقت الصلاة برنة الهاتف' : 'تنبيه وقت الصلاة بالاهتزاز فقط', importance: Importance.max, priority: Priority.max, category: AndroidNotificationCategory.alarm, fullScreenIntent: true, playSound: playSound, sound: notificationSound == null ? null : RawResourceAndroidNotificationSound(notificationSound), audioAttributesUsage: AudioAttributesUsage.alarm, channelBypassDnd: notificationPolicyAccessGranted, enableVibration: true, visibility: NotificationVisibility.public)));
   }
 
   Future<void> _scheduleCheckIn({required int id, required String title, required String body, required DateTime scheduledDate, required String payload}) async => _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: _alarmDetails(channelId: 'aqim_missed_prayer_${_channelVersion}', channelName: 'تذكير الصلاة', channelDescription: 'تذكير بعد انتهاء وقت الصلاة', category: AndroidNotificationCategory.reminder));

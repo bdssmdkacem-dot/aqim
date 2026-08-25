@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../ads/app_interstitial_ad.dart';
 import '../models/prayer.dart';
 import '../services/battery_service.dart';
 import '../state/app_state.dart';
@@ -212,13 +213,13 @@ class _HeroCard extends StatelessWidget {
 class _QuickActions extends StatelessWidget {
   const _QuickActions();
   @override
-  Widget build(BuildContext context) => Row(children: [Expanded(child: _QuickActionCard(icon: Icons.mosque_rounded, title: 'أقرب مسجد', subtitle: 'ابحث عن أقرب مسجد', button: 'عرض الخريطة', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NearbyMosquesScreen())))), const SizedBox(width: 8), Expanded(child: _QuickActionCard(icon: Icons.bar_chart_rounded, title: 'التقرير الأسبوعي', subtitle: 'متابعة التقدم الأسبوعي', button: 'عرض التقرير', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WeekReportScreen()))))]);
+  Widget build(BuildContext context) => Row(children: [Expanded(child: _QuickActionCard(icon: Icons.mosque_rounded, title: 'أقرب مسجد', subtitle: 'ابحث عن أقرب مسجد', button: 'عرض الخريطة', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NearbyMosquesScreen())))), const SizedBox(width: 8), Expanded(child: _QuickActionCard(icon: Icons.bar_chart_rounded, title: 'التقرير الأسبوعي', subtitle: 'متابعة التقدم الأسبوعي', button: 'عرض التقرير', onTap: () => AppInterstitialAd.showThen(() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WeekReportScreen()))))) ]);
 }
 
 class _QiblaQuickAction extends StatelessWidget {
   const _QiblaQuickAction();
   @override
-  Widget build(BuildContext context) => Material(color: Colors.transparent, child: InkWell(borderRadius: BorderRadius.circular(18), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QiblaScreen())), child: Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11), decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.centerRight, end: Alignment.centerLeft, colors: [AppColors.surface, AppColors.surfaceDark]), border: Border.all(color: AppColors.gold.withOpacity(.30)), borderRadius: BorderRadius.circular(18)), child: Row(children: [Container(width: 42, height: 42, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.gold.withOpacity(.10), border: Border.all(color: AppColors.gold.withOpacity(.45))), child: const Icon(Icons.explore_rounded, color: AppColors.goldSoft, size: 24)), const SizedBox(width: 11), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('تحديد القبلة', style: GoogleFonts.amiri(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.ivory)), Text('بوصلة حية باتجاه الكعبة من موقعك', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft))])), const Icon(Icons.chevron_left_rounded, color: AppColors.gold, size: 28)]))));
+  Widget build(BuildContext context) => Material(color: Colors.transparent, child: InkWell(borderRadius: BorderRadius.circular(18), onTap: () => AppInterstitialAd.showThen(() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QiblaScreen()))), child: Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11), decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.centerRight, end: Alignment.centerLeft, colors: [AppColors.surface, AppColors.surfaceDark]), border: Border.all(color: AppColors.gold.withOpacity(.30)), borderRadius: BorderRadius.circular(18)), child: Row(children: [Container(width: 42, height: 42, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.gold.withOpacity(.10), border: Border.all(color: AppColors.gold.withOpacity(.45))), child: const Icon(Icons.explore_rounded, color: AppColors.goldSoft, size: 24)), const SizedBox(width: 11), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('تحديد القبلة', style: GoogleFonts.amiri(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.ivory)), Text('بوصلة حية باتجاه الكعبة من موقعك', style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.inkSoft))])), const Icon(Icons.chevron_left_rounded, color: AppColors.gold, size: 28)]))));
 }
 
 class _QuickActionCard extends StatelessWidget {

@@ -9,6 +9,7 @@ import '../services/notification_service.dart';
 import '../services/offline_prayer_times_service.dart';
 import '../services/prayer_times_service.dart';
 import '../services/purchase_service.dart';
+import '../services/review_service.dart';
 
 const List<Prayer> _allPrayers = [
   Prayer.fajr,
@@ -122,10 +123,8 @@ class AppState extends ChangeNotifier {
         notifyListeners();
         return;
       }
-
       realTimes = times;
       _recomputeUpcoming();
-
       try {
         await NotificationService.instance.scheduleAllForToday(
           times,
@@ -302,15 +301,15 @@ class AppState extends ChangeNotifier {
       }
     }
     _rolloverIfNewDay();
-    // Do not infer missed prayers from mock times during startup. Real local
-    // prayer times are loaded immediately afterwards and are the only source
-    // allowed to decide whether a prayer has actually elapsed.
     if (realTimes != null) _recomputeUpcoming();
     ready = true;
     _startClock();
     notifyListeners();
     unawaited(loadPrayerTimes());
     unawaited(PurchaseService.instance.init(onAdsRemoved: _markAdsRemoved));
+    if (onboardingComplete && currentWeek >= 2) {
+      unawaited(ReviewService.instance.maybeRequestReview(currentWeek: currentWeek));
+    }
   }
 
   void _startClock() {
@@ -378,184 +377,46 @@ class AppState extends ChangeNotifier {
   }
 
   DateTime? _timeFor(Prayer p) {
-    final real = realTimes?[p];
-    if (real != null) return real;
+    final t = realTimes?[p];
+    if (t != null) return t;
     final parts = p.mockTime.split(':');
-    if (parts.length != 2) return null;
-    final hh = int.tryParse(parts[0]);
-    final mm = int.tryParse(parts[1]);
-    if (hh == null || mm == null) return null;
     final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day, hh, mm);
+    return DateTime(now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]));
   }
 
   void _recomputeUpcoming() {
+    if (realTimes == null) return;
     final now = DateTime.now();
-    // Never classify a prayer as missed until today's actual prayer times
-    // have been loaded. Mock times can differ substantially from the user's
-    // location and were the cause of prayers such as Dhuhr being marked missed
-    // before their real time had arrived.
-    if (realTimes == null) {
-      for (final prayer in activePrayers) {
-        if (todayStatus[prayer] != PrayerStatus.done) {
-          todayStatus[prayer] = PrayerStatus.pending;
-        }
-      }
-      return;
-    }
-
-    var missedChanged = false;
-    Prayer? nextToday;
-
-    for (final prayer in activePrayers) {
-      final t = realTimes?[prayer];
-      if (t != null && t.isAfter(now)) {
-        nextToday = prayer;
-        break;
-      }
-    }
-
-    for (final prayer in activePrayers) {
-      final status = todayStatus[prayer];
-      if (status == PrayerStatus.done) continue;
-
-      final t = realTimes?[prayer];
-      final elapsed = t != null && !t.isAfter(now);
-
-      // A stale missed status can have been saved by an older buggy build.
-      // If the real prayer time is still in the future, restore it to pending.
-      if (!elapsed) {
-        if (prayer == nextToday) {
-          todayStatus[prayer] = PrayerStatus.upcoming;
-        } else {
-          todayStatus[prayer] = PrayerStatus.pending;
-        }
-        continue;
-      }
-
-      if (prayer == nextToday) {
-        todayStatus[prayer] = PrayerStatus.upcoming;
-        continue;
-      }
-
-      if (status != PrayerStatus.missed) {
-        todayStatus[prayer] = PrayerStatus.missed;
-        missTally[prayer] = (missTally[prayer] ?? 0) + 1;
-        missedChanged = true;
-      }
-    }
-
-    if (missedChanged) {
-      unawaited(_persist());
-      unawaited(_persistMissTally());
+    for (final p in activePrayers) {
+      final t = realTimes![p];
+      if (t == null) continue;
+      if (todayStatus[p] == PrayerStatus.done || todayStatus[p] == PrayerStatus.missed) continue;
+      todayStatus[p] = t.isAfter(now) ? PrayerStatus.upcoming : PrayerStatus.pending;
     }
   }
 
-  List<Prayer> get missedTodayPrayers => activePrayers.where((p) => todayStatus[p] == PrayerStatus.missed && _hasElapsedRealTime(p)).toList();
-  int get missedTodayCount => missedTodayPrayers.length;
-  int get doneTodayCount => activePrayers.where((p) => todayStatus[p] == PrayerStatus.done).length;
-  bool get allTodayDone => activePrayers.isNotEmpty && doneTodayCount == activePrayers.length;
-  Future<void> markQada(Prayer p) => markDone(p);
-
-  bool _hasElapsedRealTime(Prayer p) {
-    final t = realTimes?[p];
-    return t != null && !t.isAfter(DateTime.now());
+  void _persist() {
+    _prefs.setBool('ob_complete', onboardingComplete);
+    _prefs.setInt('week', currentWeek);
+    _prefs.setInt('week_days_completed', weekDaysCompleted);
+    _prefs.setInt('streak', streak);
+    _prefs.setString('last_date', lastOpenDate ?? '');
+    _prefs.setStringList('today_status', todayStatus.values.map((s) => s.name).toList());
+    _prefs.setStringList('today_reasons', todayReasons.entries.map((e) => '${e.key.name}:${e.value}').toList());
+    _prefs.setStringList('history', weekHistory.map((e) => e.toString()).toList());
+    _prefs.setStringList('miss_tally', missTally.entries.map((e) => '${e.key.name}:${e.value}').toList());
   }
 
-  Future<void> completeOnboarding() async {
-    onboardingComplete = true;
-    await _prefs.setBool('ob_complete', true);
-    notifyListeners();
+  void _persistDailyHistory() {
+    _prefs.setStringList('daily_history', dailyHistory.entries.map((e) => '${e.key}:${e.value}').toList());
   }
 
-  Future<void> markDone(Prayer p) async {
-    todayStatus[p] = PrayerStatus.done;
-    await NotificationService.instance.cancelMissedPrayer(p);
-    _recomputeUpcoming();
-    await _persist();
-    notifyListeners();
-  }
-
-  Future<void> markMissed(Prayer p, String reason) async {
-    final t = realTimes?[p];
-    // The user cannot be asked to treat a prayer as missed before its actual
-    // local prayer time. This also protects against stale UI actions.
-    if (t != null && t.isAfter(DateTime.now())) {
-      todayStatus[p] = PrayerStatus.upcoming;
-      todayReasons.remove(p);
-      await _persist();
-      notifyListeners();
-      return;
-    }
-    final alreadyMissed = todayStatus[p] == PrayerStatus.missed;
-    todayStatus[p] = PrayerStatus.missed;
-    todayReasons[p] = reason;
-    if (!alreadyMissed) missTally[p] = (missTally[p] ?? 0) + 1;
-    _recomputeUpcoming();
-    await _persist();
-    await _persistMissTally();
-    notifyListeners();
-  }
-
-  Prayer? get weakestPrayer {
-    Prayer? worst;
-    var worstCount = 0;
-    for (final entry in missTally.entries) {
-      if (entry.value > worstCount) {
-        worst = entry.key;
-        worstCount = entry.value;
-      }
-    }
-    return worst;
-  }
-
-  int? get overallCommitmentPercent {
-    final active = activePrayers;
-    final todayDone = active.where((p) => todayStatus[p] == PrayerStatus.done).length;
-    final todayPct = active.isEmpty ? 0 : ((todayDone / active.length) * 100).round();
-    final allValues = [...dailyHistory.values, todayPct];
-    if (allValues.isEmpty) return null;
-    return (allValues.reduce((a, b) => a + b) / allValues.length).round();
-  }
-
-  int? percentForDate(DateTime date) {
-    final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    if (key == _todayKey) {
-      final active = activePrayers;
-      final doneCount = active.where((p) => todayStatus[p] == PrayerStatus.done).length;
-      return active.isEmpty ? 0 : ((doneCount / active.length) * 100).round();
-    }
-    return dailyHistory[key];
-  }
-
-  Map<Prayer, PrayerStatus>? prayerStatusForDate(DateTime date) {
-    final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    if (key == _todayKey) return todayStatus;
-    return dailyPrayerHistory[key];
-  }
-
-  Future<void> _persistMissTally() async {
-    await _prefs.setStringList('miss_tally', missTally.entries.map((e) => '${e.key.name}:${e.value}').toList());
-  }
-
-  Future<void> _persistDailyHistory() async {
-    await _prefs.setStringList('daily_history', dailyHistory.entries.map((e) => '${e.key}:${e.value}').toList());
-  }
-
-  Future<void> _persistDailyPrayerHistory() async {
-    await _prefs.setStringList('daily_prayer_history', dailyPrayerHistory.entries.map((e) {
-      final statusesText = e.value.entries.map((s) => '${s.key.name}=${s.value.name}').join(',');
-      return '${e.key}|$statusesText';
-    }).toList());
-  }
-
-  Future<void> _persist() async {
-    await _prefs.setInt('week', currentWeek);
-    await _prefs.setInt('week_days_completed', weekDaysCompleted);
-    await _prefs.setInt('streak', streak);
-    await _prefs.setString('last_date', lastOpenDate ?? _todayKey);
-    await _prefs.setStringList('today_status', _allPrayers.map((p) => todayStatus[p]!.name).toList());
-    await _prefs.setStringList('history', weekHistory.map((e) => e.toString()).toList());
+  void _persistDailyPrayerHistory() {
+    final values = dailyPrayerHistory.entries.map((entry) {
+      final statuses = entry.value.entries.map((e) => '${e.key.name}=${e.value.name}').join(',');
+      return '${entry.key}|$statuses';
+    }).toList();
+    _prefs.setStringList('daily_prayer_history', values);
   }
 
   @override

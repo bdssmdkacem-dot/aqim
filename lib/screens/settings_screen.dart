@@ -29,7 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   };
   static const _fajrAdhanSounds = <String, String>{
     'azan-fajr': 'أذان فجر مكي',
-    'azanfajrmadina': 'أذان المدينة',
+    'azan-Fajr-madina ': 'أذان المدينة',
     'azan-fajr-maghribi': 'أذان مغربي',
   };
   static const _prePrayerModes = <String, String>{

@@ -27,6 +27,7 @@ class PrePrayerAlarmService : Service() {
         val body = intent.getStringExtra(EXTRA_BODY) ?: "حان وقت الاستعداد للصلاة."
 
         startForeground(NOTIFICATION_ID, buildNotification(title, body))
+        player?.stopSafely()
         player?.release()
         player = null
 
@@ -36,20 +37,27 @@ class PrePrayerAlarmService : Service() {
             return START_NOT_STICKY
         }
 
-        player = MediaPlayer.create(this, resId)?.apply {
-            setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .build()
-            )
-            isLooping = false
-            setOnCompletionListener { stopSelf() }
-            setOnErrorListener { _, _, _ -> stopSelf(); true }
-            start()
+        try {
+            player = MediaPlayer().apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+                setDataSource(resources.openRawResourceFd(resId))
+                prepare()
+                isLooping = false
+                setOnCompletionListener { stopSelf() }
+                setOnErrorListener { _, _, _ -> stopSelf(); true }
+                start()
+            }
+        } catch (_: Exception) {
+            player?.release()
+            player = null
+            stopSelf(startId)
         }
 
-        if (player == null) stopSelf(startId)
         return START_NOT_STICKY
     }
 

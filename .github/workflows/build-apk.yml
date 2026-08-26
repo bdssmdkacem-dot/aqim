@@ -21,6 +21,9 @@ jobs:
       - name: Apply Aqim notification preferences
         run: python3 scripts/apply_pre_prayer_notification_settings.py
 
+      - name: Apply persistent pre-prayer alarm fix
+        run: python3 scripts/apply_persistent_pre_prayer_alarm.py
+
       - name: Download and verify Tanzil Uthmani Quran
         run: python3 scripts/download_tanzil_uthmani.py
 

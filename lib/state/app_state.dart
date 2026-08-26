@@ -56,9 +56,6 @@ class AppState extends ChangeNotifier {
   double? get lastKnownLongitude => _prefs.getDouble('last_lng');
   List<Prayer> get activePrayers => _allPrayers;
 
-  /// Returns the first prayer whose real time is still ahead of now.
-  /// Completed/missed prayers are skipped. If all prayers have passed,
-  /// Fajr is returned because it is the next prayer on the following day.
   Prayer? get nextPrayer {
     final times = realTimes;
     if (times != null) {
@@ -113,9 +110,17 @@ class AppState extends ChangeNotifier {
     timesLoading = true;
     notifyListeners();
     try {
-      final position = await LocationService.getCurrentPosition();
-      final lat = position?.latitude ?? _prefs.getDouble('last_lat');
-      final lng = position?.longitude ?? _prefs.getDouble('last_lng');
+      // Prefer the last saved coordinates. This makes reopening Aqim fast and,
+      // more importantly, prevents a fresh GPS lookup from delaying or breaking
+      // notification scheduling after the app has been fully closed.
+      final savedLat = _prefs.getDouble('last_lat');
+      final savedLng = _prefs.getDouble('last_lng');
+      final hasSavedLocation = savedLat != null && savedLng != null;
+
+      final position = hasSavedLocation ? null : await LocationService.getCurrentPosition();
+      final lat = savedLat ?? position?.latitude;
+      final lng = savedLng ?? position?.longitude;
+
       if (position != null) {
         await _prefs.setDouble('last_lat', position.latitude);
         await _prefs.setDouble('last_lng', position.longitude);
@@ -126,35 +131,55 @@ class AppState extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      final cityFuture = GeocodingService.cityFor(latitude: lat, longitude: lng);
+
+      // Keep the last known city too, so reopening the app does not need a
+      // network geocoding request just to display the location name.
+      cityName = _prefs.getString('city_name');
+      final cityFuture = cityName == null
+          ? GeocodingService.cityFor(latitude: lat, longitude: lng)
+          : Future<String?>.value(cityName);
+
       var times = await PrayerTimesService.fetchToday(latitude: lat, longitude: lng);
       usingOfflineTimes = false;
       if (times == null) {
         times = OfflinePrayerTimesService.calculateToday(latitude: lat, longitude: lng);
         usingOfflineTimes = times != null;
       }
+
       cityName = await cityFuture;
+      if (cityName != null && cityName!.trim().isNotEmpty) {
+        await _prefs.setString('city_name', cityName!);
+      }
+
       if (times == null) {
         notificationIssue = 'تعذّر جلب أو حساب أوقات الصلاة. أعد المحاولة.';
         timesLoading = false;
         notifyListeners();
         return;
       }
+
       realTimes = times;
       _recomputeUpcoming();
+
       try {
-        await NotificationService.instance.scheduleAllForToday(
-          times,
-          beforeMinutes: beforeMinutes,
-          afterMinutes: afterMinutes,
-          adhanEnabled: adhanEnabled,
-        );
-        await NotificationService.instance.scheduleWeeklySummary(_weeklySummaryText());
-        final enabled = await NotificationService.instance.areNotificationsEnabled();
-        notificationIssue = enabled
-            ? null
-            : 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم اضغط «إعادة المحاولة»."';
-        debugPrint('Prayer notifications scheduled: $enabled');
+        await NotificationService.instance.init();
+        await NotificationService.instance.refreshPermissionStatus();
+        if (!NotificationService.instance.notificationsPermissionGranted) {
+          notificationIssue = 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم اضغط «إعادة المحاولة»."';
+        } else {
+          await NotificationService.instance.scheduleAllForToday(
+            times,
+            beforeMinutes: beforeMinutes,
+            afterMinutes: afterMinutes,
+            adhanEnabled: adhanEnabled,
+          );
+          await NotificationService.instance.scheduleWeeklySummary(_weeklySummaryText());
+          await NotificationService.instance.refreshPermissionStatus();
+          notificationIssue = NotificationService.instance.notificationsPermissionGranted
+              ? null
+              : 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم اضغط «إعادة المحاولة»."';
+          debugPrint('Prayer notifications scheduled: ${NotificationService.instance.notificationsPermissionGranted}');
+        }
       } catch (error) {
         notificationIssue = 'تعذّر جدولة الإشعارات. تحقق من صلاحية الإشعارات وإعدادات البطارية ثم أعد المحاولة.';
         debugPrint('Notification scheduling failed: $error');
@@ -207,7 +232,6 @@ class AppState extends ChangeNotifier {
         afterMinutes: afterMinutes,
         adhanEnabled: adhanEnabled,
       );
-      await NotificationService.instance.scheduleWeeklySummary(_weeklySummaryText());
       await refreshNotificationStatus();
     } else {
       await loadPrayerTimes();
@@ -227,8 +251,6 @@ class AppState extends ChangeNotifier {
         adhanEnabled: adhanEnabled,
       );
       await refreshNotificationStatus();
-    } else {
-      await loadPrayerTimes();
     }
   }
 
@@ -244,6 +266,7 @@ class AppState extends ChangeNotifier {
     weekDaysCompleted = _prefs.getInt('week_days_completed') ?? 0;
     streak = _prefs.getInt('streak') ?? 0;
     lastOpenDate = _prefs.getString('last_date');
+    cityName = _prefs.getString('city_name');
     final savedStatus = _prefs.getStringList('today_status');
     if (savedStatus != null && savedStatus.length == _allPrayers.length) {
       for (var i = 0; i < _allPrayers.length; i++) {
@@ -325,8 +348,6 @@ class AppState extends ChangeNotifier {
     unawaited(loadPrayerTimes());
     unawaited(PurchaseService.instance.init(onAdsRemoved: _markAdsRemoved));
     if (onboardingComplete) {
-      // Google Play decides whether the official review dialog is actually
-      // shown. Aqim only attempts the request (max 4 attempts/day).
       unawaited(ReviewService.instance.maybeRequestReview(currentWeek: currentWeek));
     }
   }
@@ -340,8 +361,6 @@ class AppState extends ChangeNotifier {
       if (oldDate != lastOpenDate) await loadPrayerTimes();
       _recomputeUpcoming();
       if (currentWeek != oldWeek) {
-        // A completed week is a second review opportunity. Google Play still
-        // controls whether a dialog is displayed.
         unawaited(ReviewService.instance.maybeRequestReview(currentWeek: currentWeek));
       }
       notifyListeners();
@@ -414,9 +433,6 @@ class AppState extends ChangeNotifier {
 
     final now = DateTime.now();
     Prayer? next;
-
-    // Exactly one prayer can be marked as upcoming: the first eligible
-    // prayer after now. This keeps the home arc focused on the next prayer.
     for (final p in activePrayers) {
       final time = realTimes![p];
       if (time == null) continue;

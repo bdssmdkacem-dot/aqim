@@ -48,7 +48,7 @@ class NotificationService {
         final localTz = await FlutterTimezone.getLocalTimezone();
         tz.setLocalLocation(tz.getLocation(localTz));
       } catch (_) {}
-      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const androidInit = AndroidInitializationSettings('@drawable/ic_aqim_notification');
       await _plugin.initialize(settings: const InitializationSettings(android: androidInit), onDidReceiveNotificationResponse: _onNotificationTap);
       _initialized = true;
       await refreshPermissionStatus();

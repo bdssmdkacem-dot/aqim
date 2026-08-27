@@ -19,14 +19,11 @@ extension AppStateActions on AppState {
     todayStatus[prayer] = PrayerStatus.done;
     todayReasons.remove(prayer);
     await _persistActions();
-
-    // Completing a previously missed prayer also closes its inbox item and
-    // scheduled missed-prayer notification. This is idempotent and therefore
-    // cannot count the same prayer twice.
     if (wasMissed) await _clearMissedPrayerArtifacts(prayer);
     notifyListeners();
   }
 
+  /// Marks a missed prayer as completed/qada exactly once.
   Future<void> markQada(Prayer prayer) async {
     if (todayStatus[prayer] != PrayerStatus.missed) return;
     todayStatus[prayer] = PrayerStatus.done;
@@ -44,10 +41,24 @@ extension AppStateActions on AppState {
   }
 
   Future<void> markMissed(Prayer prayer, String reason) async {
+    // Never increment the miss tally twice for the same current missed state.
+    if (todayStatus[prayer] == PrayerStatus.missed) return;
+
     todayStatus[prayer] = PrayerStatus.missed;
     todayReasons[prayer] = reason;
     missTally[prayer] = (missTally[prayer] ?? 0) + 1;
     await _persistActions();
+
+    // Create the inbox card at the moment the prayer becomes missed, rather
+    // than waiting for the user to open the bell.
+    final now = DateTime.now();
+    final dateKey = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    await NotificationInboxService.instance.add(
+      id: 'missed-prayer-$dateKey-${prayer.name}',
+      title: 'صلاة فائتة: ${prayer.arabicName}',
+      body: 'فات وقت ${prayer.arabicName}. اضغط هنا للانتقال مباشرة إلى تسجيل القضاء.',
+      createdAt: now,
+    );
     notifyListeners();
   }
 

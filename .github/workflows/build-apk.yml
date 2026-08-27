@@ -27,6 +27,9 @@ jobs:
       - name: Download and verify Tanzil Uthmani Quran
         run: python3 scripts/download_tanzil_uthmani.py
 
+      - name: Download and verify offline Hafs and Warsh Mushaf pages
+        run: python3 scripts/download_maknoon_mushaf_pages.py
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -60,6 +63,16 @@ jobs:
           assert lines[-1].startswith('114|6|')
           print(f'Quran verification passed: {len(lines)} ayat')
           PY
+
+      - name: Verify offline Mushaf pages
+        run: |
+          test "$(find assets/quran/hafs/pages -type f -name '*.png' | wc -l)" -eq 604
+          test "$(find assets/quran/warsh/pages -type f -name '*.png' | wc -l)" -eq 604
+          test -f assets/quran/hafs/pages/001.png
+          test -f assets/quran/hafs/pages/604.png
+          test -f assets/quran/warsh/pages/001.png
+          test -f assets/quran/warsh/pages/604.png
+          echo "Verified 604 Hafs pages + 604 Warsh pages"
 
       - name: Verify exact Aqim logo
         run: test -f android/app/src/main/res/drawable/aqim_logo_transparent_512.png

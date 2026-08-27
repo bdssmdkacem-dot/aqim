@@ -5,7 +5,8 @@ import '../theme/app_theme.dart';
 
 class MushafQuranScreen extends StatefulWidget {
   final int? initialPage;
-  const MushafQuranScreen({super.key, this.initialPage});
+  final MushafRiwaya? initialRiwaya;
+  const MushafQuranScreen({super.key, this.initialPage, this.initialRiwaya});
 
   @override
   State<MushafQuranScreen> createState() => _MushafQuranScreenState();
@@ -27,7 +28,10 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
   int _page = 1;
   bool _controlsVisible = true;
 
+  String get _riwayaName => _riwaya.name;
   String get _key => _riwaya == MushafRiwaya.hafs ? 'quran_hafs_page' : 'quran_warsh_page';
+  String get _resumeKey => 'quran_resume_page_$_riwayaName';
+  String get _nextKey => 'quran_next_page_$_riwayaName';
   String get _label => _riwaya == MushafRiwaya.hafs ? 'حفص عن عاصم' : 'ورش عن نافع';
   String get _folder => _riwaya == MushafRiwaya.hafs ? 'hafs' : 'warsh';
 
@@ -38,6 +42,7 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
   @override
   void initState() {
     super.initState();
+    _riwaya = widget.initialRiwaya ?? MushafRiwaya.hafs;
     _page = (widget.initialPage ?? 1).clamp(1, pageCount).toInt();
     _controller = PageController(initialPage: _page - 1);
     _restorePage();
@@ -46,7 +51,13 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
   Future<void> _restorePage() async {
     if (widget.initialPage != null) return;
     final prefs = await SharedPreferences.getInstance();
-    final saved = (prefs.getInt(_key) ?? prefs.getInt('quran_resume_page') ?? 1).clamp(1, pageCount).toInt();
+    final legacyMatches = prefs.getString('quran_last_riwaya') == _riwayaName;
+    final saved = (prefs.getInt(_key) ??
+            prefs.getInt(_resumeKey) ??
+            (legacyMatches ? prefs.getInt('quran_resume_page') : null) ??
+            1)
+        .clamp(1, pageCount)
+        .toInt();
     if (!mounted || saved == _page) return;
     _controller.jumpToPage(saved - 1);
     setState(() => _page = saved);
@@ -54,10 +65,14 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
 
   Future<void> _savePage() async {
     final prefs = await SharedPreferences.getInstance();
+    final nextPage = _page == pageCount ? 1 : _page + 1;
     await prefs.setInt(_key, _page);
+    await prefs.setInt(_resumeKey, _page);
+    await prefs.setInt(_nextKey, nextPage);
+    // Backwards-compatible keys used by NotificationService.
     await prefs.setInt('quran_resume_page', _page);
-    await prefs.setInt('quran_next_page', _page == pageCount ? 1 : _page + 1);
-    await prefs.setString('quran_last_riwaya', _riwaya.name);
+    await prefs.setInt('quran_next_page', nextPage);
+    await prefs.setString('quran_last_riwaya', _riwayaName);
   }
 
   void _setPage(int page) {
@@ -76,9 +91,10 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
 
   Future<void> _switchRiwaya(MushafRiwaya value) async {
     if (value == _riwaya) return;
+    await _savePage();
     final prefs = await SharedPreferences.getInstance();
     final key = value == MushafRiwaya.hafs ? 'quran_hafs_page' : 'quran_warsh_page';
-    final saved = (prefs.getInt(key) ?? 1).clamp(1, pageCount).toInt();
+    final saved = (prefs.getInt(key) ?? prefs.getInt('quran_resume_page_${value.name}') ?? 1).clamp(1, pageCount).toInt();
     final old = _controller;
     setState(() { _riwaya = value; _page = saved; _controller = PageController(initialPage: saved - 1); });
     old.dispose();

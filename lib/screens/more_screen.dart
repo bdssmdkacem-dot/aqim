@@ -7,7 +7,6 @@ import '../theme/app_theme.dart';
 import 'nearby_mosques_screen.dart';
 import 'prayer_guide_screen.dart';
 import 'qibla_screen.dart';
-import 'settings_screen.dart';
 import 'week_report_screen.dart';
 
 class MoreScreen extends StatefulWidget {
@@ -21,7 +20,6 @@ class _MoreScreenState extends State<MoreScreen> {
   @override
   void initState() {
     super.initState();
-    // Keep the weekly-report interstitial warm while the user is in More.
     AppInterstitialAd.preload();
   }
 
@@ -42,7 +40,6 @@ class _MoreScreenState extends State<MoreScreen> {
   @override
   Widget build(BuildContext context) {
     context.watch<AppState>();
-
     return Scaffold(
       backgroundColor: AppColors.ink,
       appBar: AppBar(title: const Text('المزيد')),
@@ -71,15 +68,9 @@ class _MoreScreenState extends State<MoreScreen> {
               icon: Icons.bar_chart_rounded,
               title: 'التقرير الأسبوعي',
               onTap: () {
-                // Interstitials are intentionally restricted to this action.
                 AppInterstitialAd.showIfReady();
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WeekReportScreen()));
               },
-            ),
-            _MenuTile(
-              icon: Icons.settings_outlined,
-              title: 'الإعدادات',
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
             ),
             _MenuTile(
               icon: Icons.family_restroom_rounded,

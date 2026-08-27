@@ -379,23 +379,30 @@ class AppState extends ChangeNotifier {
 
   String get _todayKey {
     final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    return '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
   void _rolloverIfNewDay() {
     final today = _todayKey;
     if (lastOpenDate == null) {
       lastOpenDate = today;
-      _persist();
       return;
     }
     if (lastOpenDate != today) {
+      final doneCount = _allPrayers.where((p) => todayStatus[p] == PrayerStatus.done).length;
       final active = activePrayers;
-      final doneCount = active.where((p) => todayStatus[p] == PrayerStatus.done).length;
-      final pct = active.isEmpty ? 0 : ((doneCount / active.length) * 100).round();
-      weekHistory = [...weekHistory.skip(1), pct];
-      dailyHistory[lastOpenDate!] = pct;
-      dailyPrayerHistory[lastOpenDate!] = Map.of(todayStatus);
+      if (active.isNotEmpty) {
+        final pct = (doneCount / active.length * 100).round();
+        dailyHistory[lastOpenDate!] = pct;
+        weekHistory = [...weekHistory.skip(1), pct];
+      }
+      for (final p in _allPrayers) {
+        final status = todayStatus[p];
+        if (status == PrayerStatus.missed) {
+          missTally[p] = (missTally[p] ?? 0) + 1;
+        }
+      }
+      dailyPrayerHistory[lastOpenDate!] = Map<Prayer, PrayerStatus>.from(todayStatus);
       _persistDailyHistory();
       _persistDailyPrayerHistory();
       final allDone = doneCount == active.length && active.isNotEmpty;
@@ -452,13 +459,7 @@ class AppState extends ChangeNotifier {
       todayStatus[p] = p == next ? PrayerStatus.upcoming : PrayerStatus.pending;
     }
   }
-// إذا انتهت صلوات اليوم، فالفجر هو الصلاة القادمة للغد.
-if (next == null && activePrayers.isNotEmpty) {
-  final fajr = Prayer.fajr;
-  if (realTimes![fajr] != null) {
-    next = fajr;
-  }
-}
+
   void _persist() {
     _prefs.setBool('ob_complete', onboardingComplete);
     _prefs.setInt('week', currentWeek);

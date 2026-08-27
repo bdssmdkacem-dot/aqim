@@ -4,10 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 
 /// Offline, page-accurate Mushaf viewer.
-///
-/// Hafs and Warsh are intentionally separate datasets. Each uses the page
-/// images from the pinned Maknoon/KFQPC source downloaded at release-build
-/// time by scripts/download_maknoon_mushaf_pages.py.
+/// Hafs and Warsh are separate datasets downloaded at release-build time.
 class MushafQuranScreen extends StatefulWidget {
   final int? initialPage;
   const MushafQuranScreen({super.key, this.initialPage});
@@ -32,7 +29,7 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
   @override
   void initState() {
     super.initState();
-    _page = (widget.initialPage ?? 1).clamp(1, pageCount);
+    _page = (widget.initialPage ?? 1).clamp(1, pageCount).toInt();
     _controller = PageController(initialPage: _page - 1);
     _restorePage();
   }
@@ -40,7 +37,7 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
   Future<void> _restorePage() async {
     if (widget.initialPage != null) return;
     final prefs = await SharedPreferences.getInstance();
-    final saved = (prefs.getInt(_key) ?? 1).clamp(1, pageCount);
+    final saved = (prefs.getInt(_key) ?? 1).clamp(1, pageCount).toInt();
     if (!mounted || saved == _page) return;
     _controller.jumpToPage(saved - 1);
     setState(() => _page = saved);
@@ -55,7 +52,7 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
     if (value == _riwaya) return;
     final prefs = await SharedPreferences.getInstance();
     final key = value == MushafRiwaya.hafs ? 'quran_hafs_page' : 'quran_warsh_page';
-    final saved = (prefs.getInt(key) ?? 1).clamp(1, pageCount);
+    final saved = (prefs.getInt(key) ?? 1).clamp(1, pageCount).toInt();
     final old = _controller;
     setState(() {
       _riwaya = value;
@@ -82,10 +79,13 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-          FilledButton(onPressed: () {
-            final p = int.tryParse(text.text.trim());
-            if (p != null && p >= 1 && p <= pageCount) Navigator.pop(context, p);
-          }, child: const Text('فتح')),
+          FilledButton(
+            onPressed: () {
+              final p = int.tryParse(text.text.trim());
+              if (p != null && p >= 1 && p <= pageCount) Navigator.pop(context, p);
+            },
+            child: const Text('فتح'),
+          ),
         ],
       ),
     );
@@ -151,18 +151,8 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
               ),
             ),
             if (_controlsVisible) ...[
-              Positioned(
-                top: 8,
-                left: 8,
-                right: 8,
-                child: _topBar(),
-              ),
-              Positioned(
-                bottom: 10,
-                left: 12,
-                right: 12,
-                child: _bottomBar(),
-              ),
+              Positioned(top: 8, left: 8, right: 8, child: _topBar()),
+              Positioned(bottom: 10, left: 12, right: 12, child: _bottomBar()),
             ],
           ],
         ),
@@ -177,14 +167,10 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         child: Row(children: [
-          IconButton(
-            tooltip: 'رجوع',
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
-          ),
+          IconButton(tooltip: 'رجوع', onPressed: () => Navigator.of(context).maybePop(), icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white)),
           Expanded(
             child: Column(children: [
-              Text('القرآن الكريم', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17)),
+              const Text('القرآن الكريم', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17)),
               Text(_label, style: const TextStyle(color: AppColors.gold, fontSize: 11, fontWeight: FontWeight.w700)),
             ]),
           ),
@@ -198,16 +184,8 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
               PopupMenuItem(value: MushafRiwaya.warsh, child: Text('ورش عن نافع', style: TextStyle(color: Colors.white))),
             ],
           ),
-          IconButton(
-            tooltip: 'رقم الصفحة',
-            onPressed: _gotoPage,
-            icon: const Icon(Icons.find_in_page_rounded, color: AppColors.gold),
-          ),
-          IconButton(
-            tooltip: 'المصدر',
-            onPressed: _showSource,
-            icon: const Icon(Icons.info_outline_rounded, color: Colors.white),
-          ),
+          IconButton(tooltip: 'رقم الصفحة', onPressed: _gotoPage, icon: const Icon(Icons.find_in_page_rounded, color: AppColors.gold)),
+          IconButton(tooltip: 'المصدر', onPressed: _showSource, icon: const Icon(Icons.info_outline_rounded, color: Colors.white)),
         ]),
       ),
     );
@@ -236,7 +214,7 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
         backgroundColor: AppColors.surfaceDark,
         title: const Text('مصدر صفحات المصحف', textAlign: TextAlign.right, style: TextStyle(color: AppColors.ivory)),
         content: const Text(
-          'نسخة الصفحات المستخدمة في AQIM هي صفحات PNG المنشورة في مشروع مكنون، والتي يذكر موضوع المصدر أنها حُوّلت من النسخة الرقمية الحديثة لمجمع الملك فهد.\n\nحفص: 604 صفحة\nورش: 604 صفحة\n\nالصفحات تُضمّن داخل APK أثناء بناء الإصدار، لذلك القراءة تعمل دون اتصال بالإنترنت.',
+          'نسخة الصفحات المستخدمة في AQIM هي صفحات PNG المنشورة في مشروع مكنون، والذي يذكر أن الصفحات حُوّلت من النسخة الرقمية الحديثة لمجمع الملك فهد.\n\nحفص: 604 صفحة\nورش: 604 صفحة\n\nالصفحات تُضمّن داخل APK أثناء بناء الإصدار، لذلك القراءة تعمل دون اتصال بالإنترنت.',
           textAlign: TextAlign.right,
           style: TextStyle(color: AppColors.ivory, height: 1.6),
         ),

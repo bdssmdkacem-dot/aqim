@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../ads/app_banner_ad.dart';
 import '../services/religious_events_service.dart';
 import '../state/app_state.dart';
-import '../theme/app_theme.dart';
 import '../widgets/notification_bell.dart';
 import '../widgets/religious_event_home_card.dart';
 import 'adhkar_home_screen.dart';
@@ -11,7 +10,6 @@ import 'home_screen.dart';
 import 'more_screen.dart';
 import 'pre_prayer_screen.dart';
 import 'quran_screen.dart';
-import 'settings_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -44,9 +42,9 @@ class _MainShellState extends State<MainShell> {
           ),
           if (_index == 0)
             const PositionedDirectional(
-              top: 10,
-              end: 8,
-              child: _HeaderActions(),
+              top: 9,
+              end: 60,
+              child: NotificationBell(),
             ),
         ],
       ),
@@ -63,65 +61,17 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-class _HeaderActions extends StatelessWidget {
-  const _HeaderActions();
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.ink.withOpacity(.94),
-      borderRadius: BorderRadius.circular(24),
-      child: Padding(
-        padding: const EdgeInsets.all(3),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const NotificationBell(),
-            const SizedBox(width: 6),
-            Material(
-              color: AppColors.surfaceDark,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                ),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.gold.withOpacity(.45)),
-                  ),
-                  child: const Icon(Icons.settings_outlined, size: 21, color: AppColors.ivory),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _BottomBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
   final VoidCallback? onCenterTap;
 
-  const _BottomBar({
-    required this.currentIndex,
-    required this.onTap,
-    required this.onCenterTap,
-  });
+  const _BottomBar({required this.currentIndex, required this.onTap, required this.onCenterTap});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceDark,
-        border: Border(top: BorderSide(color: AppColors.paperLine)),
-      ),
+      decoration: const BoxDecoration(color: Color(0xFF171717), border: Border(top: BorderSide(color: Color(0xFF3A3A3A)))),
       child: SafeArea(
         top: false,
         child: SizedBox(
@@ -147,59 +97,23 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-
   const _NavItem({required this.icon, required this.selectedIcon, required this.label, required this.selected, required this.onTap});
-
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.gold : AppColors.textMuted;
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(selected ? selectedIcon : icon, color: color, size: 22),
-            const SizedBox(height: 3),
-            Text(label, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
-          ],
-        ),
-      ),
-    );
+    final color = selected ? const Color(0xFFD8B15A) : const Color(0xFF999999);
+    return Expanded(child: InkWell(onTap: onTap, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(selected ? selectedIcon : icon, color: color, size: 22), const SizedBox(height: 3), Text(label, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600))])));
   }
 }
 
 class _CenterButton extends StatelessWidget {
   final VoidCallback? onTap;
   const _CenterButton({required this.onTap});
-
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Transform.translate(
-        offset: const Offset(0, -14),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(32),
-              child: Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: AppColors.gold,
-                  shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 10, offset: const Offset(0, 3))],
-                ),
-                child: const Icon(Icons.timer_outlined, color: AppColors.ink, size: 26),
-              ),
-            ),
-            const SizedBox(height: 2),
-            const Text('استعد للصلاة', style: TextStyle(fontSize: 9.5, color: AppColors.gold, fontWeight: FontWeight.w700)),
-          ],
-        ),
-      ),
-    );
+    return Expanded(child: Transform.translate(offset: const Offset(0, -14), child: Column(mainAxisSize: MainAxisSize.min, children: [
+      InkWell(onTap: onTap, borderRadius: BorderRadius.circular(32), child: Container(width: 54, height: 54, decoration: const BoxDecoration(color: Color(0xFFD8B15A), shape: BoxShape.circle), child: const Icon(Icons.timer_outlined, color: Color(0xFF111111), size: 26))),
+      const SizedBox(height: 2),
+      const Text('استعد للصلاة', style: TextStyle(fontSize: 9.5, color: Color(0xFFD8B15A), fontWeight: FontWeight.w700)),
+    ]));
   }
 }

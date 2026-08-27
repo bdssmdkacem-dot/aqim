@@ -6,8 +6,6 @@ import '../services/notification_service.dart';
 import 'app_state.dart';
 
 /// UI-facing actions kept separate from the core state implementation.
-/// This avoids changing prayer scheduling/persistence logic while restoring
-/// the public actions used by the existing screens.
 extension AppStateActions on AppState {
   Future<void> completeOnboarding() async {
     onboardingComplete = true;
@@ -17,27 +15,32 @@ extension AppStateActions on AppState {
   }
 
   Future<void> markDone(Prayer prayer) async {
+    final wasMissed = todayStatus[prayer] == PrayerStatus.missed;
     todayStatus[prayer] = PrayerStatus.done;
     todayReasons.remove(prayer);
     await _persistActions();
+
+    // Completing a previously missed prayer also closes its inbox item and
+    // scheduled missed-prayer notification. This is idempotent and therefore
+    // cannot count the same prayer twice.
+    if (wasMissed) await _clearMissedPrayerArtifacts(prayer);
     notifyListeners();
   }
 
-  /// Marks a prayer that was already missed as performed/qada exactly once.
-  /// It is deliberately idempotent: a prayer that is no longer missed cannot
-  /// increment any tally or create another completion.
   Future<void> markQada(Prayer prayer) async {
     if (todayStatus[prayer] != PrayerStatus.missed) return;
-
     todayStatus[prayer] = PrayerStatus.done;
     todayReasons.remove(prayer);
     await _persistActions();
+    await _clearMissedPrayerArtifacts(prayer);
+    notifyListeners();
+  }
 
+  Future<void> _clearMissedPrayerArtifacts(Prayer prayer) async {
     final now = DateTime.now();
     final dateKey = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     await NotificationInboxService.instance.removeMissedPrayer(dateKey, prayer.name);
     await NotificationService.instance.cancelMissedPrayer(prayer);
-    notifyListeners();
   }
 
   Future<void> markMissed(Prayer prayer, String reason) async {

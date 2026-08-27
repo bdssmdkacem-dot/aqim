@@ -11,6 +11,7 @@ import 'home_screen.dart';
 import 'more_screen.dart';
 import 'pre_prayer_screen.dart';
 import 'quran_screen.dart';
+import 'settings_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -44,8 +45,8 @@ class _MainShellState extends State<MainShell> {
           if (_index == 0)
             const PositionedDirectional(
               top: 10,
-              end: 62,
-              child: NotificationBell(),
+              end: 8,
+              child: _HeaderActions(),
             ),
         ],
       ),
@@ -57,6 +58,47 @@ class _MainShellState extends State<MainShell> {
             : () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => PrePrayerScreen(prayer: next)),
                 ),
+      ),
+    );
+  }
+}
+
+class _HeaderActions extends StatelessWidget {
+  const _HeaderActions();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.ink.withOpacity(.94),
+      borderRadius: BorderRadius.circular(24),
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const NotificationBell(),
+            const SizedBox(width: 6),
+            Material(
+              color: AppColors.surfaceDark,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                ),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.gold.withOpacity(.45)),
+                  ),
+                  child: const Icon(Icons.settings_outlined, size: 21, color: AppColors.ivory),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -106,13 +148,7 @@ class _NavItem extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _NavItem({
-    required this.icon,
-    required this.selectedIcon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+  const _NavItem({required this.icon, required this.selectedIcon, required this.label, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -154,22 +190,13 @@ class _CenterButton extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.gold,
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 10, offset: const Offset(0, 3))],
                 ),
                 child: const Icon(Icons.timer_outlined, color: AppColors.ink, size: 26),
               ),
             ),
             const SizedBox(height: 2),
-            const Text(
-              'استعد للصلاة',
-              style: TextStyle(fontSize: 9.5, color: AppColors.gold, fontWeight: FontWeight.w700),
-            ),
+            const Text('استعد للصلاة', style: TextStyle(fontSize: 9.5, color: AppColors.gold, fontWeight: FontWeight.w700)),
           ],
         ),
       ),

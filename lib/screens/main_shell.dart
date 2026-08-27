@@ -4,6 +4,7 @@ import '../ads/app_banner_ad.dart';
 import '../services/religious_events_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
+import '../widgets/notification_bell.dart';
 import '../widgets/religious_event_home_card.dart';
 import 'adhkar_home_screen.dart';
 import 'home_screen.dart';
@@ -28,11 +29,17 @@ class _MainShellState extends State<MainShell> {
     final next = state.nextPrayer;
     final todayEvent = ReligiousEventsService.eventOn(DateTime.now());
     return Scaffold(
-      body: Column(children: [
-        if (_index == 0 && todayEvent != null)
-          Padding(padding: const EdgeInsets.fromLTRB(14, 6, 14, 0), child: ReligiousEventHomeCard(event: todayEvent)),
-        Expanded(child: IndexedStack(index: _index, children: _tabs)),
-        if (_index == 0) const AppBannerAd(placement: 'home'),
+      body: Stack(children: [
+        Column(children: [
+          if (_index == 0 && todayEvent != null)
+            Padding(padding: const EdgeInsets.fromLTRB(14, 6, 14, 0), child: ReligiousEventHomeCard(event: todayEvent)),
+          Expanded(child: IndexedStack(index: _index, children: _tabs)),
+          if (_index == 0) const AppBannerAd(placement: 'home'),
+        ]),
+        // The bell is deliberately overlaid on the Home header so it sits
+        // directly beside the existing Settings button.
+        if (_index == 0)
+          const PositionedDirectional(top: 6, end: 62, child: NotificationBell()),
       ]),
       bottomNavigationBar: _BottomBar(
         currentIndex: _index,

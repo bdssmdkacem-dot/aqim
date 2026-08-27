@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import '../ads/app_banner_ad.dart';
 import '../services/religious_events_service.dart';
 import '../state/app_state.dart';
-import '../theme/app_theme.dart';
-import '../widgets/notification_bell.dart';
 import '../widgets/religious_event_home_card.dart';
 import 'adhkar_home_screen.dart';
 import 'home_screen.dart';
@@ -39,17 +37,10 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       body: Column(
         children: [
-          if (_index == 0)
+          if (_index == 0 && todayEvent != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
-              child: Row(children: [
-                const NotificationBell(),
-                if (todayEvent != null) ...[
-                  const SizedBox(width: 8),
-                  Expanded(child: ReligiousEventHomeCard(event: todayEvent)),
-                ] else
-                  const Spacer(),
-              ]),
+              child: ReligiousEventHomeCard(event: todayEvent),
             ),
           Expanded(child: IndexedStack(index: _index, children: _tabs)),
           if (_index == 0) const AppBannerAd(placement: 'home'),

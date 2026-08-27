@@ -31,16 +31,31 @@ class _NotificationBellState extends State<NotificationBell> {
       );
     }
 
-    // Missed-prayer cards are derived from AppState. The bell badge itself is
-    // also derived from the same state, so it means only unpaid missed prayers.
     final state = context.read<AppState>();
     final today = DateTime.now();
     final dateKey = '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    // Keep the bell inbox synchronized with missed prayers.
     for (final prayer in state.missedTodayPrayers) {
       await NotificationInboxService.instance.add(
         id: 'missed-prayer-$dateKey-${prayer.name}',
         title: 'صلاة فائتة: ${prayer.arabicName}',
         body: 'فات وقت ${prayer.arabicName}. اضغط هنا للانتقال مباشرة إلى تسجيل القضاء.',
+      );
+    }
+
+    // Also show the current upcoming prayer in the same inbox. The id contains
+    // the date and prayer, so each prayer appears only once per day.
+    final next = state.nextPrayer;
+    final nextTime = state.nextPrayerTime;
+    if (next != null) {
+      final timeLabel = nextTime == null
+          ? state.displayTimeFor(next)
+          : '${nextTime.hour.toString().padLeft(2, '0')}:${nextTime.minute.toString().padLeft(2, '0')}';
+      await NotificationInboxService.instance.add(
+        id: 'upcoming-prayer-$dateKey-${next.name}',
+        title: 'الصلاة القادمة: ${next.arabicName}',
+        body: 'الصلاة القادمة في $timeLabel. افتح أقم للاستعداد للصلاة.',
       );
     }
   }

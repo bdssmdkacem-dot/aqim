@@ -74,6 +74,16 @@ class NotificationInboxService {
 
   Future<void> markAllRead() async => _replace((item) => item.copyWith(read: true));
 
+  Future<void> remove(String id) async {
+    final items = await getItems();
+    final remaining = items.where((item) => item.id != id).toList();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_key, remaining.map((item) => jsonEncode(item.toJson())).toList());
+  }
+
+  Future<void> removeMissedPrayer(String dateKey, String prayerName) =>
+      remove('missed-prayer-$dateKey-$prayerName');
+
   Future<int> unreadCount() async => (await getItems()).where((item) => !item.read).length;
 
   Future<void> _replace(AqimInboxItem Function(AqimInboxItem) transform) async {

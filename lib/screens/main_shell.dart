@@ -12,7 +12,6 @@ import 'more_screen.dart';
 import 'pre_prayer_screen.dart';
 import 'quran_screen.dart';
 
-/// القشرة الرئيسية: القرآن أصبح تبويبًا أساسيًا في الشريط السفلي.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
   @override
@@ -29,26 +28,35 @@ class _MainShellState extends State<MainShell> {
     final next = state.nextPrayer;
     final todayEvent = ReligiousEventsService.eventOn(DateTime.now());
     return Scaffold(
-      body: Stack(children: [
-        Column(children: [
-          if (_index == 0 && todayEvent != null)
-            Padding(padding: const EdgeInsets.fromLTRB(14, 6, 14, 0), child: ReligiousEventHomeCard(event: todayEvent)),
-          Expanded(child: IndexedStack(index: _index, children: _tabs)),
-          if (_index == 0) const AppBannerAd(placement: 'home'),
-        ]),
-        // HomeScreen already owns the settings button. Keep the bell in the
-        // exact same header row, immediately beside it, without duplicating it.
-        if (_index == 0)
-          PositionedDirectional(
-            top: todayEvent == null ? 6 : 60,
-            end: 62,
-            child: const NotificationBell(),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              if (_index == 0 && todayEvent != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+                  child: ReligiousEventHomeCard(event: todayEvent),
+                ),
+              Expanded(child: IndexedStack(index: _index, children: _tabs)),
+              if (_index == 0) const AppBannerAd(placement: 'home'),
+            ],
           ),
-      ]),
+          if (_index == 0)
+            const PositionedDirectional(
+              top: 10,
+              end: 62,
+              child: NotificationBell(),
+            ),
+        ],
+      ),
       bottomNavigationBar: _BottomBar(
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
-        onCenterTap: next == null ? null : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => PrePrayerScreen(prayer: next))),
+        onCenterTap: next == null
+            ? null
+            : () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => PrePrayerScreen(prayer: next)),
+                ),
       ),
     );
   }

@@ -3,44 +3,53 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'banner_ad_manager.dart';
 
-/// Banner placement widget backed by the centralized banner manager.
+/// Banner widget backed by the centralized BannerAdManager.
+///
+/// If no placement is supplied, a stable instance-specific placement is
+/// generated. This keeps the existing screen code compatible while ensuring
+/// two simultaneously mounted screens never try to display the same AdWidget.
 class AppBannerAd extends StatefulWidget {
-  final String placement;
+  final String? placement;
 
-  const AppBannerAd({super.key, required this.placement});
+  const AppBannerAd({super.key, this.placement});
 
   @override
   State<AppBannerAd> createState() => _AppBannerAdState();
 }
 
 class _AppBannerAdState extends State<AppBannerAd> {
+  static int _nextId = 0;
+
+  late final String _placement;
   BannerAd? _ad;
   bool _loaded = false;
 
   @override
   void initState() {
     super.initState();
+    _placement = widget.placement ?? 'banner_${_nextId++}';
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   Future<void> _load() async {
     if (!mounted) return;
-    final manager = BannerAdManager.instance;
-    await manager.load(context: context, placement: widget.placement);
-    if (!mounted) return;
 
-    final current = manager.get(widget.placement);
-    if (current != null) {
-      setState(() {
-        _ad = current;
-        _loaded = true;
-      });
-    }
+    final ad = await BannerAdManager.instance.load(
+      context: context,
+      placement: _placement,
+    );
+
+    if (!mounted || ad == null) return;
+
+    setState(() {
+      _ad = ad;
+      _loaded = true;
+    });
   }
 
   @override
   void dispose() {
-    BannerAdManager.instance.dispose(widget.placement);
+    BannerAdManager.instance.dispose(_placement);
     super.dispose();
   }
 

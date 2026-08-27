@@ -17,7 +17,6 @@ class AppInterstitialAd {
 
   static void preload() {
     if (_ad != null || _loading) return;
-
     _retryTimer?.cancel();
     _retryTimer = null;
     _loading = true;
@@ -30,7 +29,6 @@ class AppInterstitialAd {
           _loading = false;
           _ad = ad;
           debugPrint('AQIM Interstitial preloaded');
-
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();
@@ -66,18 +64,40 @@ class AppInterstitialAd {
     });
   }
 
-  /// Attempts to show the currently preloaded interstitial.
-  ///
-  /// This method is called only for the weekly report action. If an ad is not
-  /// ready, the report still opens normally and the manager continues loading
-  /// in the background; the next eligible report tap can show it.
+  /// Attempts to show the preloaded interstitial and then runs the action.
+  /// If no ad is ready, the action still runs immediately.
+  static void showThen(VoidCallback action) {
+    final ad = _ad;
+    if (ad == null) {
+      preload();
+      action();
+      return;
+    }
+
+    _ad = null;
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (shownAd) {
+        shownAd.dispose();
+        preload();
+        action();
+      },
+      onAdFailedToShowFullScreenContent: (shownAd, error) {
+        debugPrint('AQIM Interstitial failed to show: $error');
+        shownAd.dispose();
+        _scheduleRetry();
+        action();
+      },
+    );
+    ad.show();
+  }
+
+  /// Shows the preloaded interstitial when available.
   static bool showIfReady() {
     final ad = _ad;
     if (ad == null) {
       preload();
       return false;
     }
-
     _ad = null;
     ad.show();
     return true;

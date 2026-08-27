@@ -35,8 +35,95 @@ ad = ROOT / 'lib/ads/app_interstitial_ad.dart'
 text = ad.read_text(encoding='utf-8')
 if 'static void showThen(' not in text:
     marker = "  static void showIfEligible() {"
-    method = """  /// Shows the preloaded ad when available and runs [onComplete] after\n  /// dismissal. If no ad is ready, continues immediately.\n  static void showThen(void Function() onComplete) {\n    final ad = _ad;\n    if (ad == null) {\n      preload();\n      onComplete();\n      return;\n    }\n\n    _ad = null;\n    var completed = false;\n    void complete() {\n      if (completed) return;\n      completed = true;\n      onComplete();\n    }\n\n    ad.fullScreenContentCallback = FullScreenContentCallback(\n      onAdDismissedFullScreenContent: (ad) {\n        ad.dispose();\n        preload();\n        complete();\n      },\n      onAdFailedToShowFullScreenContent: (ad, error) {\n        debugPrint('Interstitial failed to show: $error');\n        ad.dispose();\n        preload();\n        complete();\n      },\n    );\n    ad.show();\n  }\n\n"""
+    method = """  /// Shows the preloaded ad when available and runs [onComplete] after
+  /// dismissal. If no ad is ready, continues immediately.
+  static void showThen(void Function() onComplete) {
+    final ad = _ad;
+    if (ad == null) {
+      preload();
+      onComplete();
+      return;
+    }
+
+    _ad = null;
+    var completed = false;
+    void complete() {
+      if (completed) return;
+      completed = true;
+      onComplete();
+    }
+
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        preload();
+        complete();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        debugPrint('Interstitial failed to show: $error');
+        ad.dispose();
+        preload();
+        complete();
+      },
+    );
+    ad.show();
+  }
+
+"""
     text = text.replace(marker, method + marker, 1)
 ad.write_text(text, encoding='utf-8')
 
-print('Release compile fixes prepared successfully.')
+# Keep the original home content/design, but make the weekly report the only
+# action that uses the interstitial. The Qibla action must open directly.
+home = ROOT / 'lib/screens/home_screen.dart'
+text = home.read_text(encoding='utf-8')
+old_qibla = "onTap: () => AppInterstitialAd.showThen(() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QiblaScreen())))"
+new_qibla = "onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QiblaScreen()))"
+text = text.replace(old_qibla, new_qibla, 1)
+old_hero = "nextRealTime: state.realTimes?[next!]"
+new_hero = "nextRealTime: state.nextPrayerTime"
+text = text.replace(old_hero, new_hero, 1)
+home.write_text(text, encoding='utf-8')
+
+# Notification correctness fixes. Do not change notification text/content.
+notifications = ROOT / 'lib/services/notification_service.dart'
+text = notifications.read_text(encoding='utf-8')
+# Never move a pre-prayer/adhan notification two minutes late merely because
+# exact-alarm access is unavailable. The service already selects an inexact
+# Android schedule mode in that case.
+text = text.replace(
+    "  DateTime _safeFallbackDate(DateTime scheduledDate) => exactAlarmPermissionGranted ? scheduledDate : scheduledDate.add(const Duration(minutes: 2));",
+    "  DateTime _safeFallbackDate(DateTime scheduledDate) => scheduledDate;",
+    1,
+)
+# Query DND policy access instead of leaving the cached value false.
+text = text.replace(
+    "  Future<bool> refreshNotificationPolicyAccess() async { await init(); return notificationPolicyAccessGranted; }",
+    "  Future<bool> refreshNotificationPolicyAccess() async {\n    await init();\n    final android = _android;\n    if (android == null) return false;\n    try {\n      notificationPolicyAccessGranted = await android.hasNotificationPolicyAccess() ?? false;\n    } catch (_) {}\n    return notificationPolicyAccessGranted;\n  }",
+    1,
+)
+# Fix the Fajr resource-name typo (trailing whitespace) without changing the
+# user's selected sound or any notification wording.
+text = text.replace("'azan-Fajr-madina '", "'azan-Fajr-madina'", 1)
+# Keep DND state current before creating alarm channels.
+text = text.replace(
+    "    await refreshExactAlarmPermission();\n    if (!exactAlarmPermissionGranted)",
+    "    await refreshExactAlarmPermission();\n    await refreshNotificationPolicyAccess();\n    if (!exactAlarmPermissionGranted)",
+    1,
+)
+notifications.write_text(text, encoding='utf-8')
+
+# Android 12+ requires a system-intent receiver to be exported when it has a
+# BOOT_COMPLETED intent filter. This allows scheduled notifications to be
+# restored after reboot/update on modern Android versions.
+manifest = ROOT / 'android/app/src/main/AndroidManifest.xml'
+if manifest.exists():
+    text = manifest.read_text(encoding='utf-8')
+    text = text.replace(
+        '<receiver\n            android:exported="false"\n            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">',
+        '<receiver\n            android:exported="true"\n            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">',
+        1,
+    )
+    manifest.write_text(text, encoding='utf-8')
+
+print('Release compile, prayer countdown, interstitial placement, and notification fixes prepared successfully.')

@@ -1,6 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/prayer.dart';
+import '../services/notification_inbox_service.dart';
+import '../services/notification_service.dart';
 import 'app_state.dart';
 
 /// UI-facing actions kept separate from the core state implementation.
@@ -18,6 +20,23 @@ extension AppStateActions on AppState {
     todayStatus[prayer] = PrayerStatus.done;
     todayReasons.remove(prayer);
     await _persistActions();
+    notifyListeners();
+  }
+
+  /// Marks a prayer that was already missed as performed/qada exactly once.
+  /// It is deliberately idempotent: a prayer that is no longer missed cannot
+  /// increment any tally or create another completion.
+  Future<void> markQada(Prayer prayer) async {
+    if (todayStatus[prayer] != PrayerStatus.missed) return;
+
+    todayStatus[prayer] = PrayerStatus.done;
+    todayReasons.remove(prayer);
+    await _persistActions();
+
+    final now = DateTime.now();
+    final dateKey = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    await NotificationInboxService.instance.removeMissedPrayer(dateKey, prayer.name);
+    await NotificationService.instance.cancelMissedPrayer(prayer);
     notifyListeners();
   }
 

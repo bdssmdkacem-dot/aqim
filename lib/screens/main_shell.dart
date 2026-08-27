@@ -27,6 +27,7 @@ class _MainShellState extends State<MainShell> {
     final state = context.watch<AppState>();
     final next = state.nextPrayer;
     final todayEvent = ReligiousEventsService.eventOn(DateTime.now());
+
     return Scaffold(
       body: Stack(
         children: [
@@ -42,9 +43,9 @@ class _MainShellState extends State<MainShell> {
             ],
           ),
           if (_index == 0)
-            const PositionedDirectional(
+            const Positioned(
               top: 6,
-              end: 56,
+              right: 62,
               child: NotificationBell(),
             ),
         ],
@@ -141,10 +142,7 @@ class _CenterButton extends StatelessWidget {
               child: Container(
                 width: 54,
                 height: 54,
-                decoration: const BoxDecoration(
-                  color: AppColors.gold,
-                  shape: BoxShape.circle,
-                ),
+                decoration: const BoxDecoration(color: AppColors.gold, shape: BoxShape.circle),
                 child: const Icon(Icons.timer_outlined, color: AppColors.ink, size: 26),
               ),
             ),

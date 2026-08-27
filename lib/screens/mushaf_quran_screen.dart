@@ -185,7 +185,6 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
             ],
           ),
           IconButton(tooltip: 'رقم الصفحة', onPressed: _gotoPage, icon: const Icon(Icons.find_in_page_rounded, color: AppColors.gold)),
-          IconButton(tooltip: 'المصدر', onPressed: _showSource, icon: const Icon(Icons.info_outline_rounded, color: Colors.white)),
         ]),
       ),
     );
@@ -203,22 +202,6 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
           IconButton(onPressed: _next, icon: const Icon(Icons.chevron_left_rounded, color: Colors.white, size: 30)),
           IconButton(onPressed: _savePage, tooltip: 'حفظ الصفحة', icon: const Icon(Icons.bookmark_outline_rounded, color: AppColors.gold)),
         ]),
-      ),
-    );
-  }
-
-  Future<void> _showSource() async {
-    await showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.surfaceDark,
-        title: const Text('مصدر صفحات المصحف', textAlign: TextAlign.right, style: TextStyle(color: AppColors.ivory)),
-        content: const Text(
-          'نسخة الصفحات المستخدمة في AQIM هي صفحات PNG المنشورة في مشروع مكنون، والذي يذكر أن الصفحات حُوّلت من النسخة الرقمية الحديثة لمجمع الملك فهد.\n\nحفص: 604 صفحة\nورش: 604 صفحة\n\nالصفحات تُضمّن داخل APK أثناء بناء الإصدار، لذلك القراءة تعمل دون اتصال بالإنترنت.',
-          textAlign: TextAlign.right,
-          style: TextStyle(color: AppColors.ivory, height: 1.6),
-        ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('حسنًا'))],
       ),
     );
   }

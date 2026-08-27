@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/prayer.dart';
 import '../screens/notification_inbox_screen.dart';
 import '../services/notification_inbox_service.dart';
 import '../services/religious_events_service.dart';
@@ -30,9 +31,8 @@ class _NotificationBellState extends State<NotificationBell> {
       );
     }
 
-    // The missed-prayer inbox is derived from AppState. Do not use the generic
-    // unread inbox count for the bell badge: the badge must mean only
-    // "unpaid missed prayers".
+    // Missed-prayer cards are derived from AppState. The bell badge itself is
+    // also derived from the same state, so it means only unpaid missed prayers.
     final state = context.read<AppState>();
     final today = DateTime.now();
     final dateKey = '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
@@ -47,8 +47,6 @@ class _NotificationBellState extends State<NotificationBell> {
 
   @override
   Widget build(BuildContext context) {
-    // This value comes directly from the same source used by MissedPrayersCard.
-    // Therefore the red indicator changes immediately after qada/markDone.
     final missedCount = context.watch<AppState>().missedTodayCount;
 
     return Material(
@@ -66,24 +64,27 @@ class _NotificationBellState extends State<NotificationBell> {
         child: SizedBox(
           width: 40,
           height: 40,
-          child: Stack(alignment: Alignment.center, children: [
-            const Icon(Icons.notifications_none_rounded, size: 21, color: AppColors.ivory),
-            if (missedCount > 0)
-              Positioned(
-                top: 1,
-                right: 0,
-                child: Container(
-                  constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: const BoxDecoration(color: AppColors.ember, shape: BoxShape.circle),
-                  alignment: Alignment.center,
-                  child: Text(
-                    missedCount > 99 ? '99+' : '$missedCount',
-                    style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w900),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              const Icon(Icons.notifications_none_rounded, size: 21, color: AppColors.ivory),
+              if (missedCount > 0)
+                Positioned(
+                  top: 1,
+                  right: 0,
+                  child: Container(
+                    constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: const BoxDecoration(color: AppColors.ember, shape: BoxShape.circle),
+                    alignment: Alignment.center,
+                    child: Text(
+                      missedCount > 99 ? '99+' : '$missedCount',
+                      style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w900),
+                    ),
                   ),
                 ),
-              ),
-          ]),
+            ],
+          ),
         ),
       ),
     );

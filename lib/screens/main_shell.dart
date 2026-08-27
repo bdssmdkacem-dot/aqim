@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../ads/app_banner_ad.dart';
-import '../ads/app_interstitial_ad.dart';
 import '../services/religious_events_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
@@ -53,17 +52,12 @@ class _MainShellState extends State<MainShell> {
               ]),
             ),
           Expanded(child: IndexedStack(index: _index, children: _tabs)),
-          if (_index == 0) const AppBannerAd(),
+          if (_index == 0) const AppBannerAd(placement: 'home'),
         ],
       ),
       bottomNavigationBar: _BottomBar(
         currentIndex: _index,
-        onTap: (i) {
-          if (i == 2 && i != _index) {
-            AppInterstitialAd.showIfEligible();
-          }
-          setState(() => _index = i);
-        },
+        onTap: (i) => setState(() => _index = i),
         onCenterTap: next == null
             ? null
             : () => Navigator.of(context).push(

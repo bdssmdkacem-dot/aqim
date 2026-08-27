@@ -39,17 +39,12 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
   Future<void> _load() async {
     final state = context.read<AppState>();
     final items = await NotificationInboxService.instance.getItems();
-
-    // A missed-prayer inbox item is valid only while that prayer is still
-    // missed. This removes stale entries if the prayer was completed from
-    // Home or from the system notification.
     for (final item in items) {
       final prayer = _prayerFromMissedId(item.id);
       if (prayer != null && !state.missedTodayPrayers.contains(prayer)) {
         await NotificationInboxService.instance.remove(item.id);
       }
     }
-
     final freshItems = await NotificationInboxService.instance.getItems();
     if (!mounted) return;
     setState(() {
@@ -79,11 +74,8 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
         await _load();
         return;
       }
-
       await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => MissedPrayerResponseScreen(prayer: prayer, qadaMode: true),
-        ),
+        MaterialPageRoute(builder: (_) => MissedPrayerResponseScreen(prayer: prayer)),
       );
       await _load();
       return;

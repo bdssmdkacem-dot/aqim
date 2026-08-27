@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../screens/notification_inbox_screen.dart';
 import '../services/notification_inbox_service.dart';
 import '../services/religious_events_service.dart';
+import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 
 class NotificationBell extends StatefulWidget {
@@ -17,7 +19,7 @@ class _NotificationBellState extends State<NotificationBell> {
   @override
   void initState() {
     super.initState();
-    _sync();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
   }
 
   Future<void> _sync() async {
@@ -29,6 +31,22 @@ class _NotificationBellState extends State<NotificationBell> {
         body: '${event.hijri}. نسأل الله أن يتقبل منكم صالح الأعمال.',
       );
     }
+
+    // Keep the notification inbox synchronized with the same missed-prayer
+    // state shown on the home screen. An item is created only after a prayer
+    // is actually considered missed, and its id is date+prayer so repeated
+    // refreshes do not create duplicates.
+    final state = context.read<AppState>();
+    final today = DateTime.now();
+    final dateKey = '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0)}';
+    for (final prayer in state.missedTodayPrayers) {
+      await NotificationInboxService.instance.add(
+        id: 'missed-prayer-$dateKey-${prayer.name}',
+        title: 'صلاة فائتة: ${prayer.arabicName}',
+        body: 'فات وقت ${prayer.arabicName}. يمكنك تسجيلها كمقضيّة من الصفحة الرئيسية.',
+      );
+    }
+
     final count = await NotificationInboxService.instance.unreadCount();
     if (mounted) setState(() => _unread = count);
   }
@@ -41,6 +59,8 @@ class _NotificationBellState extends State<NotificationBell> {
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: () async {
+          await _sync();
+          if (!mounted) return;
           await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationInboxScreen()));
           await _sync();
         },

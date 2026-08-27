@@ -36,10 +36,14 @@ class _MainShellState extends State<MainShell> {
           Expanded(child: IndexedStack(index: _index, children: _tabs)),
           if (_index == 0) const AppBannerAd(placement: 'home'),
         ]),
-        // The bell is deliberately overlaid on the Home header so it sits
-        // directly beside the existing Settings button.
+        // HomeScreen already owns the settings button. Keep the bell in the
+        // exact same header row, immediately beside it, without duplicating it.
         if (_index == 0)
-          const PositionedDirectional(top: 6, end: 62, child: NotificationBell()),
+          PositionedDirectional(
+            top: todayEvent == null ? 6 : 60,
+            end: 62,
+            child: const NotificationBell(),
+          ),
       ]),
       bottomNavigationBar: _BottomBar(
         currentIndex: _index,

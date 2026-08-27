@@ -452,7 +452,13 @@ class AppState extends ChangeNotifier {
       todayStatus[p] = p == next ? PrayerStatus.upcoming : PrayerStatus.pending;
     }
   }
-
+// إذا انتهت صلوات اليوم، فالفجر هو الصلاة القادمة للغد.
+if (next == null && activePrayers.isNotEmpty) {
+  final fajr = Prayer.fajr;
+  if (realTimes![fajr] != null) {
+    next = fajr;
+  }
+}
   void _persist() {
     _prefs.setBool('ob_complete', onboardingComplete);
     _prefs.setInt('week', currentWeek);

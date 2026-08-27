@@ -1,18 +1,25 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 import 'ad_ids.dart';
 
-/// Interstitial manager for non-worship transitions only.
+/// Interstitial manager used only for explicit non-worship actions.
 ///
-/// The ad is never shown automatically. Call showIfEligible() only from a
-/// user action such as opening the weekly report. There is no artificial
-/// 10-minute cooldown: each user action may show the currently preloaded ad.
+/// AQIM preloads in the background, retries failed loads with a short
+/// backoff, and immediately starts preparing the next ad after dismissal.
+/// There is intentionally no artificial 10-minute cooldown.
 class AppInterstitialAd {
   static InterstitialAd? _ad;
   static bool _loading = false;
+  static Timer? _retryTimer;
 
   static void preload() {
     if (_ad != null || _loading) return;
+
+    _retryTimer?.cancel();
+    _retryTimer = null;
     _loading = true;
 
     InterstitialAd.load(
@@ -22,6 +29,8 @@ class AppInterstitialAd {
         onAdLoaded: (ad) {
           _loading = false;
           _ad = ad;
+          debugPrint('AQIM Interstitial preloaded');
+
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();
@@ -29,33 +38,56 @@ class AppInterstitialAd {
               preload();
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
-              debugPrint('Interstitial failed to show: $error');
+              debugPrint('AQIM Interstitial failed to show: $error');
               ad.dispose();
               _ad = null;
-              preload();
+              _scheduleRetry();
+            },
+            onAdShowedFullScreenContent: (_) {
+              debugPrint('AQIM Interstitial shown');
             },
           );
         },
         onAdFailedToLoad: (error) {
           _loading = false;
           _ad = null;
-          debugPrint('Interstitial failed to load: $error');
+          debugPrint('AQIM Interstitial failed to load: $error');
+          _scheduleRetry();
         },
       ),
     );
   }
 
-  /// Shows the preloaded interstitial when available, then prepares another
-  /// one. No 10-minute cooldown is applied.
-  static void showIfEligible() {
+  static void _scheduleRetry() {
+    if (_ad != null || _loading || _retryTimer != null) return;
+    _retryTimer = Timer(const Duration(seconds: 8), () {
+      _retryTimer = null;
+      preload();
+    });
+  }
+
+  /// Attempts to show the currently preloaded interstitial.
+  ///
+  /// This method is called only for the weekly report action. If an ad is not
+  /// ready, the report still opens normally and the manager continues loading
+  /// in the background; the next eligible report tap can show it.
+  static bool showIfReady() {
     final ad = _ad;
     if (ad == null) {
       preload();
-      return;
+      return false;
     }
 
     _ad = null;
     ad.show();
-    preload();
+    return true;
+  }
+
+  static void dispose() {
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _ad?.dispose();
+    _ad = null;
+    _loading = false;
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 
 class AqimBottomNav extends StatelessWidget {
@@ -39,7 +40,7 @@ class AqimBottomNav extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text('استعد للصلاة', style: TextStyle(fontSize: 9.5, color: AppColors.gold, fontWeight: FontWeight.w700)),
+                      Text('استعد للصلاة', style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.gold, fontWeight: FontWeight.w700, decoration: TextDecoration.none)),
                     ],
                   ),
                 ),
@@ -74,7 +75,7 @@ class _NavItem extends StatelessWidget {
           children: [
             Icon(selected ? selectedIcon : icon, color: color, size: 22),
             const SizedBox(height: 3),
-            Text(label, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+            Text(label, style: GoogleFonts.cairo(fontSize: 10, color: color, fontWeight: FontWeight.w600, decoration: TextDecoration.none)),
           ],
         ),
       ),

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../ads/app_banner_ad.dart';
 import '../services/religious_events_service.dart';
 import '../state/app_state.dart';
-import '../widgets/aqim_bottom_nav.dart';
 import '../widgets/religious_event_home_card.dart';
 import 'adhkar_home_screen.dart';
 import 'home_screen.dart';
@@ -28,17 +27,6 @@ class _MainShellState extends State<MainShell> {
     _index = widget.initialIndex.clamp(0, 3);
   }
 
-  void _navigate(int index) {
-    if (index == 4) {
-      final next = context.read<AppState>().nextPrayer;
-      if (next != null) {
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => PrePrayerScreen(prayer: next)));
-      }
-      return;
-    }
-    setState(() => _index = index);
-  }
-
   @override
   Widget build(BuildContext context) {
     final todayEvent = ReligiousEventsService.eventOn(DateTime.now());
@@ -54,7 +42,6 @@ class _MainShellState extends State<MainShell> {
           if (_index == 0) const AppBannerAd(placement: 'home'),
         ],
       ),
-      bottomNavigationBar: AqimBottomNav(currentIndex: _index, onTap: _navigate),
     );
   }
 }

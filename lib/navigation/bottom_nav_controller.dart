@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/prayer.dart';
 import '../screens/main_shell.dart';
 import '../screens/pre_prayer_screen.dart';
+import '../state/app_state.dart';
 import '../widgets/aqim_bottom_nav.dart';
 import 'nav_key.dart';
 
@@ -44,13 +46,19 @@ class AqimGlobalBottomNav extends StatelessWidget {
         return ValueListenableBuilder<int>(
           valueListenable: aqimBottomNavIndex,
           builder: (_, index, __) {
-            final nextPrayer = context.select((dynamic state) => state.nextPrayer);
+            final nextPrayer = context.select<AppState, Prayer?>(
+              (state) => state.nextPrayer,
+            );
             return Column(
               children: [
                 Expanded(child: child),
                 AqimBottomNav(
                   currentIndex: index,
-                  onTap: (value) => handleAqimBottomNavTap(context, value, nextPrayer: nextPrayer),
+                  onTap: (value) => handleAqimBottomNavTap(
+                    context,
+                    value,
+                    nextPrayer: nextPrayer,
+                  ),
                 ),
               ],
             );

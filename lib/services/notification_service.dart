@@ -171,7 +171,8 @@ class NotificationService {
         await _scheduleCheckIn(id: _idFor(prayer, 1), title: isJumuah ? 'فاتتك صلاة الجمعة' : 'فاتتك صلاة ${prayer.arabicName}', body: 'اضغط هنا لتجيب مباشرة: هل صليتها أم لا؟', scheduledDate: missedTime, payload: '$_missedPrefix${prayer.name}');
       }
     }
-    final savedPage = prefs.getInt('quran_resume_page') ?? prefs.getInt('quran_next_page') ?? 1;
+    final riwaya = prefs.getString('quran_last_riwaya') == 'warsh' ? 'warsh' : 'hafs';
+    final savedPage = prefs.getInt('quran_resume_page_$riwaya') ?? prefs.getInt('quran_next_page_$riwaya') ?? prefs.getInt('quran_${riwaya}_page') ?? 1;
     await _scheduleQuranReminders(realTimes, savedPage);
     await _scheduleShafWitrReminder(realTimes[Prayer.isha]);
     await _scheduleReligiousEvents();

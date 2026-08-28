@@ -11,13 +11,7 @@ import '../services/prayer_times_service.dart';
 import '../services/purchase_service.dart';
 import '../services/review_service.dart';
 
-const List<Prayer> _allPrayers = [
-  Prayer.fajr,
-  Prayer.dhuhr,
-  Prayer.asr,
-  Prayer.maghrib,
-  Prayer.isha,
-];
+const List<Prayer> _allPrayers = [Prayer.fajr, Prayer.dhuhr, Prayer.asr, Prayer.maghrib, Prayer.isha];
 
 class AppState extends ChangeNotifier {
   bool onboardingComplete = false;
@@ -25,17 +19,13 @@ class AppState extends ChangeNotifier {
   int weekDaysCompleted = 0;
   int streak = 0;
   String? lastOpenDate;
-
-  final Map<Prayer, PrayerStatus> todayStatus = {
-    for (final p in _allPrayers) p: PrayerStatus.pending,
-  };
+  final Map<Prayer, PrayerStatus> todayStatus = {for (final p in _allPrayers) p: PrayerStatus.pending};
   final Map<Prayer, String> todayReasons = {};
   final Map<Prayer, int> missTally = {for (final p in _allPrayers) p: 0};
   List<int> weekHistory = [0, 0, 0, 0, 0, 0, 0];
   final Map<String, int> dailyHistory = {};
   final Map<String, Map<Prayer, PrayerStatus>> dailyPrayerHistory = {};
   int longestStreak = 0;
-
   late SharedPreferences _prefs;
   Timer? _clockTimer;
   bool ready = false;
@@ -48,10 +38,7 @@ class AppState extends ChangeNotifier {
   bool batteryPromptShown = false;
   String? cityName;
   String? notificationIssue;
-  bool get notificationsActive =>
-      realTimes != null &&
-      notificationIssue == null &&
-      NotificationService.instance.notificationsPermissionGranted;
+  bool get notificationsActive => realTimes != null && notificationIssue == null && NotificationService.instance.notificationsPermissionGranted;
   double? get lastKnownLatitude => _prefs.getDouble('last_lat');
   double? get lastKnownLongitude => _prefs.getDouble('last_lng');
   List<Prayer> get activePrayers => _allPrayers;
@@ -63,17 +50,13 @@ class AppState extends ChangeNotifier {
       for (final p in activePrayers) {
         final status = todayStatus[p];
         final time = times[p];
-        if (time == null || status == PrayerStatus.done || status == PrayerStatus.missed) {
-          continue;
-        }
+        if (time == null || status == PrayerStatus.done || status == PrayerStatus.missed) continue;
         if (time.isAfter(now)) return p;
       }
       return Prayer.fajr;
     }
-
     for (final p in activePrayers) {
-      final status = todayStatus[p];
-      if (status == PrayerStatus.upcoming) return p;
+      if (todayStatus[p] == PrayerStatus.upcoming) return p;
     }
     return Prayer.fajr;
   }
@@ -84,9 +67,7 @@ class AppState extends ChangeNotifier {
     final time = _timeFor(prayer);
     if (time == null) return null;
     final now = DateTime.now();
-    if (prayer == Prayer.fajr && !time.isAfter(now)) {
-      return time.add(const Duration(days: 1));
-    }
+    if (prayer == Prayer.fajr && !time.isAfter(now)) return time.add(const Duration(days: 1));
     return time;
   }
 
@@ -110,17 +91,12 @@ class AppState extends ChangeNotifier {
     timesLoading = true;
     notifyListeners();
     try {
-      // Prefer the last saved coordinates. This makes reopening Aqim fast and,
-      // more importantly, prevents a fresh GPS lookup from delaying or breaking
-      // notification scheduling after the app has been fully closed.
       final savedLat = _prefs.getDouble('last_lat');
       final savedLng = _prefs.getDouble('last_lng');
       final hasSavedLocation = savedLat != null && savedLng != null;
-
       final position = hasSavedLocation ? null : await LocationService.getCurrentPosition();
       final lat = savedLat ?? position?.latitude;
       final lng = savedLng ?? position?.longitude;
-
       if (position != null) {
         await _prefs.setDouble('last_lat', position.latitude);
         await _prefs.setDouble('last_lng', position.longitude);
@@ -131,53 +107,34 @@ class AppState extends ChangeNotifier {
         notifyListeners();
         return;
       }
-
-      // Keep the last known city too, so reopening the app does not need a
-      // network geocoding request just to display the location name.
       cityName = _prefs.getString('city_name');
-      final cityFuture = cityName == null
-          ? GeocodingService.cityFor(latitude: lat, longitude: lng)
-          : Future<String?>.value(cityName);
-
+      final cityFuture = cityName == null ? GeocodingService.cityFor(latitude: lat, longitude: lng) : Future<String?>.value(cityName);
       var times = await PrayerTimesService.fetchToday(latitude: lat, longitude: lng);
       usingOfflineTimes = false;
       if (times == null) {
         times = OfflinePrayerTimesService.calculateToday(latitude: lat, longitude: lng);
         usingOfflineTimes = times != null;
       }
-
       cityName = await cityFuture;
-      if (cityName != null && cityName!.trim().isNotEmpty) {
-        await _prefs.setString('city_name', cityName!);
-      }
-
+      if (cityName != null && cityName!.trim().isNotEmpty) await _prefs.setString('city_name', cityName!);
       if (times == null) {
         notificationIssue = 'تعذّر جلب أو حساب أوقات الصلاة. أعد المحاولة.';
         timesLoading = false;
         notifyListeners();
         return;
       }
-
       realTimes = times;
       _recomputeUpcoming();
-
       try {
         await NotificationService.instance.init();
         await NotificationService.instance.refreshPermissionStatus();
         if (!NotificationService.instance.notificationsPermissionGranted) {
           notificationIssue = 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم اضغط «إعادة المحاولة»."';
         } else {
-          await NotificationService.instance.scheduleAllForToday(
-            times,
-            beforeMinutes: beforeMinutes,
-            afterMinutes: afterMinutes,
-            adhanEnabled: adhanEnabled,
-          );
+          await NotificationService.instance.scheduleAllForToday(times, beforeMinutes: beforeMinutes, afterMinutes: afterMinutes, adhanEnabled: adhanEnabled);
           await NotificationService.instance.scheduleWeeklySummary(_weeklySummaryText());
           await NotificationService.instance.refreshPermissionStatus();
-          notificationIssue = NotificationService.instance.notificationsPermissionGranted
-              ? null
-              : 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم اضغط «إعادة المحاولة»."';
+          notificationIssue = NotificationService.instance.notificationsPermissionGranted ? null : 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم اضغط «إعادة المحاولة»."';
           debugPrint('Prayer notifications scheduled: ${NotificationService.instance.notificationsPermissionGranted}');
         }
       } catch (error) {
@@ -196,11 +153,7 @@ class AppState extends ChangeNotifier {
   Future<void> refreshNotificationStatus() async {
     try {
       final enabled = await NotificationService.instance.areNotificationsEnabled();
-      if (enabled) {
-        notificationIssue = realTimes == null ? 'جارٍ تحميل أوقات الصلاة.' : null;
-      } else {
-        notificationIssue = 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم اضغط «إعادة المحاولة»."';
-      }
+      notificationIssue = enabled ? (realTimes == null ? 'جارٍ تحميل أوقات الصلاة.' : null) : 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم اضغط «إعادة المحاولة»."';
     } catch (_) {
       notificationIssue = 'تعذّر التحقق من حالة الإشعارات. اضغط «إعادة المحاولة»."';
     }
@@ -209,9 +162,7 @@ class AppState extends ChangeNotifier {
 
   String _weeklySummaryText() {
     final recentSix = weekHistory.skip(1);
-    final pastDaysTotal = recentSix
-        .map((pct) => (pct / 100 * _allPrayers.length).round())
-        .fold<int>(0, (a, b) => a + b);
+    final pastDaysTotal = recentSix.map((pct) => (pct / 100 * _allPrayers.length).round()).fold<int>(0, (a, b) => a + b);
     final todayDone = activePrayers.where((p) => todayStatus[p] == PrayerStatus.done).length;
     final total = pastDaysTotal + todayDone;
     const max = 7 * 5;
@@ -226,12 +177,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     final times = realTimes;
     if (times != null) {
-      await NotificationService.instance.scheduleAllForToday(
-        times,
-        beforeMinutes: beforeMinutes,
-        afterMinutes: afterMinutes,
-        adhanEnabled: adhanEnabled,
-      );
+      await NotificationService.instance.scheduleAllForToday(times, beforeMinutes: beforeMinutes, afterMinutes: afterMinutes, adhanEnabled: adhanEnabled);
       await refreshNotificationStatus();
     } else {
       await loadPrayerTimes();
@@ -244,12 +190,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     final times = realTimes;
     if (times != null) {
-      await NotificationService.instance.scheduleAllForToday(
-        times,
-        beforeMinutes: beforeMinutes,
-        afterMinutes: afterMinutes,
-        adhanEnabled: adhanEnabled,
-      );
+      await NotificationService.instance.scheduleAllForToday(times, beforeMinutes: beforeMinutes, afterMinutes: afterMinutes, adhanEnabled: adhanEnabled);
       await refreshNotificationStatus();
     }
   }
@@ -270,16 +211,11 @@ class AppState extends ChangeNotifier {
     final savedStatus = _prefs.getStringList('today_status');
     if (savedStatus != null && savedStatus.length == _allPrayers.length) {
       for (var i = 0; i < _allPrayers.length; i++) {
-        todayStatus[_allPrayers[i]] = PrayerStatus.values.firstWhere(
-          (e) => e.name == savedStatus[i],
-          orElse: () => PrayerStatus.pending,
-        );
+        todayStatus[_allPrayers[i]] = PrayerStatus.values.firstWhere((e) => e.name == savedStatus[i], orElse: () => PrayerStatus.pending);
       }
     }
     final savedHistory = _prefs.getStringList('history');
-    if (savedHistory != null && savedHistory.length == 7) {
-      weekHistory = savedHistory.map(int.parse).toList();
-    }
+    if (savedHistory != null && savedHistory.length == 7) weekHistory = savedHistory.map(int.parse).toList();
     final savedDaily = _prefs.getStringList('daily_history');
     if (savedDaily != null) {
       for (final entry in savedDaily) {
@@ -301,19 +237,9 @@ class AppState extends ChangeNotifier {
           final kv = pair.split('=');
           if (kv.length != 2) continue;
           Prayer? prayer;
-          for (final p in _allPrayers) {
-            if (p.name == kv[0]) {
-              prayer = p;
-              break;
-            }
-          }
+          for (final p in _allPrayers) { if (p.name == kv[0]) { prayer = p; break; } }
           PrayerStatus? status;
-          for (final s in PrayerStatus.values) {
-            if (s.name == kv[1]) {
-              status = s;
-              break;
-            }
-          }
+          for (final s in PrayerStatus.values) { if (s.name == kv[1]) { status = s; break; } }
           if (prayer != null && status != null) statuses[prayer] = status;
         }
         if (statuses.isNotEmpty) dailyPrayerHistory[date] = statuses;
@@ -332,12 +258,7 @@ class AppState extends ChangeNotifier {
         if (parts.length != 2) continue;
         final count = int.tryParse(parts[1]);
         if (count == null) continue;
-        for (final p in _allPrayers) {
-          if (p.name == parts[0]) {
-            missTally[p] = count;
-            break;
-          }
-        }
+        for (final p in _allPrayers) { if (p.name == parts[0]) { missTally[p] = count; break; } }
       }
     }
     _rolloverIfNewDay();
@@ -347,9 +268,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     unawaited(loadPrayerTimes());
     unawaited(PurchaseService.instance.init(onAdsRemoved: _markAdsRemoved));
-    if (onboardingComplete) {
-      unawaited(ReviewService.instance.maybeRequestReview(currentWeek: currentWeek));
-    }
+    if (onboardingComplete) unawaited(ReviewService.instance.maybeRequestReview(currentWeek: currentWeek));
   }
 
   void _startClock() {
@@ -360,9 +279,7 @@ class AppState extends ChangeNotifier {
       _rolloverIfNewDay();
       if (oldDate != lastOpenDate) await loadPrayerTimes();
       _recomputeUpcoming();
-      if (currentWeek != oldWeek) {
-        unawaited(ReviewService.instance.maybeRequestReview(currentWeek: currentWeek));
-      }
+      if (currentWeek != oldWeek) unawaited(ReviewService.instance.maybeRequestReview(currentWeek: currentWeek));
       notifyListeners();
     });
   }
@@ -384,10 +301,7 @@ class AppState extends ChangeNotifier {
 
   void _rolloverIfNewDay() {
     final today = _todayKey;
-    if (lastOpenDate == null) {
-      lastOpenDate = today;
-      return;
-    }
+    if (lastOpenDate == null) { lastOpenDate = today; return; }
     if (lastOpenDate != today) {
       final doneCount = _allPrayers.where((p) => todayStatus[p] == PrayerStatus.done).length;
       final active = activePrayers;
@@ -397,10 +311,7 @@ class AppState extends ChangeNotifier {
         weekHistory = [...weekHistory.skip(1), pct];
       }
       for (final p in _allPrayers) {
-        final status = todayStatus[p];
-        if (status == PrayerStatus.missed) {
-          missTally[p] = (missTally[p] ?? 0) + 1;
-        }
+        if (todayStatus[p] == PrayerStatus.missed) missTally[p] = (missTally[p] ?? 0) + 1;
       }
       dailyPrayerHistory[lastOpenDate!] = Map<Prayer, PrayerStatus>.from(todayStatus);
       _persistDailyHistory();
@@ -409,17 +320,9 @@ class AppState extends ChangeNotifier {
       if (allDone) {
         streak += 1;
         weekDaysCompleted += 1;
-        if (streak > longestStreak) {
-          longestStreak = streak;
-          _prefs.setInt('longest_streak', longestStreak);
-        }
-        if (weekDaysCompleted >= 7 && currentWeek < 5) {
-          currentWeek += 1;
-          weekDaysCompleted = 0;
-        }
-      } else {
-        streak = 0;
-      }
+        if (streak > longestStreak) { longestStreak = streak; _prefs.setInt('longest_streak', longestStreak); }
+        if (weekDaysCompleted >= 7 && currentWeek < 5) { currentWeek += 1; weekDaysCompleted = 0; }
+      } else { streak = 0; }
       for (final p in _allPrayers) todayStatus[p] = PrayerStatus.pending;
       todayReasons.clear();
       lastOpenDate = today;
@@ -436,29 +339,42 @@ class AppState extends ChangeNotifier {
   }
 
   void _recomputeUpcoming() {
-    if (realTimes == null) return;
-
     final now = DateTime.now();
+    var missedChanged = false;
     Prayer? next;
-    for (final p in activePrayers) {
-      final time = realTimes![p];
-      if (time == null) continue;
-      final status = todayStatus[p];
+    for (final prayer in activePrayers) {
+      final t = _timeFor(prayer);
+      if (t == null) continue;
+      if (t.isAfter(now)) { next = prayer; break; }
+    }
+    next ??= Prayer.fajr;
+    for (final prayer in activePrayers) {
+      final status = todayStatus[prayer];
       if (status == PrayerStatus.done || status == PrayerStatus.missed) continue;
-      if (time.isAfter(now)) {
-        next = p;
-        break;
+      if (prayer == next) {
+        todayStatus[prayer] = PrayerStatus.upcoming;
+        continue;
+      }
+      final t = _timeFor(prayer);
+      if (t != null && now.isAfter(t)) {
+        todayStatus[prayer] = PrayerStatus.missed;
+        missTally[prayer] = (missTally[prayer] ?? 0) + 1;
+        missedChanged = true;
+      } else {
+        todayStatus[prayer] = PrayerStatus.pending;
       }
     }
-
-    for (final p in activePrayers) {
-      final time = realTimes![p];
-      if (time == null) continue;
-      final status = todayStatus[p];
-      if (status == PrayerStatus.done || status == PrayerStatus.missed) continue;
-      todayStatus[p] = p == next ? PrayerStatus.upcoming : PrayerStatus.pending;
+    if (missedChanged) {
+      unawaited(_persist());
+      unawaited(_persistMissTally());
     }
   }
+
+  List<Prayer> get missedTodayPrayers => activePrayers.where((p) => todayStatus[p] == PrayerStatus.missed).toList();
+  int get missedTodayCount => missedTodayPrayers.length;
+  int get doneTodayCount => activePrayers.where((p) => todayStatus[p] == PrayerStatus.done).length;
+  bool get allTodayDone => activePrayers.isNotEmpty && doneTodayCount == activePrayers.length;
+  Future<void> markQada(Prayer p) => markDone(p);
 
   void _persist() {
     _prefs.setBool('ob_complete', onboardingComplete);
@@ -472,21 +388,11 @@ class AppState extends ChangeNotifier {
     _prefs.setStringList('miss_tally', missTally.entries.map((e) => '${e.key.name}:${e.value}').toList());
   }
 
-  void _persistDailyHistory() {
-    _prefs.setStringList('daily_history', dailyHistory.entries.map((e) => '${e.key}:${e.value}').toList());
-  }
-
-  void _persistDailyPrayerHistory() {
-    final values = dailyPrayerHistory.entries.map((entry) {
-      final statuses = entry.value.entries.map((e) => '${e.key.name}=${e.value.name}').join(',');
-      return '${entry.key}|$statuses';
-    }).toList();
-    _prefs.setStringList('daily_prayer_history', values);
-  }
+  Future<void> completeOnboarding() async { onboardingComplete = true; await _prefs.setBool('ob_complete', true); notifyListeners(); }
+  void _persistDailyHistory() { _prefs.setStringList('daily_history', dailyHistory.entries.map((e) => '${e.key}:${e.value}').toList()); }
+  void _persistDailyPrayerHistory() { _prefs.setStringList('daily_prayer_history', dailyPrayerHistory.entries.map((entry) => '${entry.key}|${entry.value.entries.map((e) => '${e.key.name}=${e.value.name}').join(',')}').toList()); }
+  Future<void> _persistMissTally() async { await _prefs.setStringList('miss_tally', missTally.entries.map((e) => '${e.key.name}:${e.value}').toList()); }
 
   @override
-  void dispose() {
-    _clockTimer?.cancel();
-    super.dispose();
-  }
+  void dispose() { _clockTimer?.cancel(); super.dispose(); }
 }

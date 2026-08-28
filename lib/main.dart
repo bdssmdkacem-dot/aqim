@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' hide AppState;
 import 'package:provider/provider.dart';
 import 'ads/app_interstitial_ad.dart';
+import 'navigation/bottom_nav_controller.dart';
 import 'navigation/nav_key.dart';
 import 'screens/main_shell.dart';
 import 'screens/onboarding_screen.dart';
@@ -41,10 +42,16 @@ class AqimApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        builder: (context, child) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: child ?? const SizedBox.shrink(),
-        ),
+        builder: (context, child) {
+          final state = context.watch<AppState>();
+          final content = child ?? const SizedBox.shrink();
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: state.ready && state.onboardingComplete
+                ? AqimGlobalBottomNav(child: content)
+                : content,
+          );
+        },
         home: const _Gate(),
       ),
     );

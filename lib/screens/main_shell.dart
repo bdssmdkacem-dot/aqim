@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../ads/app_banner_ad.dart';
+import '../navigation/bottom_nav_controller.dart';
 import '../services/religious_events_service.dart';
-import '../state/app_state.dart';
 import '../widgets/religious_event_home_card.dart';
 import 'adhkar_home_screen.dart';
 import 'home_screen.dart';
 import 'more_screen.dart';
-import 'pre_prayer_screen.dart';
 import 'quran_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -25,6 +23,7 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _index = widget.initialIndex.clamp(0, 3);
+    setAqimBottomNavIndex(_index);
   }
 
   @override

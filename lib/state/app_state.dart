@@ -6,6 +6,7 @@ import '../models/prayer.dart';
 import '../services/geocoding_service.dart';
 import '../services/location_service.dart';
 import '../services/notification_service.dart';
+import '../services/notification_inbox_service.dart';
 import '../services/offline_prayer_times_service.dart';
 import '../services/prayer_times_service.dart';
 import '../services/purchase_service.dart';
@@ -360,12 +361,19 @@ class AppState extends ChangeNotifier {
         todayStatus[prayer] = PrayerStatus.missed;
         missTally[prayer] = (missTally[prayer] ?? 0) + 1;
         missedChanged = true;
+        final dateKey = _todayKey;
+        unawaited(NotificationInboxService.instance.add(
+          id: 'missed-prayer-$dateKey-${prayer.name}',
+          title: 'صلاة فائتة: ${prayer.arabicName}',
+          body: 'فات وقت ${prayer.arabicName}. اضغط هنا للانتقال مباشرة إلى تسجيل القضاء.',
+          createdAt: now,
+        ));
       } else {
         todayStatus[prayer] = PrayerStatus.pending;
       }
     }
     if (missedChanged) {
-      unawaited(_persist());
+      _persist();
       unawaited(_persistMissTally());
     }
   }
@@ -374,7 +382,6 @@ class AppState extends ChangeNotifier {
   int get missedTodayCount => missedTodayPrayers.length;
   int get doneTodayCount => activePrayers.where((p) => todayStatus[p] == PrayerStatus.done).length;
   bool get allTodayDone => activePrayers.isNotEmpty && doneTodayCount == activePrayers.length;
-  Future<void> markQada(Prayer p) => markDone(p);
 
   void _persist() {
     _prefs.setBool('ob_complete', onboardingComplete);

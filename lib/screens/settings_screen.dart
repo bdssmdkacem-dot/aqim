@@ -34,7 +34,6 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.ink,
       body: const _SettingsContentScreen(),
-      bottomNavigationBar: AqimBottomNav(currentIndex: 5, onTap: (index) => _navigate(context, index)),
     );
   }
 }

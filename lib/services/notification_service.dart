@@ -21,6 +21,7 @@ class NotificationService {
   bool exactAlarmPermissionGranted = false;
   bool notificationPolicyAccessGranted = false;
   Future<void>? _initFuture;
+  String? _pendingNotificationPayload;
 
   static const _jumuahAlarmSound = 'alarm_jomoaa';
   static const _missedPrefix = 'missed:';
@@ -49,9 +50,30 @@ class NotificationService {
         tz.setLocalLocation(tz.getLocation(localTz));
       } catch (_) {}
       const androidInit = AndroidInitializationSettings('@drawable/ic_aqim_notification');
-      await _plugin.initialize(settings: const InitializationSettings(android: androidInit), onDidReceiveNotificationResponse: _onNotificationTap);
+      await _plugin.initialize(
+        settings: const InitializationSettings(android: androidInit),
+        onDidReceiveNotificationResponse: _onNotificationTap,
+      );
       _initialized = true;
       await refreshPermissionStatus();
+
+      // When Android launches AQIM from a notification while the app was
+      // terminated, the response callback is not enough on all plugin/API
+      // combinations. Recover the launch payload explicitly and keep it until
+      // the Navigator is ready.
+      try {
+        final launchDetails = await _plugin.getNotificationAppLaunchDetails();
+        if (launchDetails?.didNotificationLaunchApp ?? false) {
+          final payload = launchDetails?.notificationResponse?.payload;
+          if (payload != null && payload.isNotEmpty) {
+            _pendingNotificationPayload = payload;
+          }
+        }
+      } catch (_) {}
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _flushPendingNotificationTap();
+      });
     } catch (_) {
       _initialized = false;
       _initFuture = null;
@@ -65,11 +87,24 @@ class NotificationService {
     final android = _android;
     if (android == null) return;
     notificationsPermissionGranted = await android.areNotificationsEnabled() ?? false;
-    try { exactAlarmPermissionGranted = await android.canScheduleExactNotifications() ?? false; } catch (_) { exactAlarmPermissionGranted = false; }
+    try {
+      exactAlarmPermissionGranted = await android.canScheduleExactNotifications() ?? false;
+    } catch (_) {
+      exactAlarmPermissionGranted = false;
+    }
   }
 
-  Future<bool> areNotificationsEnabled() async { await init(); await refreshPermissionStatus(); return notificationsPermissionGranted; }
-  Future<bool> refreshExactAlarmPermission() async { await init(); await refreshPermissionStatus(); return exactAlarmPermissionGranted; }
+  Future<bool> areNotificationsEnabled() async {
+    await init();
+    await refreshPermissionStatus();
+    return notificationsPermissionGranted;
+  }
+
+  Future<bool> refreshExactAlarmPermission() async {
+    await init();
+    await refreshPermissionStatus();
+    return exactAlarmPermissionGranted;
+  }
 
   Future<bool> requestNotificationsPermission() async {
     await init();
@@ -88,7 +123,10 @@ class NotificationService {
       final granted = await android.requestExactAlarmsPermission() ?? false;
       exactAlarmPermissionGranted = granted;
       return granted;
-    } catch (_) { await refreshPermissionStatus(); return exactAlarmPermissionGranted; }
+    } catch (_) {
+      await refreshPermissionStatus();
+      return exactAlarmPermissionGranted;
+    }
   }
 
   Future<bool> requestNotificationPolicyAccess() async {
@@ -99,16 +137,25 @@ class NotificationService {
       final granted = await android.requestNotificationPolicyAccess() ?? false;
       notificationPolicyAccessGranted = granted;
       return granted;
-    } catch (_) { return notificationPolicyAccessGranted; }
+    } catch (_) {
+      return notificationPolicyAccessGranted;
+    }
   }
 
-  Future<bool> refreshNotificationPolicyAccess() async { await init(); return notificationPolicyAccessGranted; }
+  Future<bool> refreshNotificationPolicyAccess() async {
+    await init();
+    return notificationPolicyAccessGranted;
+  }
 
   Future<bool> requestFullScreenIntentPermission() async {
     await init();
     final android = _android;
     if (android == null) return false;
-    try { return await android.requestFullScreenIntentPermission() ?? false; } catch (_) { return false; }
+    try {
+      return await android.requestFullScreenIntentPermission() ?? false;
+    } catch (_) {
+      return false;
+    }
   }
 
   AndroidScheduleMode get _scheduleMode => exactAlarmPermissionGranted ? AndroidScheduleMode.alarmClock : AndroidScheduleMode.inexactAllowWhileIdle;
@@ -276,18 +323,35 @@ class NotificationService {
 
   Future<void> _onNotificationTap(NotificationResponse response) async {
     final payload = response.payload ?? '';
+    if (payload.isEmpty) return;
+    _pendingNotificationPayload = payload;
+    await _flushPendingNotificationTap();
+  }
+
+  Future<void> _flushPendingNotificationTap() async {
+    final payload = _pendingNotificationPayload;
+    if (payload == null || payload.isEmpty) return;
     final context = rootNavigatorKey.currentState?.context;
-    if (context == null) return;
+    if (context == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _flushPendingNotificationTap();
+      });
+      return;
+    }
+    _pendingNotificationPayload = null;
+
     if (payload.startsWith(_missedPrefix)) {
       final name = payload.substring(_missedPrefix.length);
       final prayer = Prayer.values.where((p) => p.name == name).firstOrNull;
       if (prayer != null) Navigator.of(context).push(MaterialPageRoute(builder: (_) => MissedPrayerResponseScreen(prayer: prayer)));
     } else if (payload.startsWith(_quranPrefix)) {
       final page = int.tryParse(payload.substring(_quranPrefix.length));
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => QuranScreen(initialPage: page)));
+      if (page != null) {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => QuranScreen(initialPage: page)));
+      }
     } else if (payload.startsWith(_witrPrefix)) {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PrePrayerScreen(prayer: Prayer.isha)));
-    } else if (payload.isNotEmpty && !payload.startsWith(_religiousPrefix)) {
+    } else if (payload.isNotEmpty && !payload.startsWith(_religiousPrefix) && payload != 'weekly_summary') {
       final prayer = Prayer.values.where((p) => p.name == payload).firstOrNull;
       if (prayer != null) Navigator.of(context).push(MaterialPageRoute(builder: (_) => PrePrayerScreen(prayer: prayer)));
     }

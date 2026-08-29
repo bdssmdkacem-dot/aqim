@@ -25,13 +25,14 @@ class PrePrayerAlarmService : Service() {
         }
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "استعد للصلاة"
         val body = intent.getStringExtra(EXTRA_BODY) ?: "حان وقت الاستعداد للصلاة."
+        val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, DEFAULT_NOTIFICATION_ID)
 
-        startForeground(NOTIFICATION_ID, buildNotification(title, body))
+        startForeground(notificationId, buildNotification(title, body))
         player?.stopSafely()
         player?.release()
         player = null
 
-        val resId = resources.getIdentifier(soundName, "raw", packageName)
+        val resId = resources.getIdentifier(soundName.trim(), "raw", packageName)
         if (resId == 0) {
             stopSelf(startId)
             return START_NOT_STICKY
@@ -74,10 +75,10 @@ class PrePrayerAlarmService : Service() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "منبه قبل الصلاة",
+            "أذان ومنبه أقم",
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = "منبه صوتي مستمر قبل الصلاة"
+            description = "تشغيل صوت الأذان والمنبه لمدة الملف الصوتي كاملة"
             setSound(null, null)
             enableVibration(true)
         }
@@ -111,7 +112,8 @@ class PrePrayerAlarmService : Service() {
         const val EXTRA_SOUND = "sound_name"
         const val EXTRA_TITLE = "title"
         const val EXTRA_BODY = "body"
-        private const val CHANNEL_ID = "aqim_pre_prayer_alarm_service_v1"
-        private const val NOTIFICATION_ID = 7300
+        const val EXTRA_NOTIFICATION_ID = "notification_id"
+        const val DEFAULT_NOTIFICATION_ID = 7300
+        private const val CHANNEL_ID = "aqim_alarm_audio_service_v2"
     }
 }

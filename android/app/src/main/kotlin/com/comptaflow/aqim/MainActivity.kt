@@ -52,7 +52,18 @@ class MainActivity : FlutterActivity() {
                         val soundName = call.argument<String>("soundName") ?: return@setMethodCallHandler result.error("ARG", "Missing soundName", null)
                         val title = call.argument<String>("title") ?: "استعد للصلاة"
                         val body = call.argument<String>("body") ?: "حان وقت الاستعداد للصلاة."
-                        schedulePrePrayerAlarm(id, timeMillis, soundName, title, body)
+                        val notificationId = call.argument<Int>("notificationId") ?: PrePrayerAlarmReceiver.DEFAULT_NOTIFICATION_ID
+                        schedulePrePrayerAlarm(id, timeMillis, soundName, title, body, notificationId)
+                        result.success(true)
+                    }
+                    "scheduleAdhan" -> {
+                        val id = call.argument<Int>("id") ?: return@setMethodCallHandler result.error("ARG", "Missing id", null)
+                        val timeMillis = call.argument<Long>("timeMillis") ?: return@setMethodCallHandler result.error("ARG", "Missing timeMillis", null)
+                        val soundName = call.argument<String>("soundName") ?: return@setMethodCallHandler result.error("ARG", "Missing soundName", null)
+                        val title = call.argument<String>("title") ?: "حان وقت الصلاة"
+                        val body = call.argument<String>("body") ?: "حيّ على الصلاة، حيّ على الفلاح."
+                        val notificationId = call.argument<Int>("notificationId") ?: (10000 + id)
+                        schedulePrePrayerAlarm(id, timeMillis, soundName, title, body, notificationId)
                         result.success(true)
                     }
                     "cancel" -> {
@@ -65,12 +76,13 @@ class MainActivity : FlutterActivity() {
             }
     }
 
-    private fun schedulePrePrayerAlarm(id: Int, timeMillis: Long, soundName: String, title: String, body: String) {
+    private fun schedulePrePrayerAlarm(id: Int, timeMillis: Long, soundName: String, title: String, body: String, notificationId: Int) {
         val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
         val intent = Intent(this, PrePrayerAlarmReceiver::class.java).apply {
             putExtra(PrePrayerAlarmReceiver.EXTRA_SOUND, soundName)
             putExtra(PrePrayerAlarmReceiver.EXTRA_TITLE, title)
             putExtra(PrePrayerAlarmReceiver.EXTRA_BODY, body)
+            putExtra(PrePrayerAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId)
         }
         val pendingIntent = PendingIntent.getBroadcast(
             this,

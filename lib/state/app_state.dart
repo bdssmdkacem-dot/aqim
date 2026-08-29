@@ -94,10 +94,12 @@ class AppState extends ChangeNotifier {
     try {
       final savedLat = _prefs.getDouble('last_lat');
       final savedLng = _prefs.getDouble('last_lng');
-      final hasSavedLocation = savedLat != null && savedLng != null;
-      final position = hasSavedLocation ? null : await LocationService.getCurrentPosition();
-      final lat = savedLat ?? position?.latitude;
-      final lng = savedLng ?? position?.longitude;
+
+      // Always prefer a fresh GPS fix. The saved coordinates are only a
+      // fallback for cases where location services/permission are unavailable.
+      final position = await LocationService.getCurrentPosition();
+      final lat = position?.latitude ?? savedLat;
+      final lng = position?.longitude ?? savedLng;
       if (position != null) {
         await _prefs.setDouble('last_lat', position.latitude);
         await _prefs.setDouble('last_lng', position.longitude);
@@ -108,8 +110,8 @@ class AppState extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      cityName = _prefs.getString('city_name');
-      final cityFuture = cityName == null ? GeocodingService.cityFor(latitude: lat, longitude: lng) : Future<String?>.value(cityName);
+
+      final cityFuture = GeocodingService.cityFor(latitude: lat, longitude: lng);
       var times = await PrayerTimesService.fetchToday(latitude: lat, longitude: lng);
       usingOfflineTimes = false;
       if (times == null) {

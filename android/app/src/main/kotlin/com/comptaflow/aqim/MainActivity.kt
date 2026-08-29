@@ -52,8 +52,7 @@ class MainActivity : FlutterActivity() {
                         val soundName = call.argument<String>("soundName") ?: return@setMethodCallHandler result.error("ARG", "Missing soundName", null)
                         val title = call.argument<String>("title") ?: "استعد للصلاة"
                         val body = call.argument<String>("body") ?: "حان وقت الاستعداد للصلاة."
-                        val notificationId = call.argument<Int>("notificationId") ?: PrePrayerAlarmReceiver.DEFAULT_NOTIFICATION_ID
-                        schedulePrePrayerAlarm(id, timeMillis, soundName, title, body, notificationId)
+                        schedulePrePrayerAlarm(id, timeMillis, soundName, title, body)
                         result.success(true)
                     }
                     "scheduleAdhan" -> {
@@ -74,6 +73,10 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun schedulePrePrayerAlarm(id: Int, timeMillis: Long, soundName: String, title: String, body: String) {
+        schedulePrePrayerAlarm(id, timeMillis, soundName, title, body, PrePrayerAlarmReceiver.DEFAULT_NOTIFICATION_ID)
     }
 
     private fun schedulePrePrayerAlarm(id: Int, timeMillis: Long, soundName: String, title: String, body: String, notificationId: Int) {

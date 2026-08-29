@@ -158,7 +158,7 @@ class NotificationService {
 
       if (prePrayerEnabled && selectedPrePrayers.contains(prayer.name)) {
         if (prayer == Prayer.fajr) {
-          await _scheduleFajrWakeAlarms(finalAlarmTime: alarmTime, beforeMinutes: beforeMinutes, now: now);
+          await _scheduleFajrWakeAlarms(prayerTime: prayerTime, beforeMinutes: beforeMinutes, now: now);
         } else if (alarmTime.isAfter(now)) {
           await _scheduleWakeAlarm(id: _idFor(prayer, 0), title: isJumuah ? 'استعد لصلاة الجمعة' : 'استعد لصلاة ${prayer.arabicName}', body: isJumuah ? 'تبقّى $beforeMinutes دقيقة على صلاة الجمعة.' : 'تبقّى $beforeMinutes دقيقة على ${prayer.arabicName}.', scheduledDate: alarmTime, soundName: _wakeAlarmSoundFor(prayer, prayerTime), payload: prayer.name);
         }
@@ -204,12 +204,34 @@ class NotificationService {
     await _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: details);
   }
 
-  Future<void> _scheduleFajrWakeAlarms({required DateTime finalAlarmTime, required int beforeMinutes, required DateTime now}) async {
-    final stages = [(10, 'alarm_fajr_1', 'اقترب وقت الفجر', 0), (5, 'alarm_fajr_2', 'استعد لصلاة الفجر', 3), (0, 'alarm_fajr_3', 'حان الاستعداد الأخير لصلاة الفجر', 4)];
+  Future<void> _scheduleFajrWakeAlarms({required DateTime prayerTime, required int beforeMinutes, required DateTime now}) async {
+    if (beforeMinutes <= 0) return;
+
+    // The selected X-minute window belongs entirely before Fajr. Spread the
+    // three dedicated Fajr alarm sounds across that window, with the final
+    // alarm immediately before the prayer time. The Fajr adhan itself remains
+    // a separate notification scheduled exactly at prayerTime.
+    final windowStart = prayerTime.subtract(Duration(minutes: beforeMinutes));
+    final window = beforeMinutes;
+    final offsets = <int>[0, window ~/ 2, window > 1 ? window - 1 : 0];
+    final stages = <(int, String, String, int)>[
+      (offsets[0], 'alarm_fajr_1', 'اقترب وقت الفجر', 0),
+      (offsets[1], 'alarm_fajr_2', 'استعد لصلاة الفجر', 3),
+      (offsets[2], 'alarm_fajr_3', 'حان الاستعداد الأخير لصلاة الفجر', 4),
+    ];
+
     for (final stage in stages) {
-      final scheduledDate = finalAlarmTime.subtract(Duration(minutes: stage.$1));
-      if (!scheduledDate.isAfter(now)) continue;
-      await _scheduleWakeAlarm(id: _idFor(Prayer.fajr, stage.$4), title: stage.$3, body: 'تبقّى $beforeMinutes دقيقة على صلاة الفجر.', scheduledDate: scheduledDate, soundName: stage.$2, payload: Prayer.fajr.name);
+      final scheduledDate = windowStart.add(Duration(minutes: stage.$1));
+      if (!scheduledDate.isAfter(now) || !scheduledDate.isBefore(prayerTime)) continue;
+      final remaining = prayerTime.difference(scheduledDate).inMinutes;
+      await _scheduleWakeAlarm(
+        id: _idFor(Prayer.fajr, stage.$4),
+        title: stage.$3,
+        body: 'تبقّى ${remaining.clamp(1, beforeMinutes)} دقيقة على صلاة الفجر.',
+        scheduledDate: scheduledDate,
+        soundName: stage.$2,
+        payload: Prayer.fajr.name,
+      );
     }
   }
 

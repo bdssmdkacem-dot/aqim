@@ -130,7 +130,7 @@ class NotificationService {
     }
   }
 
-  DateTime _safeFallbackDate(DateTime scheduledDate) => exactAlarmPermissionGranted ? scheduledDate : scheduledDate.add(const Duration(minutes: 2));
+  DateTime _safeFallbackDate(DateTime scheduledDate) => scheduledDate;
 
   Future<void> _scheduleExact({required int id, required String title, required String body, required DateTime scheduledDate, required NotificationDetails details, required String payload}) async {
     final safeDate = _safeFallbackDate(scheduledDate);
@@ -206,11 +206,6 @@ class NotificationService {
 
   Future<void> _scheduleFajrWakeAlarms({required DateTime prayerTime, required int beforeMinutes, required DateTime now}) async {
     if (beforeMinutes <= 0) return;
-
-    // The selected X-minute window belongs entirely before Fajr. Spread the
-    // three dedicated Fajr alarm sounds across that window, with the final
-    // alarm immediately before the prayer time. The Fajr adhan itself remains
-    // a separate notification scheduled exactly at prayerTime.
     final windowStart = prayerTime.subtract(Duration(minutes: beforeMinutes));
     final window = beforeMinutes;
     final offsets = <int>[0, window ~/ 2, window > 1 ? window - 1 : 0];
@@ -219,19 +214,11 @@ class NotificationService {
       (offsets[1], 'alarm_fajr_2', 'استعد لصلاة الفجر', 3),
       (offsets[2], 'alarm_fajr_3', 'حان الاستعداد الأخير لصلاة الفجر', 4),
     ];
-
     for (final stage in stages) {
       final scheduledDate = windowStart.add(Duration(minutes: stage.$1));
       if (!scheduledDate.isAfter(now) || !scheduledDate.isBefore(prayerTime)) continue;
       final remaining = prayerTime.difference(scheduledDate).inMinutes;
-      await _scheduleWakeAlarm(
-        id: _idFor(Prayer.fajr, stage.$4),
-        title: stage.$3,
-        body: 'تبقّى ${remaining.clamp(1, beforeMinutes)} دقيقة على صلاة الفجر.',
-        scheduledDate: scheduledDate,
-        soundName: stage.$2,
-        payload: Prayer.fajr.name,
-      );
+      await _scheduleWakeAlarm(id: _idFor(Prayer.fajr, stage.$4), title: stage.$3, body: 'تبقّى ${remaining.clamp(1, beforeMinutes)} دقيقة على صلاة الفجر.', scheduledDate: scheduledDate, soundName: stage.$2, payload: Prayer.fajr.name);
     }
   }
 

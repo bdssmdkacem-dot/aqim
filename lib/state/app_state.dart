@@ -132,7 +132,16 @@ class AppState extends ChangeNotifier {
         await NotificationService.instance.init();
         await NotificationService.instance.refreshPermissionStatus();
         if (!NotificationService.instance.notificationsPermissionGranted) {
-          notificationIssue = 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم اضغط «إعادة المحاولة»."';
+          final granted = await NotificationService.instance.requestNotificationsPermission();
+          await NotificationService.instance.refreshPermissionStatus();
+          if (granted && NotificationService.instance.notificationsPermissionGranted) {
+            await NotificationService.instance.scheduleAllForToday(times, beforeMinutes: beforeMinutes, afterMinutes: afterMinutes, adhanEnabled: adhanEnabled);
+            await NotificationService.instance.scheduleWeeklySummary(_weeklySummaryText());
+            notificationIssue = null;
+            debugPrint('Notification permission granted and prayer notifications scheduled.');
+          } else {
+            notificationIssue = 'إشعارات أقم محظورة من إعدادات الهاتف. اسمح للتطبيق بإرسال الإشعارات ثم اضغط «إعادة المحاولة»."';
+          }
         } else {
           await NotificationService.instance.scheduleAllForToday(times, beforeMinutes: beforeMinutes, afterMinutes: afterMinutes, adhanEnabled: adhanEnabled);
           await NotificationService.instance.scheduleWeeklySummary(_weeklySummaryText());

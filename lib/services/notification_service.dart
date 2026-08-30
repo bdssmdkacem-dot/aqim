@@ -28,6 +28,7 @@ class NotificationService {
   static const _quranPrefix = 'quran:';
   static const _witrPrefix = 'witr:';
   static const _religiousPrefix = 'religious:';
+  static const _stopAdhanAction = 'stop_adhan';
   static const _channelVersion = 'v14';
   static const _weeklySummaryId = 9001;
   static const _quranFajrId = 9002;
@@ -56,11 +57,6 @@ class NotificationService {
       );
       _initialized = true;
       await refreshPermissionStatus();
-
-      // When Android launches AQIM from a notification while the app was
-      // terminated, the response callback is not enough on all plugin/API
-      // combinations. Recover the launch payload explicitly and keep it until
-      // the Navigator is ready.
       try {
         final launchDetails = await _plugin.getNotificationAppLaunchDetails();
         if (launchDetails?.didNotificationLaunchApp ?? false) {
@@ -70,7 +66,6 @@ class NotificationService {
           }
         }
       } catch (_) {}
-
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _flushPendingNotificationTap();
       });
@@ -275,7 +270,10 @@ class NotificationService {
     final selectedSound = prayer == Prayer.fajr ? ((prefs.getString('adhan_fajr_sound') ?? 'azan-fajr') == 'azanfajrmadina' ? 'azan-Fajr-madina ' : (prefs.getString('adhan_fajr_sound') ?? 'azan-fajr')) : (prefs.getString('adhan_sound') ?? 'azan_maroc_1');
     final notificationSound = mode == 'adhan' ? selectedSound : null;
     final channelSuffix = mode == 'adhan' ? 'adhan_${prayer.name}_$selectedSound' : mode;
-    await _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: NotificationDetails(android: AndroidNotificationDetails('aqim_adhan_${_channelVersion}_$channelSuffix', 'الأذان', channelDescription: mode == 'adhan' ? (prayer == Prayer.fajr ? 'أذان الفجر — المؤذن المختار للفجر' : 'أذان الصلوات الأخرى — المؤذن المختار') : mode == 'ringtone' ? 'تنبيه وقت الصلاة برنة الهاتف' : 'تنبيه وقت الصلاة بالاهتزاز فقط', importance: Importance.max, priority: Priority.max, category: AndroidNotificationCategory.alarm, fullScreenIntent: true, playSound: mode != 'vibrate', sound: notificationSound == null ? null : RawResourceAndroidNotificationSound(notificationSound), audioAttributesUsage: AudioAttributesUsage.alarm, channelBypassDnd: notificationPolicyAccessGranted, enableVibration: true, visibility: NotificationVisibility.public)));
+    final actions = mode == 'adhan'
+        ? <AndroidNotificationAction>[const AndroidNotificationAction(_stopAdhanAction, 'إيقاف الأذان', cancelNotification: true, showsUserInterface: true)]
+        : null;
+    await _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: NotificationDetails(android: AndroidNotificationDetails('aqim_adhan_${_channelVersion}_$channelSuffix', 'الأذان', channelDescription: mode == 'adhan' ? (prayer == Prayer.fajr ? 'أذان الفجر — المؤذن المختار للفجر' : 'أذان الصلوات الأخرى — المؤذن المختار') : mode == 'ringtone' ? 'تنبيه وقت الصلاة برنة الهاتف' : 'تنبيه وقت الصلاة بالاهتزاز فقط', importance: Importance.max, priority: Priority.max, category: AndroidNotificationCategory.alarm, fullScreenIntent: true, playSound: mode != 'vibrate', sound: notificationSound == null ? null : RawResourceAndroidNotificationSound(notificationSound), audioAttributesUsage: AudioAttributesUsage.alarm, channelBypassDnd: notificationPolicyAccessGranted, enableVibration: true, visibility: NotificationVisibility.public, actions: actions)));
   }
 
   Future<void> _scheduleCheckIn({required int id, required String title, required String body, required DateTime scheduledDate, required String payload}) async => _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: _alarmDetails(channelId: 'aqim_missed_prayer_${_channelVersion}', channelName: 'تذكير الصلاة', channelDescription: 'تذكير بعد انتهاء وقت الصلاة', category: AndroidNotificationCategory.reminder));
@@ -323,7 +321,15 @@ class NotificationService {
 
   Future<void> _onNotificationTap(NotificationResponse response) async {
     final payload = response.payload ?? '';
+    if (response.actionId == _stopAdhanAction) {
+      if (response.id != null) await _plugin.cancel(id: response.id!);
+      return;
+    }
     if (payload.isEmpty) return;
+    final isPrayerNotification = Prayer.values.any((p) => p.name == payload);
+    if (isPrayerNotification && response.id != null) {
+      await _plugin.cancel(id: response.id!);
+    }
     _pendingNotificationPayload = payload;
     await _flushPendingNotificationTap();
   }

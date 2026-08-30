@@ -68,7 +68,9 @@ class _MoreScreenState extends State<MoreScreen> {
               icon: Icons.bar_chart_rounded,
               title: 'التقرير الأسبوعي',
               onTap: () {
-                AppInterstitialAd.showIfReady();
+                final ready = AppInterstitialAd.showIfReady();
+                debugPrint('AQIM_WEEKLY_REPORT_CLICK');
+                debugPrint('AQIM_WEEKLY_REPORT_AD_READY=$ready');
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WeekReportScreen()));
               },
             ),

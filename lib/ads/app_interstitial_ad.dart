@@ -28,7 +28,7 @@ class AppInterstitialAd {
         onAdLoaded: (ad) {
           _loading = false;
           _ad = ad;
-          debugPrint('AQIM Interstitial preloaded');
+          debugPrint('AQIM_AD_INTERSTITIAL_LOADED');
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();
@@ -36,20 +36,20 @@ class AppInterstitialAd {
               preload();
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
-              debugPrint('AQIM Interstitial failed to show: $error');
+              debugPrint('AQIM_AD_INTERSTITIAL_FAILED error=$error');
               ad.dispose();
               _ad = null;
               _scheduleRetry();
             },
             onAdShowedFullScreenContent: (_) {
-              debugPrint('AQIM Interstitial shown');
+              debugPrint('AQIM_AD_INTERSTITIAL_SHOWN');
             },
           );
         },
         onAdFailedToLoad: (error) {
           _loading = false;
           _ad = null;
-          debugPrint('AQIM Interstitial failed to load: $error');
+          debugPrint('AQIM_AD_INTERSTITIAL_FAILED error=$error');
           _scheduleRetry();
         },
       ),
@@ -82,7 +82,7 @@ class AppInterstitialAd {
         action();
       },
       onAdFailedToShowFullScreenContent: (shownAd, error) {
-        debugPrint('AQIM Interstitial failed to show: $error');
+        debugPrint('AQIM_AD_INTERSTITIAL_FAILED error=$error');
         shownAd.dispose();
         _scheduleRetry();
         action();

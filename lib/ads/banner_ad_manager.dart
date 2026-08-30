@@ -58,12 +58,12 @@ class BannerAdManager {
         onAdLoaded: (loadedAd) {
           final banner = loadedAd as BannerAd;
           _ads[placement] = banner;
-          debugPrint('AQIM Banner loaded: $placement');
+          debugPrint('AQIM_AD_BANNER_LOADED placement=$placement');
           if (!completer.isCompleted) completer.complete(banner);
         },
         onAdFailedToLoad: (failedAd, error) {
           failedAd.dispose();
-          debugPrint('AQIM Banner failed [$placement]: $error');
+          debugPrint('AQIM_AD_BANNER_FAILED placement=$placement error=$error');
           if (!completer.isCompleted) completer.complete(null);
         },
       ),

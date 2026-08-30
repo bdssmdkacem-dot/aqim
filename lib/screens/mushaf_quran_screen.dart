@@ -81,7 +81,9 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
     super.initState();
     _riwaya = widget.initialRiwaya ?? MushafRiwaya.hafs;
     _page = (widget.initialPage ?? 1).clamp(1, pageCount).toInt();
-    _controller = PageController(initialPage: _page - 1);
+    // Index 0 is the trailing clone of page 604; real pages are 1..604;
+    // index 605 is the leading clone of page 1. This enables swipe looping.
+    _controller = PageController(initialPage: _page);
     _restorePage();
   }
 
@@ -93,7 +95,7 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
             (legacyMatches ? prefs.getInt('quran_resume_page') : null) ?? 1)
         .clamp(1, pageCount).toInt();
     if (!mounted || saved == _page) return;
-    _controller.jumpToPage(saved - 1);
+    _controller.jumpToPage(saved);
     setState(() => _page = saved);
   }
 
@@ -110,7 +112,7 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
 
   void _setPage(int page) {
     final normalized = ((page - 1) % pageCount + pageCount) % pageCount + 1;
-    _controller.jumpToPage(normalized - 1);
+    _controller.jumpToPage(normalized);
     setState(() => _page = normalized);
     _savePage();
   }
@@ -170,7 +172,7 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
     setState(() {
       _riwaya = value;
       _page = saved;
-      _controller = PageController(initialPage: saved - 1);
+      _controller = PageController(initialPage: saved);
     });
     old.dispose();
     await _savePage();
@@ -222,13 +224,25 @@ class _MushafQuranScreenState extends State<MushafQuranScreen> {
       child: PageView.builder(
         controller: _controller,
         reverse: true,
-        itemCount: pageCount,
+        itemCount: pageCount + 2,
         onPageChanged: (index) {
-          setState(() => _page = index + 1);
+          if (index == 0) {
+            _controller.jumpToPage(pageCount);
+            setState(() => _page = pageCount);
+          } else if (index == pageCount + 1) {
+            _controller.jumpToPage(1);
+            setState(() => _page = 1);
+          } else {
+            setState(() => _page = index);
+          }
           _savePage();
         },
         itemBuilder: (_, index) {
-          final page = index + 1;
+          final page = index == 0
+              ? pageCount
+              : index == pageCount + 1
+                  ? 1
+                  : index;
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => setState(() => _controlsVisible = !_controlsVisible),

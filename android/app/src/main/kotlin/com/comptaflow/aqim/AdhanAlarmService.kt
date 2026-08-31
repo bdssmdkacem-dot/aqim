@@ -14,6 +14,7 @@ import android.os.IBinder
 class AdhanAlarmService : Service() {
     private var player: MediaPlayer? = null
     private var activeSoundName: String? = null
+    private var activeNotificationId: Int? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -21,7 +22,7 @@ class AdhanAlarmService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val soundName = intent?.getStringExtra(EXTRA_SOUND) ?: run {
+        val soundName = intent?.getStringExtra(EXTRA_SOUND)?.trim() ?: run {
             stopSelf(startId)
             return START_NOT_STICKY
         }
@@ -29,24 +30,23 @@ class AdhanAlarmService : Service() {
         val body = intent.getStringExtra(EXTRA_BODY) ?: "حيّ على الصلاة، حيّ على الفلاح."
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, AdhanAlarmReceiver.DEFAULT_NOTIFICATION_ID)
 
-        // Never restart the same adhan while it is already playing.
-        if (player?.isPlaying == true && activeSoundName == soundName) {
+        // A duplicate delivery must never restart an adhan that is already active.
+        if (player != null && activeSoundName == soundName) {
             return START_NOT_STICKY
         }
 
         startForeground(notificationId, buildNotification(title, body, notificationId))
-        player?.stopSafely()
-        player?.release()
-        player = null
-        activeSoundName = null
+        releasePlayer()
 
-        val resId = resources.getIdentifier(soundName.trim(), "raw", packageName)
+        val resId = resources.getIdentifier(soundName, "raw", packageName)
         if (resId == 0) {
             stopSelf(startId)
             return START_NOT_STICKY
         }
 
         try {
+            val afd = resources.openRawResourceFd(resId)
+                ?: throw IllegalStateException("Audio resource descriptor unavailable")
             player = MediaPlayer().apply {
                 setAudioAttributes(
                     AudioAttributes.Builder()
@@ -54,18 +54,28 @@ class AdhanAlarmService : Service() {
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .build()
                 )
-                setDataSource(resources.openRawResourceFd(resId))
+                setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                afd.close()
                 prepare()
                 isLooping = false
-                setOnCompletionListener { stopSelf() }
-                setOnErrorListener { _, _, _ -> stopSelf(); true }
+                setOnCompletionListener {
+                    releasePlayer()
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }
+                setOnErrorListener { _, _, _ ->
+                    releasePlayer()
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                    true
+                }
                 start()
             }
-            activeSoundName = soundName.trim()
+            activeSoundName = soundName
+            activeNotificationId = notificationId
         } catch (_: Exception) {
-            player?.release()
-            player = null
-            activeSoundName = null
+            releasePlayer()
+            stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf(startId)
         }
 
@@ -73,14 +83,33 @@ class AdhanAlarmService : Service() {
     }
 
     override fun onDestroy() {
-        player?.stopSafely()
-        player?.release()
-        player = null
-        activeSoundName = null
+        releasePlayer()
+        activeNotificationId = null
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun releasePlayer() {
+        val current = player ?: run {
+            activeSoundName = null
+            return
+        }
+        try {
+            if (current.isPlaying) current.stop()
+        } catch (_: Exception) {
+        }
+        try {
+            current.reset()
+        } catch (_: Exception) {
+        }
+        try {
+            current.release()
+        } catch (_: Exception) {
+        }
+        player = null
+        activeSoundName = null
+    }
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -120,13 +149,6 @@ class AdhanAlarmService : Service() {
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .addAction(Notification.Action.Builder(null, "إيقاف الأذان", stopPendingIntent).build())
             .build()
-    }
-
-    private fun MediaPlayer.stopSafely() {
-        try {
-            if (isPlaying) stop()
-        } catch (_: Exception) {
-        }
     }
 
     companion object {

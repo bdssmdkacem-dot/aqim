@@ -68,6 +68,10 @@
             android:name=".PrePrayerAlarmReceiver"
             android:exported="false"/>
 
+        <receiver
+            android:name=".StopAdhanReceiver"
+            android:exported="false"/>
+
         <service
             android:name=".PrePrayerAlarmService"
             android:exported="false"

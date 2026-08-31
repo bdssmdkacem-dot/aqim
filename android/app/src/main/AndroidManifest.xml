@@ -69,11 +69,20 @@
             android:exported="false"/>
 
         <receiver
+            android:name=".AdhanAlarmReceiver"
+            android:exported="false"/>
+
+        <receiver
             android:name=".StopAdhanReceiver"
             android:exported="false"/>
 
         <service
             android:name=".PrePrayerAlarmService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback"/>
+
+        <service
+            android:name=".AdhanAlarmService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback"/>
     </application>

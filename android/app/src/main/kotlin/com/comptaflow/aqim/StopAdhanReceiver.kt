@@ -1,16 +1,21 @@
 package com.comptaflow.aqim
 
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 
+/** Stops the actual prayer-time adhan service, not the pre-prayer alert service. */
 class StopAdhanReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        val notificationId = intent?.getIntExtra(EXTRA_NOTIFICATION_ID, PrePrayerAlarmService.DEFAULT_NOTIFICATION_ID)
-            ?: PrePrayerAlarmService.DEFAULT_NOTIFICATION_ID
+        val notificationId = intent?.getIntExtra(
+            EXTRA_NOTIFICATION_ID,
+            AdhanAlarmReceiver.DEFAULT_NOTIFICATION_ID
+        ) ?: AdhanAlarmReceiver.DEFAULT_NOTIFICATION_ID
 
-        context.stopService(Intent(context, PrePrayerAlarmService::class.java))
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+        context.stopService(Intent(context, AdhanAlarmService::class.java))
+
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
         manager?.cancel(notificationId)
     }
 

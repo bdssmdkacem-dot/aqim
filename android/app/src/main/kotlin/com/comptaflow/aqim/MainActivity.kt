@@ -62,12 +62,22 @@ class MainActivity : FlutterActivity() {
                         val title = call.argument<String>("title") ?: "حان وقت الصلاة"
                         val body = call.argument<String>("body") ?: "حيّ على الصلاة، حيّ على الفلاح."
                         val notificationId = call.argument<Int>("notificationId") ?: (10000 + id)
-                        schedulePrePrayerAlarm(id, timeMillis, soundName, title, body, notificationId)
+                        scheduleAdhanAlarm(id, timeMillis, soundName, title, body, notificationId)
                         result.success(true)
                     }
                     "cancel" -> {
                         val id = call.argument<Int>("id") ?: return@setMethodCallHandler result.error("ARG", "Missing id", null)
                         cancelPrePrayerAlarm(id)
+                        cancelAdhanAlarm(id)
+                        result.success(true)
+                    }
+                    "cancelAdhan" -> {
+                        val id = call.argument<Int>("id") ?: return@setMethodCallHandler result.error("ARG", "Missing id", null)
+                        cancelAdhanAlarm(id)
+                        result.success(true)
+                    }
+                    "cancelAllAdhanAlarms" -> {
+                        cancelAllAdhanAlarms()
                         result.success(true)
                     }
                     else -> result.notImplemented()
@@ -100,6 +110,27 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun scheduleAdhanAlarm(id: Int, timeMillis: Long, soundName: String, title: String, body: String, notificationId: Int) {
+        val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, AdhanAlarmReceiver::class.java).apply {
+            putExtra(AdhanAlarmReceiver.EXTRA_SOUND, soundName)
+            putExtra(AdhanAlarmReceiver.EXTRA_TITLE, title)
+            putExtra(AdhanAlarmReceiver.EXTRA_BODY, body)
+            putExtra(AdhanAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            id,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        } else {
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        }
+    }
+
     private fun cancelPrePrayerAlarm(id: Int) {
         val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
         val intent = Intent(this, PrePrayerAlarmReceiver::class.java)
@@ -111,6 +142,27 @@ class MainActivity : FlutterActivity() {
         )
         alarmManager.cancel(pendingIntent)
         pendingIntent.cancel()
+    }
+
+    private fun cancelAdhanAlarm(id: Int) {
+        val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, AdhanAlarmReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            id,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
+        pendingIntent.cancel()
+    }
+
+    private fun cancelAllAdhanAlarms() {
+        val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
+        for (prayerIndex in 0..4) {
+            val id = prayerIndex * 10 + 2
+            cancelAdhanAlarm(id)
+        }
     }
 
     private fun isIgnoringBatteryOptimizations(): Boolean {

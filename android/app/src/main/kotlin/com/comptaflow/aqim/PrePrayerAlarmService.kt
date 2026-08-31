@@ -3,6 +3,7 @@ package com.comptaflow.aqim
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.media.AudioAttributes
@@ -12,6 +13,7 @@ import android.os.IBinder
 
 class PrePrayerAlarmService : Service() {
     private var player: MediaPlayer? = null
+    private var activeSoundName: String? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -27,10 +29,16 @@ class PrePrayerAlarmService : Service() {
         val body = intent.getStringExtra(EXTRA_BODY) ?: "حان وقت الاستعداد للصلاة."
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, DEFAULT_NOTIFICATION_ID)
 
-        startForeground(notificationId, buildNotification(title, body))
+        // A duplicated delivery must never restart an adhan that is already playing.
+        if (player?.isPlaying == true && activeSoundName == soundName) {
+            return START_NOT_STICKY
+        }
+
+        startForeground(notificationId, buildNotification(title, body, notificationId))
         player?.stopSafely()
         player?.release()
         player = null
+        activeSoundName = null
 
         val resId = resources.getIdentifier(soundName.trim(), "raw", packageName)
         if (resId == 0) {
@@ -53,9 +61,11 @@ class PrePrayerAlarmService : Service() {
                 setOnErrorListener { _, _, _ -> stopSelf(); true }
                 start()
             }
+            activeSoundName = soundName
         } catch (_: Exception) {
             player?.release()
             player = null
+            activeSoundName = null
             stopSelf(startId)
         }
 
@@ -66,6 +76,7 @@ class PrePrayerAlarmService : Service() {
         player?.stopSafely()
         player?.release()
         player = null
+        activeSoundName = null
         super.onDestroy()
     }
 
@@ -85,7 +96,16 @@ class PrePrayerAlarmService : Service() {
         getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
     }
 
-    private fun buildNotification(title: String, body: String): Notification {
+    private fun buildNotification(title: String, body: String, notificationId: Int): Notification {
+        val stopIntent = Intent(this, StopAdhanReceiver::class.java).apply {
+            putExtra(StopAdhanReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+        }
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            this,
+            notificationId,
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, CHANNEL_ID)
         } else {
@@ -98,6 +118,7 @@ class PrePrayerAlarmService : Service() {
             .setOngoing(true)
             .setCategory(Notification.CATEGORY_ALARM)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .addAction(Notification.Action.Builder(null, "إيقاف الأذان", stopPendingIntent).build())
             .build()
     }
 

@@ -1,8 +1,9 @@
 from pathlib import Path
 
-# IMPORTANT: pre-prayer alerts must stay on the existing
-# flutter_local_notifications path. This patch is ONLY for the adhan that
-# starts at the actual prayer time.
+# IMPORTANT: pre-prayer alerts stay on the existing flutter_local_notifications
+# path. This patch is ONLY for the adhan that starts at the actual prayer time.
+# Native adhan alarms are also cancelled before every daily reschedule so old
+# AlarmManager entries cannot survive a location/time refresh.
 path = Path("lib/services/notification_service.dart")
 text = path.read_text(encoding="utf-8")
 
@@ -21,51 +22,59 @@ if "static const MethodChannel _nativeAdhanChannel" not in text:
         1,
     )
 
+schedule_marker = "    await _plugin.cancelAll();\n"
+if "cancelAllAdhanAlarms" not in text:
+    text = text.replace(
+        schedule_marker,
+        "    // Stage 3: clear native prayer-time alarms before rebuilding today's schedule.\n    await _nativeAdhanChannel.invokeMethod('cancelAllAdhanAlarms');\n    await _plugin.cancelAll();\n",
+        1,
+    )
+
 start = text.index("  Future<void> _scheduleAdhan({")
 end = text.index("\n  Future<void> _scheduleCheckIn", start)
 
 replacement = '''  Future<void> _scheduleAdhan({required Prayer prayer, required int id, required String title, required String body, required DateTime scheduledDate, required String payload}) async {
     final prefs = await SharedPreferences.getInstance();
     final mode = prefs.getString('adhan_alert_mode') ?? 'adhan';
-    if (mode == 'vibrate') {
-      await _scheduleExact(
-        id: id,
-        title: title,
-        body: body,
-        scheduledDate: scheduledDate,
-        payload: payload,
-        details: NotificationDetails(
-          android: AndroidNotificationDetails(
-            'aqim_adhan_${_channelVersion}_vibrate',
-            'الأذان',
-            channelDescription: 'تنبيه وقت الصلاة بالاهتزاز فقط',
-            importance: Importance.max,
-            priority: Priority.max,
-            category: AndroidNotificationCategory.alarm,
-            fullScreenIntent: true,
-            playSound: false,
-            enableVibration: true,
-            visibility: NotificationVisibility.public,
-          ),
-        ),
-      );
-      return;
-    }
 
-    if (mode == 'ringtone') {
-      await _scheduleExact(
-        id: id,
-        title: title,
-        body: body,
-        scheduledDate: scheduledDate,
-        payload: payload,
-        details: _alarmDetails(
-          channelId: 'aqim_adhan_${_channelVersion}_ringtone',
-          channelName: 'الأذان',
-          channelDescription: 'تنبيه وقت الصلاة برنة الهاتف',
-          category: AndroidNotificationCategory.alarm,
-        ),
-      );
+    if (mode != 'adhan') {
+      if (mode == 'vibrate') {
+        await _scheduleExact(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledDate,
+          payload: payload,
+          details: const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'aqim_adhan_v14_vibrate',
+              'الأذان',
+              channelDescription: 'تنبيه وقت الصلاة بالاهتزاز فقط',
+              importance: Importance.max,
+              priority: Priority.max,
+              category: AndroidNotificationCategory.alarm,
+              fullScreenIntent: true,
+              playSound: false,
+              enableVibration: true,
+              visibility: NotificationVisibility.public,
+            ),
+          ),
+        );
+      } else {
+        await _scheduleExact(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledDate,
+          payload: payload,
+          details: _alarmDetails(
+            channelId: 'aqim_adhan_v14_ringtone',
+            channelName: 'الأذان',
+            channelDescription: 'تنبيه وقت الصلاة برنة الهاتف',
+            category: AndroidNotificationCategory.alarm,
+          ),
+        );
+      }
       return;
     }
 
@@ -78,9 +87,10 @@ replacement = '''  Future<void> _scheduleAdhan({required Prayer prayer, required
     final safeDate = _safeFallbackDate(scheduledDate);
     if (!safeDate.isAfter(DateTime.now())) return;
 
-    // The adhan is the actual prayer-time audio. Use the native exact alarm
-    // receiver + foreground MediaPlayer so Android plays the whole file.
-    await _nativeAdhanChannel.invokeMethod('cancel', {'id': id});
+    // Stage 1: actual prayer-time adhan has its own native receiver/service.
+    // Stage 2: the native service ignores duplicate delivery while the same
+    // adhan is already playing, preventing a restart from the beginning.
+    await _nativeAdhanChannel.invokeMethod('cancelAdhan', {'id': id});
     await _nativeAdhanChannel.invokeMethod('scheduleAdhan', {
       'id': id,
       'timeMillis': safeDate.millisecondsSinceEpoch,
@@ -94,4 +104,4 @@ replacement = '''  Future<void> _scheduleAdhan({required Prayer prayer, required
 
 text = text[:start] + replacement + text[end:]
 path.write_text(text, encoding="utf-8")
-print("Verified: pre-prayer alerts remain unchanged; prayer-time adhan uses persistent native audio")
+print("Applied stages 1-3: dedicated native adhan lifecycle, duplicate-playback protection, and native alarm cancellation before rescheduling")

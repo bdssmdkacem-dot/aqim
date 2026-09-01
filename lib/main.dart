@@ -36,30 +36,73 @@ class AqimApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<AppState>(
       create: (_) => AppState()..init(),
-      child: MaterialApp(
-        navigatorKey: rootNavigatorKey,
-        title: 'أقم',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
-        locale: const Locale('ar'),
-        supportedLocales: const [Locale('ar')],
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        builder: (context, child) {
-          final state = context.watch<AppState>();
-          final content = child ?? const SizedBox.shrink();
-          return Directionality(
-            textDirection: TextDirection.rtl,
-            child: state.ready && state.onboardingComplete
-                ? AqimGlobalBottomNav(child: content)
-                : content,
-          );
-        },
-        home: const _Gate(),
-      ),
+      child: const _AqimLifecycleRoot(),
+    );
+  }
+}
+
+class _AqimLifecycleRoot extends StatefulWidget {
+  const _AqimLifecycleRoot();
+
+  @override
+  State<_AqimLifecycleRoot> createState() => _AqimLifecycleRootState();
+}
+
+class _AqimLifecycleRootState extends State<_AqimLifecycleRoot>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !mounted) return;
+
+    final appState = context.read<AppState>();
+    if (!appState.ready || !appState.onboardingComplete || appState.timesLoading) {
+      return;
+    }
+
+    // Re-read the device location after returning to the foreground. The
+    // existing loadPrayerTimes() logic keeps the saved coordinates only when
+    // a fresh location cannot be obtained, so moving to another city no
+    // longer leaves the app stuck on the previous location after resume.
+    appState.loadPrayerTimes();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      navigatorKey: rootNavigatorKey,
+      title: 'أقم',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      builder: (context, child) {
+        final state = context.watch<AppState>();
+        final content = child ?? const SizedBox.shrink();
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: state.ready && state.onboardingComplete
+              ? AqimGlobalBottomNav(child: content)
+              : content,
+        );
+      },
+      home: const _Gate(),
     );
   }
 }

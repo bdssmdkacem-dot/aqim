@@ -1,17 +1,14 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import '../models/prayer.dart';
 
-/// يجلب أوقات الصلاة الحقيقية لليوم من AlAdhan API (مصدر مفتوح وموثوق
-/// يُستعمل في عشرات التطبيقات الإسلامية). method=21 هي طريقة حساب وزارة
-/// الأوقاف والشؤون الإسلامية المغربية. الأوقات المُرجعة بالتوقيت المحلي
-/// لموقع الإحداثيات المُرسَلة، لذا لا حاجة لأي تحويل توقيت إضافي.
+/// Fetches prayer times from AlAdhan and normalizes source timestamps to the
+/// device's local DateTime. The resulting DateTime map is the single source
+/// consumed by both Home and notification scheduling.
 class PrayerTimesService {
   static const _baseUrl = 'https://api.aladhan.com/v1/timings';
 
-  /// يرجع خريطة Prayer → DateTime لليوم الحالي، أو null إن فشل الطلب
-  /// (بلا إنترنت، أو الخادم غير متاح) — الاستدعاء يجب أن يتعامل مع
-  /// null بالرجوع للأوقات الاحتياطية الثابتة.
   static Future<Map<Prayer, DateTime>?> fetchToday({
     required double latitude,
     required double longitude,
@@ -31,14 +28,51 @@ class PrayerTimesService {
       final now = DateTime.now();
       DateTime? parseTime(String? key) {
         if (key == null) return null;
-        final raw = (timings[key] as String?)?.split(' ').first; // يحذف أي لاحقة منطقة زمنية
-        if (raw == null) return null;
-        final parts = raw.split(':');
-        if (parts.length != 2) return null;
-        final hour = int.tryParse(parts[0]);
-        final minute = int.tryParse(parts[1]);
+        final value = timings[key];
+        if (value is! String) return null;
+
+        // AlAdhan may return e.g. "13:42 (+01)". Keep the source offset
+        // instead of silently interpreting that clock time in the device TZ.
+        final match = RegExp(
+          r'^(\d{1,2}):(\d{2})(?:\s*\(([+-])(\d{2})(?::?(\d{2}))?\))?',
+        ).firstMatch(value.trim());
+        if (match == null) return null;
+
+        final hour = int.tryParse(match.group(1)!);
+        final minute = int.tryParse(match.group(2)!);
         if (hour == null || minute == null) return null;
-        return DateTime(now.year, now.month, now.day, hour, minute);
+
+        late final DateTime parsed;
+        final sign = match.group(3);
+        if (sign != null) {
+          final offsetHours = int.tryParse(match.group(4) ?? '0') ?? 0;
+          final offsetMinutes = int.tryParse(match.group(5) ?? '0') ?? 0;
+          final offset = Duration(hours: offsetHours, minutes: offsetMinutes);
+          final sourceLocal = DateTime.utc(
+            now.year,
+            now.month,
+            now.day,
+            hour,
+            minute,
+          );
+          final utc = sign == '+'
+              ? sourceLocal.subtract(offset)
+              : sourceLocal.add(offset);
+          parsed = utc.toLocal();
+        } else {
+          parsed = DateTime(now.year, now.month, now.day, hour, minute);
+        }
+
+        final deviceNow = DateTime.now();
+        developer.log(
+          'prayer=$key raw="$value" '
+          'parsedLocal="${parsed.toIso8601String()}" '
+          'epoch=${parsed.millisecondsSinceEpoch} '
+          'deviceTimezone="${deviceNow.timeZoneName}" '
+          'deviceOffset="${deviceNow.timeZoneOffset}"',
+          name: 'Aqim.PrayerTimes.Timestamp',
+        );
+        return parsed;
       }
 
       final fajr = parseTime('Fajr');

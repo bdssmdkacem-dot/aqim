@@ -2,8 +2,13 @@ from pathlib import Path
 
 # IMPORTANT: pre-prayer alerts stay on the existing flutter_local_notifications
 # path. This patch is ONLY for the adhan that starts at the actual prayer time.
-# Native adhan alarms are also cancelled before every daily reschedule so old
+# Native adhan alarms are cancelled before every daily reschedule so old
 # AlarmManager entries cannot survive a location/time refresh.
+#
+# Stage 7: do not use Flutter's cancelAll() here. It can remove unrelated
+# notifications (weekly summary, Quran, Witr, religious events, or a currently
+# visible missed-prayer notification). Prayer-related Flutter IDs are cancelled
+# explicitly below; each feature remains responsible for its own IDs.
 path = Path("lib/services/notification_service.dart")
 text = path.read_text(encoding="utf-8")
 
@@ -23,12 +28,22 @@ if "static const MethodChannel _nativeAdhanChannel" not in text:
     )
 
 schedule_marker = "    await _plugin.cancelAll();\n"
-if "cancelAllAdhanAlarms" not in text:
-    text = text.replace(
-        schedule_marker,
-        "    // Stage 3: clear native prayer-time alarms before rebuilding today's schedule.\n    await _nativeAdhanChannel.invokeMethod('cancelAllAdhanAlarms');\n    await _plugin.cancelAll();\n",
-        1,
-    )
+if "Stage 7: cancel only prayer-related Flutter notification IDs" not in text:
+    targeted_cancel = """    // Stage 3: clear native prayer-time alarms before rebuilding today's schedule.
+    await _nativeAdhanChannel.invokeMethod('cancelAllAdhanAlarms');
+
+    // Stage 7: cancel only IDs owned by the prayer schedule. Do not call
+    // cancelAll(), because it can remove unrelated or already-visible
+    // notifications that are managed by their own scheduling methods.
+    for (final prayer in Prayer.values) {
+      await _plugin.cancel(id: _idFor(prayer, 0)); // pre-prayer
+      await _plugin.cancel(id: _idFor(prayer, 1)); // missed-prayer check-in
+      await _plugin.cancel(id: _idFor(prayer, 2)); // prayer-time notification when applicable
+    }
+    await _plugin.cancel(id: _idFor(Prayer.fajr, 3));
+    await _plugin.cancel(id: _idFor(Prayer.fajr, 4));
+"""
+    text = text.replace(schedule_marker, targeted_cancel, 1)
 
 start = text.index("  Future<void> _scheduleAdhan({")
 end = text.index("\n  Future<void> _scheduleCheckIn", start)
@@ -104,4 +119,4 @@ replacement = '''  Future<void> _scheduleAdhan({required Prayer prayer, required
 
 text = text[:start] + replacement + text[end:]
 path.write_text(text, encoding="utf-8")
-print("Applied stages 1-3: dedicated native adhan lifecycle, duplicate-playback protection, and native alarm cancellation before rescheduling")
+print("Applied stages 1-3 and stage 7: dedicated native adhan lifecycle, duplicate-playback protection, native alarm cancellation, and targeted daily rescheduling")

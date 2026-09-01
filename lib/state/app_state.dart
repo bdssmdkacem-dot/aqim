@@ -94,9 +94,6 @@ class AppState extends ChangeNotifier {
     try {
       final savedLat = _prefs.getDouble('last_lat');
       final savedLng = _prefs.getDouble('last_lng');
-
-      // Always prefer a fresh GPS fix. The saved coordinates are only a
-      // fallback for cases where location services/permission are unavailable.
       final position = await LocationService.getCurrentPosition();
       final lat = position?.latitude ?? savedLat;
       final lng = position?.longitude ?? savedLng;
@@ -110,7 +107,6 @@ class AppState extends ChangeNotifier {
         notifyListeners();
         return;
       }
-
       final cityFuture = GeocodingService.cityFor(latitude: lat, longitude: lng);
       var times = await PrayerTimesService.fetchToday(latitude: lat, longitude: lng);
       usingOfflineTimes = false;
@@ -321,9 +317,6 @@ class AppState extends ChangeNotifier {
         final pct = (doneCount / active.length * 100).round();
         dailyHistory[lastOpenDate!] = pct;
         weekHistory = [...weekHistory.skip(1), pct];
-      }
-      for (final p in _allPrayers) {
-        if (todayStatus[p] == PrayerStatus.missed) missTally[p] = (missTally[p] ?? 0) + 1;
       }
       dailyPrayerHistory[lastOpenDate!] = Map<Prayer, PrayerStatus>.from(todayStatus);
       _persistDailyHistory();

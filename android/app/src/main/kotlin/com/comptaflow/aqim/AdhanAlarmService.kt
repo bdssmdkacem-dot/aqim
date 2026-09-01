@@ -30,8 +30,8 @@ class AdhanAlarmService : Service() {
         val body = intent.getStringExtra(EXTRA_BODY) ?: "حيّ على الصلاة، حيّ على الفلاح."
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, AdhanAlarmReceiver.DEFAULT_NOTIFICATION_ID)
 
-        // A duplicate delivery must never restart an adhan that is already active.
-        if (player != null && activeSoundName == soundName) {
+        // Duplicate delivery: never interrupt or restart an adhan already playing.
+        if (player?.isPlaying == true && activeSoundName == soundName) {
             return START_NOT_STICKY
         }
 
@@ -40,6 +40,7 @@ class AdhanAlarmService : Service() {
 
         val resId = resources.getIdentifier(soundName, "raw", packageName)
         if (resId == 0) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf(startId)
             return START_NOT_STICKY
         }
@@ -47,32 +48,37 @@ class AdhanAlarmService : Service() {
         try {
             val afd = resources.openRawResourceFd(resId)
                 ?: throw IllegalStateException("Audio resource descriptor unavailable")
-            player = MediaPlayer().apply {
-                setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ALARM)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .build()
-                )
-                setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                afd.close()
-                prepare()
-                isLooping = false
-                setOnCompletionListener {
+            val newPlayer = MediaPlayer()
+            newPlayer.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+            )
+            newPlayer.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+            afd.close()
+            newPlayer.prepare()
+            newPlayer.isLooping = false
+            newPlayer.setOnCompletionListener {
+                // Natural completion is terminal: clean up and remove the foreground service.
+                if (player === newPlayer) {
                     releasePlayer()
                     stopForeground(STOP_FOREGROUND_REMOVE)
                     stopSelf()
                 }
-                setOnErrorListener { _, _, _ ->
-                    releasePlayer()
-                    stopForeground(STOP_FOREGROUND_REMOVE)
-                    stopSelf()
-                    true
-                }
-                start()
             }
+            newPlayer.setOnErrorListener { _, _, _ ->
+                if (player === newPlayer) {
+                    releasePlayer()
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }
+                true
+            }
+            player = newPlayer
             activeSoundName = soundName
             activeNotificationId = notificationId
+            newPlayer.start()
         } catch (_: Exception) {
             releasePlayer()
             stopForeground(STOP_FOREGROUND_REMOVE)
@@ -94,6 +100,11 @@ class AdhanAlarmService : Service() {
         val current = player ?: run {
             activeSoundName = null
             return
+        }
+        try {
+            current.setOnCompletionListener(null)
+            current.setOnErrorListener(null)
+        } catch (_: Exception) {
         }
         try {
             if (current.isPlaying) current.stop()

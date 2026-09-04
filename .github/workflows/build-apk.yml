@@ -7,6 +7,9 @@ on:
       - master
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,6 +26,18 @@ jobs:
 
       - name: Apply persistent pre-prayer alarm fix
         run: python3 scripts/apply_persistent_pre_prayer_alarm.py
+
+      - name: Persist generated notification source fixes
+        run: |
+          if git diff --quiet -- lib/services/notification_service.dart; then
+            echo "No generated notification source changes to persist."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lib/services/notification_service.dart
+            git commit -m "fix: persist notification and adhan scheduling fixes [skip ci]"
+            git push
+          fi
 
       - name: Download and verify Tanzil Uthmani Quran
         run: python3 scripts/download_tanzil_uthmani.py

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,6 +16,7 @@ import 'religious_events_service.dart';
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
+  static const MethodChannel _nativeAdhanChannel = MethodChannel('aqim/pre_prayer_alarm');
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
   bool notificationsPermissionGranted = false;
@@ -185,7 +187,19 @@ class NotificationService {
     if (!await areNotificationsEnabled()) throw StateError('NOTIFICATIONS_PERMISSION_REQUIRED');
     await refreshExactAlarmPermission();
     if (!exactAlarmPermissionGranted) { await requestExactAlarmPermission(); await refreshExactAlarmPermission(); }
-    await _plugin.cancelAll();
+    // Stage 3: clear native prayer-time alarms before rebuilding today's schedule.
+    await _nativeAdhanChannel.invokeMethod('cancelAllAdhanAlarms');
+
+    // Stage 7: cancel only IDs owned by the prayer schedule. Do not call
+    // cancelAll(), because it can remove unrelated or already-visible
+    // notifications that are managed by their own scheduling methods.
+    for (final prayer in Prayer.values) {
+      await _plugin.cancel(id: _idFor(prayer, 0)); // pre-prayer
+      await _plugin.cancel(id: _idFor(prayer, 1)); // missed-prayer check-in
+      await _plugin.cancel(id: _idFor(prayer, 2)); // prayer-time notification when applicable
+    }
+    await _plugin.cancel(id: _idFor(Prayer.fajr, 3));
+    await _plugin.cancel(id: _idFor(Prayer.fajr, 4));
     final now = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
     final prePrayerEnabled = prefs.getBool('pre_prayer_enabled') ?? true;
@@ -267,13 +281,69 @@ class NotificationService {
   Future<void> _scheduleAdhan({required Prayer prayer, required int id, required String title, required String body, required DateTime scheduledDate, required String payload}) async {
     final prefs = await SharedPreferences.getInstance();
     final mode = prefs.getString('adhan_alert_mode') ?? 'adhan';
-    final selectedSound = prayer == Prayer.fajr ? ((prefs.getString('adhan_fajr_sound') ?? 'azan-fajr') == 'azanfajrmadina' ? 'azan-Fajr-madina ' : (prefs.getString('adhan_fajr_sound') ?? 'azan-fajr')) : (prefs.getString('adhan_sound') ?? 'azan_maroc_1');
-    final notificationSound = mode == 'adhan' ? selectedSound : null;
-    final channelSuffix = mode == 'adhan' ? 'adhan_${prayer.name}_$selectedSound' : mode;
-    final actions = mode == 'adhan'
-        ? <AndroidNotificationAction>[const AndroidNotificationAction(_stopAdhanAction, 'إيقاف الأذان', cancelNotification: true, showsUserInterface: true)]
-        : null;
-    await _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: NotificationDetails(android: AndroidNotificationDetails('aqim_adhan_${_channelVersion}_$channelSuffix', 'الأذان', channelDescription: mode == 'adhan' ? (prayer == Prayer.fajr ? 'أذان الفجر — المؤذن المختار للفجر' : 'أذان الصلوات الأخرى — المؤذن المختار') : mode == 'ringtone' ? 'تنبيه وقت الصلاة برنة الهاتف' : 'تنبيه وقت الصلاة بالاهتزاز فقط', importance: Importance.max, priority: Priority.max, category: AndroidNotificationCategory.alarm, fullScreenIntent: true, playSound: mode != 'vibrate', sound: notificationSound == null ? null : RawResourceAndroidNotificationSound(notificationSound), audioAttributesUsage: AudioAttributesUsage.alarm, channelBypassDnd: notificationPolicyAccessGranted, enableVibration: true, visibility: NotificationVisibility.public, actions: actions)));
+
+    if (mode != 'adhan') {
+      if (mode == 'vibrate') {
+        await _scheduleExact(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledDate,
+          payload: payload,
+          details: const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'aqim_adhan_v14_vibrate',
+              'الأذان',
+              channelDescription: 'تنبيه وقت الصلاة بالاهتزاز فقط',
+              importance: Importance.max,
+              priority: Priority.max,
+              category: AndroidNotificationCategory.alarm,
+              fullScreenIntent: true,
+              playSound: false,
+              enableVibration: true,
+              visibility: NotificationVisibility.public,
+            ),
+          ),
+        );
+      } else {
+        await _scheduleExact(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledDate,
+          payload: payload,
+          details: _alarmDetails(
+            channelId: 'aqim_adhan_v14_ringtone',
+            channelName: 'الأذان',
+            channelDescription: 'تنبيه وقت الصلاة برنة الهاتف',
+            category: AndroidNotificationCategory.alarm,
+          ),
+        );
+      }
+      return;
+    }
+
+    final selectedSound = prayer == Prayer.fajr
+        ? ((prefs.getString('adhan_fajr_sound') ?? 'azan-fajr') == 'azanfajrmadina'
+            ? 'azan-Fajr-madina'
+            : (prefs.getString('adhan_fajr_sound') ?? 'azan-fajr'))
+        : (prefs.getString('adhan_sound') ?? 'azan_maroc_1');
+
+    final safeDate = _safeFallbackDate(scheduledDate);
+    if (!safeDate.isAfter(DateTime.now())) return;
+
+    // Stage 1: actual prayer-time adhan has its own native receiver/service.
+    // Stage 2: the native service ignores duplicate delivery while the same
+    // adhan is already playing, preventing a restart from the beginning.
+    await _nativeAdhanChannel.invokeMethod('cancelAdhan', {'id': id});
+    await _nativeAdhanChannel.invokeMethod('scheduleAdhan', {
+      'id': id,
+      'timeMillis': safeDate.millisecondsSinceEpoch,
+      'soundName': selectedSound,
+      'title': title,
+      'body': body,
+      'notificationId': 10000 + id,
+    });
   }
 
   Future<void> _scheduleCheckIn({required int id, required String title, required String body, required DateTime scheduledDate, required String payload}) async => _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: _alarmDetails(channelId: 'aqim_missed_prayer_${_channelVersion}', channelName: 'تذكير الصلاة', channelDescription: 'تذكير بعد انتهاء وقت الصلاة', category: AndroidNotificationCategory.reminder));

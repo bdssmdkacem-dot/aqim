@@ -64,6 +64,10 @@ object AdhanAlarmScheduler {
 
     fun requestReschedule(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+            return
+        }
+
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val now = System.currentTimeMillis()
         val currentDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).apply {

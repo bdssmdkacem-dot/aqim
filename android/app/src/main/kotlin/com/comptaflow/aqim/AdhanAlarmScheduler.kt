@@ -21,15 +21,7 @@ object AdhanAlarmScheduler {
     private const val KEY_TZ_OFFSET = "tz_offset"
     private const val MAX_ALARMS = 5
 
-    fun persist(
-        context: Context,
-        id: Int,
-        timeMillis: Long,
-        soundName: String,
-        title: String,
-        body: String,
-        notificationId: Int
-    ) {
+    fun persist(context: Context, id: Int, timeMillis: Long, soundName: String, title: String, body: String, notificationId: Int) {
         val date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).apply {
             timeZone = TimeZone.getDefault()
         }.format(java.util.Date(timeMillis))
@@ -64,9 +56,7 @@ object AdhanAlarmScheduler {
 
     fun requestReschedule(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-            return
-        }
+        val canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
 
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val now = System.currentTimeMillis()
@@ -83,7 +73,6 @@ object AdhanAlarmScheduler {
             val storedDate = prefs.getString(prefix + KEY_DATE, null)
             val storedOffset = prefs.getInt(prefix + KEY_TZ_OFFSET, Int.MIN_VALUE)
 
-            // Never resurrect an alarm belonging to another day or timezone.
             if (time <= now || sound.isNullOrBlank() || storedDate != currentDate || storedOffset != currentOffset) {
                 cancelAlarm(alarmManager, context, id)
                 remove(context, id)
@@ -96,14 +85,15 @@ object AdhanAlarmScheduler {
                 putExtra(AdhanAlarmReceiver.EXTRA_BODY, prefs.getString(prefix + KEY_BODY, "حيّ على الصلاة، حيّ على الفلاح."))
                 putExtra(AdhanAlarmReceiver.EXTRA_NOTIFICATION_ID, prefs.getInt(prefix + KEY_NOTIFICATION_ID, 10000 + id))
             }
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                id,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
+            val pendingIntent = PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time, pendingIntent)
+                if (canExact) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time, pendingIntent)
+                } else {
+                    // Graceful fallback when the user has not granted Alarms & reminders.
+                    // The alarm is never scheduled before its requested time.
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time, pendingIntent)
+                }
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, time, pendingIntent)
             }
@@ -111,12 +101,7 @@ object AdhanAlarmScheduler {
     }
 
     private fun cancelAlarm(alarmManager: AlarmManager, context: Context, id: Int) {
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            id,
-            Intent(context, AdhanAlarmReceiver::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val pendingIntent = PendingIntent.getBroadcast(context, id, Intent(context, AdhanAlarmReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         alarmManager.cancel(pendingIntent)
         pendingIntent.cancel()
     }

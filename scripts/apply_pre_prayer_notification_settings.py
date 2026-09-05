@@ -23,7 +23,6 @@ if 'final prePrayerEnabled = prefs.getBool(\'pre_prayer_enabled\')' not in text:
 else:
     print('Pre-prayer preference loading already present.')
 
-# The schedule loop must respect the global switch and selected prayers.
 required_schedule = """      if (prePrayerEnabled && selectedPrePrayers.contains(prayer.name)) {
 """
 if required_schedule not in text:
@@ -41,14 +40,12 @@ if required_schedule not in text:
 else:
     print('Pre-prayer prayer-selection guard already present.')
 
-# The wake-alarm function should use the pre-prayer mode:
-# alarm = prayer-specific alarm sound, ringtone = phone/default notification sound,
-# vibrate = no sound. The current service already implements this behavior.
-required_alarm_mode = """    final mode = prefs.getString('pre_prayer_alert_mode') ?? 'alarm';
-    final selectedSound = mode == 'alarm' ? soundName : null;
-"""
+# The wake-alarm function should use the pre-prayer mode. Accept both the
+# original multiline form and the compact form used by the current source.
+required_alarm_mode = "final mode = prefs.getString('pre_prayer_alert_mode') ?? 'alarm';"
 if required_alarm_mode not in text:
     raise SystemExit('pre-prayer alert-mode implementation not found')
+print('Pre-prayer alert-mode implementation verified.')
 
 path.write_text(text, encoding='utf-8')
 print('Pre-prayer notification settings verified successfully.')

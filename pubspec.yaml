@@ -2,7 +2,7 @@ name: aqim
 description: "Aqim — Personal Prayer Habit Coach"
 publish_to: "none"
 
-version: 1.0.14+18
+version: 1.0.15+19
 
 environment:
   sdk: ">=3.3.0 <4.0.0"

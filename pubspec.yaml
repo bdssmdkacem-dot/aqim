@@ -2,7 +2,7 @@ name: aqim
 description: "Aqim — Personal Prayer Habit Coach"
 publish_to: "none"
 
-version: 1.0.15+19
+version: 1.0.16+20
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -18,45 +18,3 @@ dependencies:
   shared_preferences: ^2.2.3
   google_fonts: ^6.2.1
   intl: ^0.20.2
-  audioplayers: ^6.7.1
-  google_mobile_ads: ^5.3.1
-  http: ^1.6.0
-  geolocator: ^13.0.4
-  flutter_compass: ^0.8.1
-  disable_battery_optimization: ^1.1.2
-  flutter_local_notifications: ^21.0.0
-  timezone: ^0.11.1
-  flutter_timezone: ^4.1.1
-  url_launcher: ^6.3.2
-  in_app_purchase: ^3.3.0
-  in_app_review: ^2.0.12
-  quran_with_tafsir: ^1.0.1
-  share_plus: ^11.1.0
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-
-  flutter_lints: ^4.0.0
-
-flutter:
-  uses-material-design: true
-
-  assets:
-    - assets/adhan/
-    - assets/audio/before/
-    - assets/audio/after/
-    - assets/audio/morning/
-    - assets/audio/evening/
-    - assets/audio/sleep/
-    - assets/audio/waking/
-    - assets/audio/home/
-    - assets/audio/mosque/
-    - assets/audio/wudu/
-    - assets/audio/food/
-    - assets/audio/travel/
-    - assets/audio/protection/
-    - assets/images/
-    - assets/quran/quran-uthmani.txt
-    - assets/quran/hafs/pages/
-    - assets/quran/warsh/pages/

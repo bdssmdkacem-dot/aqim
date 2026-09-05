@@ -18,3 +18,7 @@ dependencies:
   shared_preferences: ^2.2.3
   google_fonts: ^6.2.1
   intl: ^0.20.2
+
+flutter:
+  assets:
+    - assets/adhan/

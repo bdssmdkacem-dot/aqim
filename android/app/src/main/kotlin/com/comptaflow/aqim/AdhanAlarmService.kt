@@ -30,6 +30,14 @@ class AdhanAlarmService : Service() {
         val body = intent.getStringExtra(EXTRA_BODY) ?: "حيّ على الصلاة، حيّ على الفلاح."
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, AdhanAlarmReceiver.DEFAULT_NOTIFICATION_ID)
 
+        // Never start playback when the user has disabled Adhan in Aqim settings.
+        val prefs = getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE)
+        if (!prefs.getBoolean("flutter.adhan_enabled", true)) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+
         // Duplicate delivery: never interrupt or restart an adhan already playing.
         if (player?.isPlaying == true && activeSoundName == soundName) {
             return START_NOT_STICKY
@@ -60,7 +68,6 @@ class AdhanAlarmService : Service() {
             newPlayer.prepare()
             newPlayer.isLooping = false
             newPlayer.setOnCompletionListener {
-                // Natural completion is terminal: clean up and remove the foreground service.
                 if (player === newPlayer) {
                     releasePlayer()
                     stopForeground(STOP_FOREGROUND_REMOVE)
@@ -101,23 +108,10 @@ class AdhanAlarmService : Service() {
             activeSoundName = null
             return
         }
-        try {
-            current.setOnCompletionListener(null)
-            current.setOnErrorListener(null)
-        } catch (_: Exception) {
-        }
-        try {
-            if (current.isPlaying) current.stop()
-        } catch (_: Exception) {
-        }
-        try {
-            current.reset()
-        } catch (_: Exception) {
-        }
-        try {
-            current.release()
-        } catch (_: Exception) {
-        }
+        try { current.setOnCompletionListener(null); current.setOnErrorListener(null) } catch (_: Exception) {}
+        try { if (current.isPlaying) current.stop() } catch (_: Exception) {}
+        try { current.reset() } catch (_: Exception) {}
+        try { current.release() } catch (_: Exception) {}
         player = null
         activeSoundName = null
     }
@@ -158,7 +152,11 @@ class AdhanAlarmService : Service() {
             .setOngoing(true)
             .setCategory(Notification.CATEGORY_ALARM)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
-            .addAction(Notification.Action.Builder(null, "إيقاف الأذان", stopPendingIntent).build())
+            .addAction(Notification.Action.Builder(
+                android.graphics.drawable.Icon.createWithResource(this, com.comptaflow.aqim.R.drawable.ic_aqim_notification),
+                "إيقاف الأذان",
+                stopPendingIntent
+            ).build())
             .build()
     }
 

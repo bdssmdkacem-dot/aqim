@@ -7,10 +7,20 @@ ROOT = Path(__file__).resolve().parents[1]
 
 pubspec = ROOT / 'pubspec.yaml'
 s = pubspec.read_text(encoding='utf-8')
+
+# Flutter assets are a top-level pubspec section. Older Aqim pubspecs may not
+# have had a top-level `flutter:` section at all; create it instead of failing.
 if '    - assets/adhan/' not in s:
-    if '  assets:\n' not in s:
-        raise SystemExit('assets section not found in pubspec.yaml')
-    s = s.replace('  assets:\n', '  assets:\n    - assets/adhan/\n', 1)
+    lines = s.splitlines()
+    top_level_flutter = next((i for i, line in enumerate(lines) if line == 'flutter:'), None)
+    if top_level_flutter is not None:
+        insert_at = top_level_flutter + 1
+        lines.insert(insert_at, '  assets:')
+        lines.insert(insert_at + 1, '    - assets/adhan/')
+    else:
+        if not s.endswith('\n'):
+            s += '\n'
+        s += '\nflutter:\n  assets:\n    - assets/adhan/\n'
     pubspec.write_text(s, encoding='utf-8')
 
 settings = ROOT / 'lib/screens/settings_screen.dart'
@@ -53,8 +63,6 @@ required_notification = (
     'Future<void> _scheduleAdhan',
     "prefs.getString('adhan_alert_mode')",
     "prefs.getString('adhan_fajr_sound')",
-    # Current notification implementation uses the local variable selectedSound
-    # for the Flutter notification sound. Accept either current or legacy naming.
     'RawResourceAndroidNotificationSound(selectedSound)',
 )
 missing = [item for item in required_notification if item not in ns]

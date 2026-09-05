@@ -142,6 +142,9 @@ class NotificationService {
     if (!await areNotificationsEnabled()) throw StateError('NOTIFICATIONS_PERMISSION_REQUIRED');
     await refreshExactAlarmPermission();
     if (!exactAlarmPermissionGranted) { await requestExactAlarmPermission(); await refreshExactAlarmPermission(); }
+
+    // The dedicated native alarm is the only scheduler for real Adhan audio.
+    // Clear it before every rebuild so changed settings cannot leave stale alarms.
     await _nativeAdhanChannel.invokeMethod('cancelAllAdhanAlarms');
     for (final prayer in Prayer.values) { await _plugin.cancel(id: _idFor(prayer, 0)); await _plugin.cancel(id: _idFor(prayer, 1)); await _plugin.cancel(id: _idFor(prayer, 2)); }
     await _plugin.cancel(id: _idFor(Prayer.fajr, 3));
@@ -204,45 +207,15 @@ class NotificationService {
 
     if (mode != 'adhan') {
       if (mode == 'vibrate') {
-        await _scheduleExact(
-          id: id,
-          title: title,
-          body: body,
-          scheduledDate: scheduledDate,
-          payload: payload,
-          details: const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'aqim_adhan_v14_vibrate',
-              'الأذان',
-              channelDescription: 'تنبيه وقت الصلاة بالاهتزاز فقط',
-              importance: Importance.max,
-              priority: Priority.max,
-              category: AndroidNotificationCategory.alarm,
-              fullScreenIntent: true,
-              playSound: false,
-              enableVibration: true,
-              visibility: NotificationVisibility.public,
-            ),
-          ),
-        );
+        await _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: const NotificationDetails(android: AndroidNotificationDetails('aqim_adhan_v14_vibrate', 'الأذان', channelDescription: 'تنبيه وقت الصلاة بالاهتزاز فقط', importance: Importance.max, priority: Priority.max, category: AndroidNotificationCategory.alarm, fullScreenIntent: true, playSound: false, enableVibration: true, visibility: NotificationVisibility.public)));
       } else {
-        await _scheduleExact(
-          id: id,
-          title: title,
-          body: body,
-          scheduledDate: scheduledDate,
-          payload: payload,
-          details: _alarmDetails(
-            channelId: 'aqim_adhan_v14_ringtone',
-            channelName: 'الأذان',
-            channelDescription: 'تنبيه وقت الصلاة برنة الهاتف',
-            category: AndroidNotificationCategory.alarm,
-          ),
-        );
+        await _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: _alarmDetails(channelId: 'aqim_adhan_v14_ringtone', channelName: 'الأذان', channelDescription: 'تنبيه وقت الصلاة برنة الهاتف', category: AndroidNotificationCategory.alarm));
       }
       return;
     }
 
+    // Keep Fajr and the other prayers completely independent.
+    // Fajr reads only adhan_fajr_sound; the other prayers read only adhan_sound.
     final selectedSound = prayer == Prayer.fajr
         ? ((prefs.getString('adhan_fajr_sound') ?? 'azan-fajr') == 'azanfajrmadina'
             ? 'azan-Fajr-madina'
@@ -252,9 +225,8 @@ class NotificationService {
     final safeDate = _safeFallbackDate(scheduledDate);
     if (!safeDate.isAfter(DateTime.now())) return;
 
-    // Stage 1: actual prayer-time adhan has its own native receiver/service.
-    // Stage 2: the native service ignores duplicate delivery while the same
-    // adhan is already playing, preventing a restart from the beginning.
+    // Real Adhan uses one dedicated native exact-alarm path. It does not use
+    // a Flutter notification sound, so there is no duplicate playback.
     await _nativeAdhanChannel.invokeMethod('cancelAdhan', {'id': id});
     await _nativeAdhanChannel.invokeMethod('scheduleAdhan', {
       'id': id,
@@ -273,7 +245,13 @@ class NotificationService {
 
   Future<void> stopCurrentAdhan() async {
     await init();
+    // Stop both possible delivery modes: native full Adhan playback and the
+    // notification used by ringtone/vibrate modes. This is intentionally only
+    // an emergency stop; it does not modify any sound selection preference.
     try { await _nativeAdhanChannel.invokeMethod('stopAdhanPlayback'); } catch (_) {}
+    for (final prayer in Prayer.values) {
+      try { await _plugin.cancel(id: _idFor(prayer, 2)); } catch (_) {}
+    }
   }
 
   Future<void> _onNotificationTap(NotificationResponse response) async {

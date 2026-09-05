@@ -207,15 +207,45 @@ class NotificationService {
 
     if (mode != 'adhan') {
       if (mode == 'vibrate') {
-        await _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: const NotificationDetails(android: AndroidNotificationDetails('aqim_adhan_v14_vibrate', 'الأذان', channelDescription: 'تنبيه وقت الصلاة بالاهتزاز فقط', importance: Importance.max, priority: Priority.max, category: AndroidNotificationCategory.alarm, fullScreenIntent: true, playSound: false, enableVibration: true, visibility: NotificationVisibility.public)));
+        await _scheduleExact(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledDate,
+          payload: payload,
+          details: const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'aqim_adhan_v14_vibrate',
+              'الأذان',
+              channelDescription: 'تنبيه وقت الصلاة بالاهتزاز فقط',
+              importance: Importance.max,
+              priority: Priority.max,
+              category: AndroidNotificationCategory.alarm,
+              fullScreenIntent: true,
+              playSound: false,
+              enableVibration: true,
+              visibility: NotificationVisibility.public,
+            ),
+          ),
+        );
       } else {
-        await _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: _alarmDetails(channelId: 'aqim_adhan_v14_ringtone', channelName: 'الأذان', channelDescription: 'تنبيه وقت الصلاة برنة الهاتف', category: AndroidNotificationCategory.alarm));
+        await _scheduleExact(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledDate,
+          payload: payload,
+          details: _alarmDetails(
+            channelId: 'aqim_adhan_v14_ringtone',
+            channelName: 'الأذان',
+            channelDescription: 'تنبيه وقت الصلاة برنة الهاتف',
+            category: AndroidNotificationCategory.alarm,
+          ),
+        );
       }
       return;
     }
 
-    // Keep Fajr and the other prayers completely independent.
-    // Fajr reads only adhan_fajr_sound; the other prayers read only adhan_sound.
     final selectedSound = prayer == Prayer.fajr
         ? ((prefs.getString('adhan_fajr_sound') ?? 'azan-fajr') == 'azanfajrmadina'
             ? 'azan-Fajr-madina'
@@ -225,8 +255,9 @@ class NotificationService {
     final safeDate = _safeFallbackDate(scheduledDate);
     if (!safeDate.isAfter(DateTime.now())) return;
 
-    // Real Adhan uses one dedicated native exact-alarm path. It does not use
-    // a Flutter notification sound, so there is no duplicate playback.
+    // Stage 1: actual prayer-time adhan has its own native receiver/service.
+    // Stage 2: the native service ignores duplicate delivery while the same
+    // adhan is already playing, preventing a restart from the beginning.
     await _nativeAdhanChannel.invokeMethod('cancelAdhan', {'id': id});
     await _nativeAdhanChannel.invokeMethod('scheduleAdhan', {
       'id': id,

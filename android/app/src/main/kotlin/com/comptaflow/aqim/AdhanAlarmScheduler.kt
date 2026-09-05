@@ -79,21 +79,24 @@ object AdhanAlarmScheduler {
                 continue
             }
 
-            val intent = Intent(context, AdhanAlarmReceiver::class.java).apply {
-                putExtra(AdhanAlarmReceiver.EXTRA_SOUND, sound)
-                putExtra(AdhanAlarmReceiver.EXTRA_TITLE, prefs.getString(prefix + KEY_TITLE, "حان وقت الصلاة"))
-                putExtra(AdhanAlarmReceiver.EXTRA_BODY, prefs.getString(prefix + KEY_BODY, "حيّ على الصلاة، حيّ على الفلاح."))
-                putExtra(AdhanAlarmReceiver.EXTRA_NOTIFICATION_ID, prefs.getInt(prefix + KEY_NOTIFICATION_ID, 10000 + id))
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                id,
+                Intent(context, AdhanAlarmReceiver::class.java).apply {
+                    putExtra(AdhanAlarmReceiver.EXTRA_SOUND, sound)
+                    putExtra(AdhanAlarmReceiver.EXTRA_TITLE, prefs.getString(prefix + KEY_TITLE, "حان وقت الصلاة"))
+                    putExtra(AdhanAlarmReceiver.EXTRA_BODY, prefs.getString(prefix + KEY_BODY, "حيّ على الصلاة، حيّ على الفلاح."))
+                    putExtra(AdhanAlarmReceiver.EXTRA_NOTIFICATION_ID, prefs.getInt(prefix + KEY_NOTIFICATION_ID, 10000 + id))
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !canExact) {
+                // Do not silently downgrade a prayer Adhan to an inexact alarm.
+                // The Flutter layer requests the special Alarms & reminders access.
+                continue
             }
-            val pendingIntent = PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (canExact) {
-                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time, pendingIntent)
-                } else {
-                    // Graceful fallback when the user has not granted Alarms & reminders.
-                    // The alarm is never scheduled before its requested time.
-                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time, pendingIntent)
-                }
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time, pendingIntent)
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, time, pendingIntent)
             }

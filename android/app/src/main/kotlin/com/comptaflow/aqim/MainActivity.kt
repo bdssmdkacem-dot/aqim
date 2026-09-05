@@ -54,6 +54,7 @@ class MainActivity : FlutterActivity() {
                     cancelAdhanAlarm(id); AdhanAlarmScheduler.remove(this, id); result.success(true)
                 }
                 "cancelAllAdhanAlarms" -> { cancelAllAdhanAlarms(); AdhanAlarmScheduler.clearAll(this); result.success(true) }
+                "stopAdhanPlayback" -> { stopService(Intent(this, AdhanAlarmService::class.java)); result.success(true) }
                 else -> result.notImplemented()
             }
         }
@@ -66,13 +67,19 @@ class MainActivity : FlutterActivity() {
         val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
         val intent = Intent(this, PrePrayerAlarmReceiver::class.java).apply { putExtra(PrePrayerAlarmReceiver.EXTRA_SOUND, soundName); putExtra(PrePrayerAlarmReceiver.EXTRA_TITLE, title); putExtra(PrePrayerAlarmReceiver.EXTRA_BODY, body); putExtra(PrePrayerAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId) }
         val pendingIntent = PendingIntent.getBroadcast(this, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent) else alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+            else alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        } else alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
     }
     private fun scheduleAdhanAlarm(id: Int, timeMillis: Long, soundName: String, title: String, body: String, notificationId: Int) {
         val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
         val intent = Intent(this, AdhanAlarmReceiver::class.java).apply { putExtra(AdhanAlarmReceiver.EXTRA_SOUND, soundName); putExtra(AdhanAlarmReceiver.EXTRA_TITLE, title); putExtra(AdhanAlarmReceiver.EXTRA_BODY, body); putExtra(AdhanAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId) }
         val pendingIntent = PendingIntent.getBroadcast(this, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent) else alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+            else alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        } else alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
     }
     private fun cancelPrePrayerAlarm(id: Int) { val am = getSystemService(ALARM_SERVICE) as AlarmManager; val pi = PendingIntent.getBroadcast(this, id, Intent(this, PrePrayerAlarmReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE); am.cancel(pi); pi.cancel() }
     private fun cancelAdhanAlarm(id: Int) { val am = getSystemService(ALARM_SERVICE) as AlarmManager; val pi = PendingIntent.getBroadcast(this, id, Intent(this, AdhanAlarmReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE); am.cancel(pi); pi.cancel() }

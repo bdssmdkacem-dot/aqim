@@ -1,19 +1,19 @@
 import 'package:flutter/services.dart';
 
-/// Controls the currently playing adhan from the Flutter UI.
+/// Stops the currently playing native adhan from the Flutter UI.
 ///
-/// The Android side is responsible for the actual alarm playback. This
-/// channel only sends a stop command to the native receiver/service so the
-/// in-app Stop button does not depend on the notification action.
+/// The native alarm/service remains responsible for playback; this channel
+/// only sends the stop command. Keeping the command on the existing native
+/// alarm channel avoids introducing a second Android integration path.
 class AdhanPlaybackController {
   static const MethodChannel _channel =
-      MethodChannel('com.aqim.app/adhan_playback');
+      MethodChannel('aqim/pre_prayer_alarm');
 
   static Future<void> stop() async {
     try {
-      await _channel.invokeMethod<void>('stopAdhan');
+      await _channel.invokeMethod<void>('stopAdhanPlayback');
     } on PlatformException {
-      // Keep the UI resilient if there is no active native playback.
+      // No active native playback is also a valid state for the UI.
     }
   }
 }

@@ -75,6 +75,10 @@ class AppInterstitialAd {
     }
 
     _ad = null;
+    // Start preparing the following interstitial before showing this one.
+    // This keeps explicit actions such as Weekly Report and Qibla equally
+    // fast on their next use without changing navigation behavior.
+    preload();
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (shownAd) {
         shownAd.dispose();
@@ -100,6 +104,7 @@ class AppInterstitialAd {
     }
     _ad = null;
     ad.show();
+    preload();
     return true;
   }
 

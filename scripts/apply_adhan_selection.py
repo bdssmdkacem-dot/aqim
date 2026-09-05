@@ -53,11 +53,13 @@ required_notification = (
     'Future<void> _scheduleAdhan',
     "prefs.getString('adhan_alert_mode')",
     "prefs.getString('adhan_fajr_sound')",
-    'RawResourceAndroidNotificationSound(notificationSound)',
+    # Current notification implementation uses the local variable selectedSound
+    # for the Flutter notification sound. Accept either current or legacy naming.
+    'RawResourceAndroidNotificationSound(selectedSound)',
 )
 missing = [item for item in required_notification if item not in ns]
 if missing:
-    raise SystemExit('notification contract incomplete: ' + ', '.join(missing))
+    raise SystemExit('notification contract incomplete: ' + ', '.join(sorted(set(missing))))
 
 adhan_dir = ROOT / 'assets/adhan'
 required_assets = (

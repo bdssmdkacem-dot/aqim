@@ -51,7 +51,10 @@ class AppState extends ChangeNotifier {
       for (final p in activePrayers) {
         final status = todayStatus[p];
         final time = times[p];
-        if (time == null || status == PrayerStatus.done || status == PrayerStatus.missed) continue;
+        // A persisted 'missed' status must never hide a prayer whose actual
+        // time is still in the future. The clock is the source of truth for
+        // deciding which prayer is next; only a completed prayer is excluded.
+        if (time == null || status == PrayerStatus.done) continue;
         if (time.isAfter(now)) return p;
       }
       return Prayer.fajr;
@@ -347,21 +350,30 @@ class AppState extends ChangeNotifier {
     final now = DateTime.now();
     var missedChanged = false;
     Prayer? next;
+
+    // Reconcile every non-completed prayer against today's actual clock time.
+    // Previously a persisted 'missed' status was skipped forever, so stale
+    // statuses could survive into the same day and hide future prayers.
     for (final prayer in activePrayers) {
       final t = _timeFor(prayer);
-      if (t == null) continue;
-      if (t.isAfter(now)) { next = prayer; break; }
+      if (t != null && t.isAfter(now)) {
+        next ??= prayer;
+      }
     }
-    next ??= Prayer.fajr;
+
     for (final prayer in activePrayers) {
       final status = todayStatus[prayer];
-      if (status == PrayerStatus.done || status == PrayerStatus.missed) continue;
-      if (prayer == next) {
-        todayStatus[prayer] = PrayerStatus.upcoming;
+      if (status == PrayerStatus.done) continue;
+
+      final t = _timeFor(prayer);
+      if (t == null) {
+        todayStatus[prayer] = PrayerStatus.pending;
         continue;
       }
-      final t = _timeFor(prayer);
-      if (t != null && now.isAfter(t)) {
+
+      if (t.isAfter(now)) {
+        todayStatus[prayer] = prayer == next ? PrayerStatus.upcoming : PrayerStatus.pending;
+      } else if (status != PrayerStatus.missed) {
         todayStatus[prayer] = PrayerStatus.missed;
         missTally[prayer] = (missTally[prayer] ?? 0) + 1;
         missedChanged = true;
@@ -372,8 +384,6 @@ class AppState extends ChangeNotifier {
           body: 'فات وقت ${prayer.arabicName}. اضغط هنا للانتقال مباشرة إلى تسجيل القضاء.',
           createdAt: now,
         ));
-      } else {
-        todayStatus[prayer] = PrayerStatus.pending;
       }
     }
     if (missedChanged) {

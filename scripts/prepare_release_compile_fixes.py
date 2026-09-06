@@ -73,44 +73,73 @@ if 'static void showThen(' not in text:
     text = text.replace(marker, method + marker, 1)
 ad.write_text(text, encoding='utf-8')
 
-# Keep the original home content/design, but make the weekly report the only
-# action that uses the interstitial. The Qibla action must open directly.
+# Keep Qibla behind the existing interstitial. The weekly report remains an
+# interstitial action as well; worship/prayer alerts are never monetized.
 home = ROOT / 'lib/screens/home_screen.dart'
 text = home.read_text(encoding='utf-8')
-old_qibla = "onTap: () => AppInterstitialAd.showThen(() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QiblaScreen())))"
-new_qibla = "onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QiblaScreen()))"
-text = text.replace(old_qibla, new_qibla, 1)
-old_hero = "nextRealTime: state.realTimes?[next!]"
-new_hero = "nextRealTime: state.nextPrayerTime"
-text = text.replace(old_hero, new_hero, 1)
+old_qibla_direct = "onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QiblaScreen()))"
+new_qibla = "onTap: () => AppInterstitialAd.showThen(() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QiblaScreen())))"
+text = text.replace(old_qibla_direct, new_qibla, 1)
 home.write_text(text, encoding='utf-8')
 
 # Notification correctness fixes. Do not change notification text/content.
 notifications = ROOT / 'lib/services/notification_service.dart'
 text = notifications.read_text(encoding='utf-8')
-# Never move a pre-prayer/adhan notification two minutes late merely because
-# exact-alarm access is unavailable. The service already selects an inexact
-# Android schedule mode in that case.
 text = text.replace(
     "  DateTime _safeFallbackDate(DateTime scheduledDate) => exactAlarmPermissionGranted ? scheduledDate : scheduledDate.add(const Duration(minutes: 2));",
     "  DateTime _safeFallbackDate(DateTime scheduledDate) => scheduledDate;",
     1,
 )
-# Query DND policy access instead of leaving the cached value false.
 text = text.replace(
     "  Future<bool> refreshNotificationPolicyAccess() async { await init(); return notificationPolicyAccessGranted; }",
     "  Future<bool> refreshNotificationPolicyAccess() async {\n    await init();\n    final android = _android;\n    if (android == null) return false;\n    try {\n      notificationPolicyAccessGranted = await android.hasNotificationPolicyAccess() ?? false;\n    } catch (_) {}\n    return notificationPolicyAccessGranted;\n  }",
     1,
 )
-# Fix the Fajr resource-name typo (trailing whitespace) without changing the
-# user's selected sound or any notification wording.
 text = text.replace("'azan-Fajr-madina '", "'azan-Fajr-madina'", 1)
-# Keep DND state current before creating alarm channels.
 text = text.replace(
     "    await refreshExactAlarmPermission();\n    if (!exactAlarmPermissionGranted)",
     "    await refreshExactAlarmPermission();\n    await refreshNotificationPolicyAccess();\n    if (!exactAlarmPermissionGranted)",
     1,
 )
+
+# In pre-prayer `alarm` mode use the native foreground MediaPlayer path. A
+# notification's RawResource sound is intentionally not used for this mode:
+# Android can stop it after the short notification playback window, producing
+# the reported ~1 second sound. Ringtone and vibrate modes remain unchanged.
+old_wake = """  Future<void> _scheduleWakeAlarm({required int id, required String title, required String body, required DateTime scheduledDate, required String soundName, required String payload}) async {
+    final prefs = await SharedPreferences.getInstance(); final mode = prefs.getString('pre_prayer_alert_mode') ?? 'alarm'; final selectedSound = mode == 'alarm' ? soundName : null; final channelSuffix = mode == 'alarm' ? 'alarm_$soundName' : mode;
+    final details = NotificationDetails(android: AndroidNotificationDetails('aqim_pre_prayer_${_channelVersion}_$channelSuffix', 'التنبيه قبل الصلاة', channelDescription: mode == 'alarm' ? 'منبه صوتي قبل الصلاة — ليس أذانًا' : mode == 'ringtone' ? 'تنبيه قبل الصلاة برنة الهاتف' : 'تنبيه قبل الصلاة بالاهتزاز فقط', importance: Importance.max, priority: Priority.max, category: AndroidNotificationCategory.alarm, fullScreenIntent: true, playSound: mode != 'vibrate', sound: selectedSound == null ? null : RawResourceAndroidNotificationSound(selectedSound), audioAttributesUsage: AudioAttributesUsage.alarm, channelBypassDnd: notificationPolicyAccessGranted, enableVibration: true, visibility: NotificationVisibility.public));
+    await _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: details);
+  }"""
+new_wake = """  Future<void> _scheduleWakeAlarm({required int id, required String title, required String body, required DateTime scheduledDate, required String soundName, required String payload}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final mode = prefs.getString('pre_prayer_alert_mode') ?? 'alarm';
+    if (mode == 'alarm') {
+      if (!scheduledDate.isAfter(DateTime.now())) return;
+      await _nativeAdhanChannel.invokeMethod('schedule', <String, dynamic>{
+        'id': id,
+        'timeMillis': scheduledDate.millisecondsSinceEpoch,
+        'soundName': soundName,
+        'title': title,
+        'body': body,
+      });
+      return;
+    }
+    final details = NotificationDetails(android: AndroidNotificationDetails('aqim_pre_prayer_${_channelVersion}_$mode', 'التنبيه قبل الصلاة', channelDescription: mode == 'ringtone' ? 'تنبيه قبل الصلاة برنة الهاتف' : 'تنبيه قبل الصلاة بالاهتزاز فقط', importance: Importance.max, priority: Priority.max, category: AndroidNotificationCategory.alarm, fullScreenIntent: true, playSound: mode != 'vibrate', sound: null, audioAttributesUsage: AudioAttributesUsage.alarm, channelBypassDnd: notificationPolicyAccessGranted, enableVibration: true, visibility: NotificationVisibility.public));
+    await _scheduleExact(id: id, title: title, body: body, scheduledDate: scheduledDate, payload: payload, details: details);
+  }"""
+if old_wake in text:
+    text = text.replace(old_wake, new_wake, 1)
+else:
+    raise SystemExit('Expected _scheduleWakeAlarm source was not found; refusing to write a partial fix.')
+
+# Native pre-prayer alarms use AlarmManager, so cancel those alarms explicitly
+# before rebuilding today's schedule. This prevents stale alarms after a
+# settings/location/timezone refresh.
+needle = "    await _nativeAdhanChannel.invokeMethod('cancelAllAdhanAlarms');\n"
+replacement = needle + "    for (final id in <int>[0, 3, 4, 10, 20, 30, 40]) {\n      await _nativeAdhanChannel.invokeMethod('cancel', <String, dynamic>{'id': id});\n    }\n"
+if needle in text and replacement not in text:
+    text = text.replace(needle, replacement, 1)
 notifications.write_text(text, encoding='utf-8')
 
 # Android 12+ requires a system-intent receiver to be exported when it has a

@@ -57,7 +57,6 @@ object AdhanAlarmScheduler {
     fun requestReschedule(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
-
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val now = System.currentTimeMillis()
         val currentDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).apply {
@@ -90,13 +89,17 @@ object AdhanAlarmScheduler {
                 },
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !canExact) {
-                // Do not silently downgrade a prayer Adhan to an inexact alarm.
-                // The Flutter layer requests the special Alarms & reminders access.
-                continue
-            }
+
+            // Exact alarms are preferred when the user granted the Android
+            // "Alarms & reminders" access. Otherwise keep the Adhan alive
+            // using Android's idle-aware inexact alarm instead of silently
+            // dropping it altogether.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time, pendingIntent)
+                if (canExact) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time, pendingIntent)
+                } else {
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time, pendingIntent)
+                }
             } else {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, time, pendingIntent)
             }
@@ -104,7 +107,12 @@ object AdhanAlarmScheduler {
     }
 
     private fun cancelAlarm(alarmManager: AlarmManager, context: Context, id: Int) {
-        val pendingIntent = PendingIntent.getBroadcast(context, id, Intent(context, AdhanAlarmReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            id,
+            Intent(context, AdhanAlarmReceiver::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         alarmManager.cancel(pendingIntent)
         pendingIntent.cancel()
     }

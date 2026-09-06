@@ -15,7 +15,7 @@ import androidx.core.content.ContextCompat
 class AdhanAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == ACTION_DAILY_MAINTENANCE) {
-            goAsyncRefresh(context)
+            AdhanAlarmScheduler.refreshCurrentDayAsync(context)
             return
         }
 
@@ -38,17 +38,6 @@ class AdhanAlarmReceiver : BroadcastReceiver() {
             putExtra(AdhanAlarmService.EXTRA_NOTIFICATION_ID, notificationId)
         }
         ContextCompat.startForegroundService(context, serviceIntent)
-    }
-
-    private fun goAsyncRefresh(context: Context) {
-        val pendingResult = goAsync()
-        Thread {
-            try {
-                AdhanAlarmScheduler.refreshCurrentDayAsyncBlocking(context)
-            } finally {
-                pendingResult.finish()
-            }
-        }.start()
     }
 
     private fun postFallbackAdhan(context: Context, soundName: String, title: String, body: String, notificationId: Int) {

@@ -78,6 +78,9 @@ jobs:
               print('Safe AppState notification method already present.')
           PY
 
+      - name: Clean analyzer warnings
+        run: python3 scripts/cleanup_analyzer_warnings.py
+
       - name: Format Dart sources
         run: dart format lib test
 

@@ -23,7 +23,7 @@ for path in (ROOT / 'lib').rglob('*.dart'):
 
 main = ROOT / 'lib/main.dart'
 text = main.read_text(encoding='utf-8')
-if "package:provider/provider.dart" not in text:
+if "import 'package:provider/provider.dart'" not in text:
     text = text.replace(
         "import 'package:google_mobile_ads/google_mobile_ads.dart' hide AppState;",
         "import 'package:google_mobile_ads/google_mobile_ads.dart' hide AppState;\nimport 'package:provider/provider.dart';",
@@ -131,7 +131,10 @@ new_wake = """  Future<void> _scheduleWakeAlarm({required int id, required Strin
 if old_wake in text:
     text = text.replace(old_wake, new_wake, 1)
 else:
-    raise SystemExit('Expected _scheduleWakeAlarm source was not found; refusing to write a partial fix.')
+    # The native pre-prayer implementation is already present. Do not fail CI
+    # just because this safety-net script is being run a second time.
+    if "invokeMethod('schedule', <String, dynamic>{" not in text:
+        raise SystemExit('Expected _scheduleWakeAlarm source was not found and native replacement is absent; refusing to write a partial fix.')
 
 # Native pre-prayer alarms use AlarmManager, so cancel those alarms explicitly
 # before rebuilding today's schedule. This prevents stale alarms after a

@@ -1,4 +1,4 @@
-package com.comptaflow.aqim
+package com.aqim.app
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -14,9 +14,7 @@ class AdhanBootReceiver : BroadcastReceiver() {
             Intent.ACTION_TIMEZONE_CHANGED,
             "android.intent.action.TIMEZONE_OFFSET_CHANGED",
             "android.intent.action.QUICKBOOT_POWERON",
-            "com.htc.intent.action.QUICKBOOT_POWERON" -> {
-                AdhanAlarmScheduler.requestReschedule(context)
-            }
+            "com.htc.intent.action.QUICKBOOT_POWERON" -> AdhanAlarmScheduler.requestReschedule(context)
         }
     }
 }

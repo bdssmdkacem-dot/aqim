@@ -5,7 +5,6 @@ import '../screens/notification_inbox_screen.dart';
 import '../services/notification_inbox_service.dart';
 import '../services/religious_events_service.dart';
 import '../state/app_state.dart';
-import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 
 class NotificationBell extends StatefulWidget {
@@ -37,7 +36,6 @@ class _NotificationBellState extends State<NotificationBell> {
     final dateKey =
         '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
-    // Keep the bell inbox synchronized with missed prayers.
     for (final prayer in state.missedTodayPrayers) {
       await NotificationInboxService.instance.add(
         id: 'missed-prayer-$dateKey-${prayer.name}',
@@ -47,8 +45,6 @@ class _NotificationBellState extends State<NotificationBell> {
       );
     }
 
-    // Also show the current upcoming prayer in the same inbox. The id contains
-    // the date and prayer, so each prayer appears only once per day.
     final next = state.nextPrayer;
     final nextTime = state.nextPrayerTime;
     if (next != null) {

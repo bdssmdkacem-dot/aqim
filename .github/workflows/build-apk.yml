@@ -138,17 +138,23 @@ jobs:
 
       - name: Restore Android release keystore
         env:
-          AQIM_UPLOAD_KEYSTORE_BASE64: ${{ secrets.AQIM_UPLOAD_KEYSTORE_BASE64 }}
-          AQIM_KEYSTORE_PASSWORD: ${{ secrets.AQIM_KEYSTORE_PASSWORD }}
-          AQIM_KEY_ALIAS: ${{ secrets.AQIM_KEY_ALIAS }}
-          AQIM_KEY_PASSWORD: ${{ secrets.AQIM_KEY_PASSWORD }}
+          AQIM_UPLOAD_KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          AQIM_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          AQIM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          AQIM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          set -euo pipefail
           if [ -z "$AQIM_UPLOAD_KEYSTORE_BASE64" ]; then
-            echo "AQIM_UPLOAD_KEYSTORE_BASE64 secret is missing."
+            echo "KEYSTORE_BASE64 repository secret is missing."
+            exit 1
+          fi
+          if [ -z "$AQIM_KEYSTORE_PASSWORD" ] || [ -z "$AQIM_KEY_ALIAS" ] || [ -z "$AQIM_KEY_PASSWORD" ]; then
+            echo "One or more Android signing repository secrets are missing."
             exit 1
           fi
           mkdir -p android/app
-          echo "$AQIM_UPLOAD_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          printf '%s' "$AQIM_UPLOAD_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          test -s android/app/upload-keystore.jks
           cat > android/key.properties <<EOF
           storePassword=$AQIM_KEYSTORE_PASSWORD
           keyPassword=$AQIM_KEY_PASSWORD

@@ -1,26 +1,37 @@
 from pathlib import Path
 
-UNUSED_ACTION_IMPORT_FILES = [
-    "lib/main.dart",
+# Deterministic cleanup for imports that are known to be unused after the
+# release-preparation scripts have finished mutating the Dart sources.
+UNUSED_IMPORTS = {
+    "lib/main.dart": ["import 'state/app_state_actions.dart';\n"],
+    "lib/screens/home_screen.dart": ["import '../widgets/aqim_logo.dart';\n"],
+    "lib/screens/settings_screen.dart": [
+        "import '../widgets/aqim_bottom_nav.dart';\n",
+        "import 'main_shell.dart';\n",
+        "import 'pre_prayer_screen.dart';\n",
+    ],
+}
+
+for name in [
     "lib/navigation/bottom_nav_controller.dart",
-    "lib/screens/home_screen.dart",
     "lib/screens/identity_screen.dart",
     "lib/screens/more_screen.dart",
     "lib/screens/nearby_mosques_screen.dart",
     "lib/screens/notification_inbox_screen.dart",
     "lib/screens/onboarding_screen.dart",
     "lib/screens/pre_prayer_screen.dart",
-    "lib/screens/settings_screen.dart",
     "lib/widgets/notification_bell.dart",
-]
+]:
+    UNUSED_IMPORTS.setdefault(name, []).append(
+        "import '../state/app_state_actions.dart';\n"
+    )
 
-IMPORT = "import '../state/app_state_actions.dart';\n"
-for name in UNUSED_ACTION_IMPORT_FILES:
+for name, imports in UNUSED_IMPORTS.items():
     path = Path(name)
     text = path.read_text()
-    if IMPORT in text:
-        text = text.replace(IMPORT, "", 1)
-        path.write_text(text)
+    for unused_import in imports:
+        text = text.replace(unused_import, "")
+    path.write_text(text)
 
 # These declarations are genuinely unused; removing them keeps analyzer output clean.
 week_report = Path("lib/screens/week_report_screen.dart")

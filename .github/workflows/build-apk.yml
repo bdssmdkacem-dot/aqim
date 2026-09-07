@@ -127,12 +127,14 @@ jobs:
 
       - name: Verify Quran and Mushaf assets
         run: |
-          test -f assets/quran/tanzil_uthmani.json
-          test -d assets/mushaf/hafs
-          test -d assets/mushaf/warsh
+          test -f assets/quran/quran-uthmani.txt
+          test -d assets/quran/hafs/pages
+          test -d assets/quran/warsh/pages
+          test "$(find assets/quran/hafs/pages -type f -name '*.png' | wc -l)" -eq 604
+          test "$(find assets/quran/warsh/pages -type f -name '*.png' | wc -l)" -eq 604
 
       - name: Verify Aqim logo
-        run: test -f assets/images/branding/aqim_logo.png
+        run: test -f assets/images/aqim_logo_transparent_512.png
 
       - name: Restore Android release keystore
         env:

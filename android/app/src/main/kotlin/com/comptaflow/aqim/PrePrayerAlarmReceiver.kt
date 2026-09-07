@@ -1,4 +1,4 @@
-package com.comptaflow.aqim
+package com.aqim.app
 
 import android.content.BroadcastReceiver
 import android.content.Context

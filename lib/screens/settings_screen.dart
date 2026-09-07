@@ -7,7 +7,6 @@ import '../models/prayer.dart';
 import '../services/audio_service.dart';
 import '../services/battery_service.dart';
 import '../state/app_state.dart';
-import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 
 const _beforeOptions = [5, 10, 15, 20, 30];

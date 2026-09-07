@@ -30,7 +30,7 @@ def releaseKeyPassword = keystoreProperties['keyPassword'] ?: System.getenv("KEY
 def hasReleaseSigning = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
 
 android {
-    namespace "com.comptaflow.aqim"
+    namespace "com.aqim.app"
     compileSdk 36
     ndkVersion flutter.ndkVersion
 
@@ -50,7 +50,6 @@ android {
 
     defaultConfig {
         applicationId "com.aqim.app"
-        // flutter_local_notifications 21 requires Android 7.0 / API 24+.
         minSdk 24
         targetSdk 36
         multiDexEnabled true

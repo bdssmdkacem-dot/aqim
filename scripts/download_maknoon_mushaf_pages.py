@@ -11,12 +11,16 @@ reading. It still rejects malformed/non-PNG files and implausible dimensions.
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 import struct
+import time
 
 ROOT = Path("assets/quran")
 SOURCE_REPO = "https://raw.githubusercontent.com/maknon/Quran/44115bae36fef56dd904a78e0c4eed8932c0b1c7"
 PAGE_COUNT = 604
+DOWNLOAD_ATTEMPTS = 5
+MAX_WORKERS = 4
 
 # Bounds cover the actual pinned Maknoon pages (including pages such as
 # 771x1040, 941x1552 and 941x1555) while rejecting obviously bad responses.
@@ -49,13 +53,30 @@ def download_one(kind: str, page: int):
         return page, "cached"
 
     url = f"{SOURCE_REPO}/pages-{kind}/{page}.png"
-    request = Request(url, headers={"User-Agent": "AQIM-build/1.1"})
-    with urlopen(request, timeout=60) as response:
-        data = response.read()
+    last_error = None
+    for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
+        try:
+            request = Request(
+                url,
+                headers={
+                    "User-Agent": "AQIM-build/1.2",
+                    "Accept": "image/png,*/*;q=0.8",
+                    "Connection": "close",
+                },
+            )
+            with urlopen(request, timeout=60) as response:
+                data = response.read()
+            validate_page(kind, page, data)
+            target.write_bytes(data)
+            return page, "downloaded"
+        except (HTTPError, URLError, TimeoutError, ConnectionError, OSError, ValueError) as exc:
+            last_error = exc
+            if attempt < DOWNLOAD_ATTEMPTS:
+                time.sleep(1.5 * attempt)
 
-    validate_page(kind, page, data)
-    target.write_bytes(data)
-    return page, "downloaded"
+    raise RuntimeError(
+        f"{kind} page {page}: download failed after {DOWNLOAD_ATTEMPTS} attempts: {last_error}"
+    )
 
 
 def main():
@@ -67,7 +88,7 @@ def main():
         failures = []
         downloaded = cached = 0
 
-        with ThreadPoolExecutor(max_workers=12) as pool:
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
             futures = [pool.submit(download_one, kind, p) for p in range(1, PAGE_COUNT + 1)]
             for future in as_completed(futures):
                 try:

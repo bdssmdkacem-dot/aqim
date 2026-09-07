@@ -6,11 +6,11 @@ import '../ads/app_interstitial_ad.dart';
 import '../models/prayer.dart';
 import '../services/battery_service.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import '../utils/gregorian_arabic.dart';
 import '../utils/hijri_date.dart';
 import '../widgets/day_arc.dart';
-import '../widgets/aqim_logo.dart';
 import '../widgets/prayer_arch_hero.dart';
 import '../widgets/prayer_window_icon.dart'
     show PrayerDayPeriod, currentPrayerDayPeriod;

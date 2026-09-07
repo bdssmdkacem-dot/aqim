@@ -7,10 +7,8 @@ import '../models/prayer.dart';
 import '../services/audio_service.dart';
 import '../services/battery_service.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
-import '../widgets/aqim_bottom_nav.dart';
-import 'main_shell.dart';
-import 'pre_prayer_screen.dart';
 
 const _beforeOptions = [5, 10, 15, 20, 30];
 const _afterOptions = [10, 15, 20, 30, 45];

@@ -274,6 +274,10 @@ class NotificationService {
       await _nativeAdhanChannel
           .invokeMethod('cancel', <String, dynamic>{'id': id});
     }
+    for (final id in <int>[0, 3, 4, 10, 20, 30, 40]) {
+      await _nativeAdhanChannel
+          .invokeMethod('cancel', <String, dynamic>{'id': id});
+    }
     for (final prayer in Prayer.values) {
       await _plugin.cancel(id: _idFor(prayer, 0));
       await _plugin.cancel(id: _idFor(prayer, 1));

@@ -21,8 +21,7 @@ void main() {
         Prayer.isha,
       ]);
       expect(state.todayStatus.length, 5);
-      expect(state.todayStatus.values,
-          everyElement(PrayerStatus.pending));
+      expect(state.todayStatus.values, everyElement(PrayerStatus.pending));
     });
 
     test('offline prayer times return five ordered local times', () {

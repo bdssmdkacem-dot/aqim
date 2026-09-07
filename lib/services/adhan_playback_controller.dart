@@ -6,8 +6,7 @@ import 'package:flutter/services.dart';
 /// only sends the stop command. Keeping the command on the existing native
 /// alarm channel avoids introducing a second Android integration path.
 class AdhanPlaybackController {
-  static const MethodChannel _channel =
-      MethodChannel('aqim/pre_prayer_alarm');
+  static const MethodChannel _channel = MethodChannel('aqim/pre_prayer_alarm');
 
   static Future<void> stop() async {
     try {

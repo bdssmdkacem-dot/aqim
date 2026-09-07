@@ -3,13 +3,24 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/prayer.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import '../utils/gregorian_arabic.dart';
 
 const _weekdayLabels = ['إث', 'ثل', 'أر', 'خم', 'جم', 'سب', 'أح'];
 const _monthNames = [
-  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-  'يوليوز', 'غشت', 'شتنبر', 'أكتوبر', 'نونبر', 'دجنبر',
+  'يناير',
+  'فبراير',
+  'مارس',
+  'أبريل',
+  'مايو',
+  'يونيو',
+  'يوليوز',
+  'غشت',
+  'شتنبر',
+  'أكتوبر',
+  'نونبر',
+  'دجنبر',
 ];
 
 class TrackScreen extends StatefulWidget {
@@ -117,7 +128,8 @@ class _StatCard extends StatelessWidget {
   final String label;
   final String value;
   final String unit;
-  const _StatCard({required this.label, required this.value, required this.unit});
+  const _StatCard(
+      {required this.label, required this.value, required this.unit});
 
   @override
   Widget build(BuildContext context) {
@@ -130,11 +142,22 @@ class _StatCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.gold)),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.gold)),
           const SizedBox(height: 2),
-          Text(unit, style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted)),
+          Text(unit,
+              style:
+                  const TextStyle(fontSize: 10.5, color: AppColors.textMuted)),
           const SizedBox(height: 6),
-          Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+          Text(label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -176,13 +199,21 @@ class _CircleStatCard extends StatelessWidget {
                 ),
                 Text(
                   percent == null ? '—' : '$percent%',
-                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white),
+                  style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 8),
-          Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+          Text(label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -193,19 +224,25 @@ class _MonthNavigator extends StatelessWidget {
   final DateTime month;
   final VoidCallback onPrev;
   final VoidCallback onNext;
-  const _MonthNavigator({required this.month, required this.onPrev, required this.onNext});
+  const _MonthNavigator(
+      {required this.month, required this.onPrev, required this.onNext});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        IconButton(onPressed: onPrev, icon: const Icon(Icons.chevron_right, color: AppColors.gold)),
+        IconButton(
+            onPressed: onPrev,
+            icon: const Icon(Icons.chevron_right, color: AppColors.gold)),
         Text(
           '${_monthNames[month.month - 1]} ${month.year}',
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+          style: const TextStyle(
+              fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
         ),
-        IconButton(onPressed: onNext, icon: const Icon(Icons.chevron_left, color: AppColors.gold)),
+        IconButton(
+            onPressed: onNext,
+            icon: const Icon(Icons.chevron_left, color: AppColors.gold)),
       ],
     );
   }
@@ -245,7 +282,11 @@ class _MonthGrid extends StatelessWidget {
             children: _weekdayLabels
                 .map((d) => Expanded(
                       child: Center(
-                        child: Text(d, style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w600)),
+                        child: Text(d,
+                            style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w600)),
                       ),
                     ))
                 .toList(),
@@ -324,9 +365,15 @@ class _DayCell extends StatelessWidget {
             decoration: BoxDecoration(
               color: bg,
               shape: BoxShape.circle,
-              border: isSelected ? Border.all(color: AppColors.goldSoft, width: 2) : null,
+              border: isSelected
+                  ? Border.all(color: AppColors.goldSoft, width: 2)
+                  : null,
             ),
-            child: Text('$day', style: TextStyle(fontSize: 11.5, color: textColor, fontWeight: FontWeight.w600)),
+            child: Text('$day',
+                style: TextStyle(
+                    fontSize: 11.5,
+                    color: textColor,
+                    fontWeight: FontWeight.w600)),
           ),
         ),
       ),
@@ -344,17 +391,38 @@ class _DayDetailCard extends StatelessWidget {
 
   bool get _isToday {
     final now = DateTime.now();
-    return date.year == now.year && date.month == now.month && date.day == now.day;
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   ({String emoji, String label, Color color}) _rating(int? pct) {
     if (pct == null) {
-      return (emoji: '—', label: 'لا بيانات لهذا اليوم', color: AppColors.textMuted);
+      return (
+        emoji: '—',
+        label: 'لا بيانات لهذا اليوم',
+        color: AppColors.textMuted
+      );
     }
-    if (pct >= 100) return (emoji: '🌿', label: 'يوم مكتمل — تقبّل الله منك', color: AppColors.sage);
-    if (pct >= 80) return (emoji: '✅', label: 'يوم ممتاز', color: AppColors.sage);
-    if (pct > 0) return (emoji: '🟡', label: 'يوم متوسط — يمكن أفضل', color: AppColors.gold);
-    return (emoji: '🔴', label: 'لم تُؤدَّ أي صلاة هذا اليوم', color: AppColors.ember);
+    if (pct >= 100)
+      return (
+        emoji: '🌿',
+        label: 'يوم مكتمل — تقبّل الله منك',
+        color: AppColors.sage
+      );
+    if (pct >= 80)
+      return (emoji: '✅', label: 'يوم ممتاز', color: AppColors.sage);
+    if (pct > 0)
+      return (
+        emoji: '🟡',
+        label: 'يوم متوسط — يمكن أفضل',
+        color: AppColors.gold
+      );
+    return (
+      emoji: '🔴',
+      label: 'لم تُؤدَّ أي صلاة هذا اليوم',
+      color: AppColors.ember
+    );
   }
 
   @override
@@ -378,14 +446,22 @@ class _DayDetailCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  _isToday ? 'اليوم — ${GregorianArabic.format(date)}' : GregorianArabic.format(date),
-                  style: GoogleFonts.amiri(fontSize: 15.5, fontWeight: FontWeight.w700, color: Colors.white),
+                  _isToday
+                      ? 'اليوم — ${GregorianArabic.format(date)}'
+                      : GregorianArabic.format(date),
+                  style: GoogleFonts.amiri(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white),
                 ),
               ),
               if (pct != null)
                 Text(
                   '$pct%',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: rating.color),
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: rating.color),
                 ),
             ],
           ),
@@ -395,12 +471,15 @@ class _DayDetailCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Text(
                 'لا توجد بيانات مسجَّلة لهذا اليوم.',
-                style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+                style:
+                    const TextStyle(fontSize: 12.5, color: AppColors.textMuted),
               ),
             )
           else
             Column(
-              children: Prayer.values.map((p) => _PrayerStatusRow(prayer: p, status: statuses[p])).toList(),
+              children: Prayer.values
+                  .map((p) => _PrayerStatusRow(prayer: p, status: statuses[p]))
+                  .toList(),
             ),
           const SizedBox(height: 12),
           Container(
@@ -417,7 +496,10 @@ class _DayDetailCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     rating.label,
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: rating.color),
+                    style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: rating.color),
                   ),
                 ),
               ],
@@ -444,7 +526,11 @@ class _PrayerStatusRow extends StatelessWidget {
         return (Icons.access_time_rounded, AppColors.gold, 'قادمة');
       case PrayerStatus.pending:
       case null:
-        return (Icons.remove_circle_outline_rounded, AppColors.textMuted, 'لم يحن وقتها');
+        return (
+          Icons.remove_circle_outline_rounded,
+          AppColors.textMuted,
+          'لم يحن وقتها'
+        );
     }
   }
 
@@ -460,12 +546,16 @@ class _PrayerStatusRow extends StatelessWidget {
           Expanded(
             child: Text(
               prayer.arabicName,
-              style: GoogleFonts.cairo(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+              style: GoogleFonts.cairo(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white),
             ),
           ),
           Text(
             label,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color),
+            style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w700, color: color),
           ),
         ],
       ),
@@ -490,7 +580,11 @@ class _WeeklyBars extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('إحصائيات هذا الأسبوع', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+          const Text('إحصائيات هذا الأسبوع',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white)),
           const SizedBox(height: 14),
           SizedBox(
             height: 80,
@@ -508,12 +602,16 @@ class _WeeklyBars extends StatelessWidget {
                         Container(
                           height: (v * 0.55).clamp(4, 55).toDouble(),
                           decoration: BoxDecoration(
-                            color: done ? AppColors.sage : AppColors.gold.withOpacity(0.45),
+                            color: done
+                                ? AppColors.sage
+                                : AppColors.gold.withOpacity(0.45),
                             borderRadius: BorderRadius.circular(6),
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text(dayLabels[i], style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                        Text(dayLabels[i],
+                            style: const TextStyle(
+                                fontSize: 10, color: AppColors.textMuted)),
                       ],
                     ),
                   ),

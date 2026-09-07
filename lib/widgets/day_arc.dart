@@ -11,14 +11,23 @@ class DayArc extends StatelessWidget {
   final String Function(Prayer)? timeLabelFor;
   final PrayerDayPeriod period;
 
-  const DayArc({super.key, required this.prayers, required this.status, this.timeLabelFor, this.period = PrayerDayPeriod.day});
+  const DayArc(
+      {super.key,
+      required this.prayers,
+      required this.status,
+      this.timeLabelFor,
+      this.period = PrayerDayPeriod.day});
 
   @override
   Widget build(BuildContext context) => SizedBox(
         width: double.infinity,
         height: 190,
         child: CustomPaint(
-          painter: _DayArcPainter(prayers: prayers, status: status, timeLabelFor: timeLabelFor, period: period),
+          painter: _DayArcPainter(
+              prayers: prayers,
+              status: status,
+              timeLabelFor: timeLabelFor,
+              period: period),
         ),
       );
 }
@@ -29,7 +38,11 @@ class _DayArcPainter extends CustomPainter {
   final String Function(Prayer)? timeLabelFor;
   final PrayerDayPeriod period;
 
-  _DayArcPainter({required this.prayers, required this.status, required this.period, this.timeLabelFor});
+  _DayArcPainter(
+      {required this.prayers,
+      required this.status,
+      required this.period,
+      this.timeLabelFor});
 
   Color _color(PrayerStatus s) => switch (s) {
         PrayerStatus.done => AppColors.sage,
@@ -85,7 +98,8 @@ class _DayArcPainter extends CustomPainter {
       final radius = upcoming ? 28.0 : 12.0;
 
       if (upcoming) {
-        canvas.drawCircle(center, radius + 9, Paint()..color = AppColors.gold.withValues(alpha: .18));
+        canvas.drawCircle(center, radius + 9,
+            Paint()..color = AppColors.gold.withValues(alpha: .18));
         _callout(canvas, center, radius);
       }
 
@@ -107,17 +121,35 @@ class _DayArcPainter extends CustomPainter {
         _mark(canvas, center, '×', 19);
       }
 
-      final labelColor = upcoming ? AppColors.gold : missed ? AppColors.ember : Colors.white;
-      _label(canvas, prayer.arabicName, center.dx, center.dy + radius + 9, labelColor, upcoming ? 17 : 12.5, bold: upcoming || missed);
+      final labelColor = upcoming
+          ? AppColors.gold
+          : missed
+              ? AppColors.ember
+              : Colors.white;
+      _label(canvas, prayer.arabicName, center.dx, center.dy + radius + 9,
+          labelColor, upcoming ? 17 : 12.5,
+          bold: upcoming || missed);
 
       final time = timeLabelFor?.call(prayer) ?? prayer.mockTime;
-      _label(canvas, time, center.dx, center.dy + radius + (upcoming ? 35 : 27), (missed ? AppColors.ember : Colors.white).withValues(alpha: .88), upcoming ? 12 : 11, bold: missed);
+      _label(
+          canvas,
+          time,
+          center.dx,
+          center.dy + radius + (upcoming ? 35 : 27),
+          (missed ? AppColors.ember : Colors.white).withValues(alpha: .88),
+          upcoming ? 12 : 11,
+          bold: missed);
     }
   }
 
   void _callout(Canvas canvas, Offset center, double radius) {
     final tp = TextPainter(
-      text: const TextSpan(text: 'الصلاة القادمة', style: TextStyle(fontSize: 12, color: AppColors.goldSoft, fontWeight: FontWeight.w700)),
+      text: const TextSpan(
+          text: 'الصلاة القادمة',
+          style: TextStyle(
+              fontSize: 12,
+              color: AppColors.goldSoft,
+              fontWeight: FontWeight.w700)),
       textDirection: TextDirection.rtl,
     )..layout();
     const h = 27.0;
@@ -142,24 +174,32 @@ class _DayArcPainter extends CustomPainter {
       ..close();
     canvas.drawPath(arrow, fill);
     canvas.drawPath(arrow, stroke);
-    tp.paint(canvas, Offset(rect.center.dx - tp.width / 2, rect.center.dy - tp.height / 2));
+    tp.paint(canvas,
+        Offset(rect.center.dx - tp.width / 2, rect.center.dy - tp.height / 2));
   }
 
   void _mark(Canvas canvas, Offset center, String value, double size) {
     final tp = TextPainter(
-      text: TextSpan(text: value, style: TextStyle(fontSize: size, color: Colors.white, fontWeight: FontWeight.bold)),
+      text: TextSpan(
+          text: value,
+          style: TextStyle(
+              fontSize: size,
+              color: Colors.white,
+              fontWeight: FontWeight.bold)),
       textDirection: TextDirection.ltr,
     )..layout();
     tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
   }
 
   void _sunMoon(Canvas canvas, Offset center, double r) {
-    final night = period == PrayerDayPeriod.night || period == PrayerDayPeriod.dawn;
+    final night =
+        period == PrayerDayPeriod.night || period == PrayerDayPeriod.dawn;
     final p = Paint()..color = AppColors.ink;
     if (night) {
       canvas.saveLayer(Rect.fromCircle(center: center, radius: r + 2), Paint());
       canvas.drawCircle(center, r, p);
-      canvas.drawCircle(Offset(center.dx + r * .5, center.dy - r * .3), r * .8, Paint()..blendMode = BlendMode.clear);
+      canvas.drawCircle(Offset(center.dx + r * .5, center.dy - r * .3), r * .8,
+          Paint()..blendMode = BlendMode.clear);
       canvas.restore();
       return;
     }
@@ -167,8 +207,10 @@ class _DayArcPainter extends CustomPainter {
     for (var i = 0; i < 8; i++) {
       final a = i / 8 * 2 * math.pi;
       canvas.drawLine(
-        Offset(center.dx + r * .68 * math.cos(a), center.dy + r * .68 * math.sin(a)),
-        Offset(center.dx + r * .95 * math.cos(a), center.dy + r * .95 * math.sin(a)),
+        Offset(center.dx + r * .68 * math.cos(a),
+            center.dy + r * .68 * math.sin(a)),
+        Offset(center.dx + r * .95 * math.cos(a),
+            center.dy + r * .95 * math.sin(a)),
         Paint()
           ..color = AppColors.ink
           ..strokeWidth = 1.4
@@ -177,7 +219,9 @@ class _DayArcPainter extends CustomPainter {
     }
   }
 
-  void _label(Canvas canvas, String text, double x, double y, Color color, double size, {bool bold = false}) {
+  void _label(
+      Canvas canvas, String text, double x, double y, Color color, double size,
+      {bool bold = false}) {
     final tp = TextPainter(
       text: TextSpan(
         text: text,
@@ -185,7 +229,9 @@ class _DayArcPainter extends CustomPainter {
           fontSize: size,
           color: color,
           fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
-          shadows: const [Shadow(color: Colors.black87, blurRadius: 4, offset: Offset(0, 1))],
+          shadows: const [
+            Shadow(color: Colors.black87, blurRadius: 4, offset: Offset(0, 1))
+          ],
         ),
       ),
       textDirection: TextDirection.rtl,
@@ -196,5 +242,7 @@ class _DayArcPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DayArcPainter oldDelegate) =>
-      oldDelegate.status != status || oldDelegate.prayers != prayers || oldDelegate.period != period;
+      oldDelegate.status != status ||
+      oldDelegate.prayers != prayers ||
+      oldDelegate.period != period;
 }

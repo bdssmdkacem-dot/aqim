@@ -35,8 +35,10 @@ extension AppStateActions on AppState {
 
   Future<void> _clearMissedPrayerArtifacts(Prayer prayer) async {
     final now = DateTime.now();
-    final dateKey = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    await NotificationInboxService.instance.removeMissedPrayer(dateKey, prayer.name);
+    final dateKey =
+        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    await NotificationInboxService.instance
+        .removeMissedPrayer(dateKey, prayer.name);
     await NotificationService.instance.cancelMissedPrayer(prayer);
   }
 
@@ -52,11 +54,13 @@ extension AppStateActions on AppState {
     // Create the inbox card at the moment the prayer becomes missed, rather
     // than waiting for the user to open the bell.
     final now = DateTime.now();
-    final dateKey = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final dateKey =
+        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     await NotificationInboxService.instance.add(
       id: 'missed-prayer-$dateKey-${prayer.name}',
       title: 'صلاة فائتة: ${prayer.arabicName}',
-      body: 'فات وقت ${prayer.arabicName}. اضغط هنا للانتقال مباشرة إلى تسجيل القضاء.',
+      body:
+          'فات وقت ${prayer.arabicName}. اضغط هنا للانتقال مباشرة إلى تسجيل القضاء.',
       createdAt: now,
     );
     notifyListeners();
@@ -67,7 +71,8 @@ extension AppStateActions on AppState {
     if (key == _dateKey(DateTime.now())) {
       final active = activePrayers;
       if (active.isEmpty) return 0;
-      final done = active.where((p) => todayStatus[p] == PrayerStatus.done).length;
+      final done =
+          active.where((p) => todayStatus[p] == PrayerStatus.done).length;
       return ((done / active.length) * 100).round();
     }
     return dailyHistory[key];
@@ -99,17 +104,21 @@ extension AppStateActions on AppState {
     return weakest;
   }
 
-  int get missedTodayCount =>
-      todayStatus.values.where((status) => status == PrayerStatus.missed).length;
+  int get missedTodayCount => todayStatus.values
+      .where((status) => status == PrayerStatus.missed)
+      .length;
 
-  List<Prayer> get missedTodayPrayers =>
-      activePrayers.where((p) => todayStatus[p] == PrayerStatus.missed).toList();
+  List<Prayer> get missedTodayPrayers => activePrayers
+      .where((p) => todayStatus[p] == PrayerStatus.missed)
+      .toList();
 
   Future<void> _persistActions() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
       'today_status',
-      activePrayers.map((p) => (todayStatus[p] ?? PrayerStatus.pending).name).toList(),
+      activePrayers
+          .map((p) => (todayStatus[p] ?? PrayerStatus.pending).name)
+          .toList(),
     );
     await prefs.setStringList(
       'today_reasons',

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/adhkar.dart';
 import '../models/prayer.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import 'adhkar_flow_screen.dart';
 import 'identity_screen.dart';
@@ -45,7 +46,8 @@ class _DhikrScreenState extends State<DhikrScreen> {
   }
 
   bool get _allDone =>
-      phraseIndex == _phrases.length - 1 && count >= _phrases[phraseIndex].target;
+      phraseIndex == _phrases.length - 1 &&
+      count >= _phrases[phraseIndex].target;
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +63,8 @@ class _DhikrScreenState extends State<DhikrScreen> {
             children: [
               Text('هل صليت؟', style: Theme.of(context).textTheme.labelSmall),
               const SizedBox(height: 6),
-              Text('اذكر الله دقيقة واحدة', style: Theme.of(context).textTheme.headlineSmall),
+              Text('اذكر الله دقيقة واحدة',
+                  style: Theme.of(context).textTheme.headlineSmall),
               const Spacer(),
               GestureDetector(
                 onTap: _allDone ? null : _tap,
@@ -78,7 +81,8 @@ class _DhikrScreenState extends State<DhikrScreen> {
                           value: pct,
                           strokeWidth: 10,
                           backgroundColor: AppColors.paperLine,
-                          valueColor: const AlwaysStoppedAnimation(AppColors.gold),
+                          valueColor:
+                              const AlwaysStoppedAnimation(AppColors.gold),
                         ),
                       ),
                       Column(
@@ -89,17 +93,23 @@ class _DhikrScreenState extends State<DhikrScreen> {
                               children: [
                                 TextSpan(
                                   text: '$count',
-                                  style: GoogleFonts.tajawal(fontSize: 44, fontWeight: FontWeight.w700, color: Colors.white),
+                                  style: GoogleFonts.tajawal(
+                                      fontSize: 44,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white),
                                 ),
                                 TextSpan(
                                   text: '/${phrase.target}',
-                                  style: const TextStyle(fontSize: 16, color: AppColors.textMuted),
+                                  style: const TextStyle(
+                                      fontSize: 16, color: AppColors.textMuted),
                                 ),
                               ],
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(phrase.arabic, style: GoogleFonts.amiri(fontSize: 18, color: AppColors.inkSoft)),
+                          Text(phrase.arabic,
+                              style: GoogleFonts.amiri(
+                                  fontSize: 18, color: AppColors.inkSoft)),
                         ],
                       ),
                     ],
@@ -119,7 +129,9 @@ class _DhikrScreenState extends State<DhikrScreen> {
                         await context.read<AppState>().markDone(widget.prayer);
                         if (context.mounted) {
                           Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(builder: (_) => IdentityScreen(prayer: widget.prayer)),
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    IdentityScreen(prayer: widget.prayer)),
                           );
                         }
                       },
@@ -138,7 +150,8 @@ class _DhikrScreenState extends State<DhikrScreen> {
                               title: 'أذكار ما بعد الصلاة',
                               items: afterPrayerAdhkar,
                               audioCategory: 'after',
-                              nextScreenBuilder: () => IdentityScreen(prayer: widget.prayer),
+                              nextScreenBuilder: () =>
+                                  IdentityScreen(prayer: widget.prayer),
                             ),
                           ),
                         );

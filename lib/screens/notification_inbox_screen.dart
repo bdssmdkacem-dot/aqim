@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/prayer.dart';
 import '../services/notification_inbox_service.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import 'missed_prayer_response_screen.dart';
 
@@ -11,7 +12,8 @@ class NotificationInboxScreen extends StatefulWidget {
   const NotificationInboxScreen({super.key});
 
   @override
-  State<NotificationInboxScreen> createState() => _NotificationInboxScreenState();
+  State<NotificationInboxScreen> createState() =>
+      _NotificationInboxScreenState();
 }
 
 class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
@@ -75,7 +77,8 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
         return;
       }
       await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => MissedPrayerResponseScreen(prayer: prayer)),
+        MaterialPageRoute(
+            builder: (_) => MissedPrayerResponseScreen(prayer: prayer)),
       );
       await _load();
       return;
@@ -92,16 +95,24 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.surfaceDark,
         foregroundColor: AppColors.ivory,
-        title: Text('الإشعارات', style: GoogleFonts.amiri(fontWeight: FontWeight.w800)),
+        title: Text('الإشعارات',
+            style: GoogleFonts.amiri(fontWeight: FontWeight.w800)),
         actions: [
           if (unread > 0)
-            TextButton(onPressed: _markAllRead, child: Text('تحديد الكل كمقروء', style: GoogleFonts.cairo(color: AppColors.goldSoft, fontSize: 11))),
+            TextButton(
+                onPressed: _markAllRead,
+                child: Text('تحديد الكل كمقروء',
+                    style: GoogleFonts.cairo(
+                        color: AppColors.goldSoft, fontSize: 11))),
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.gold))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.gold))
           : _items.isEmpty
-              ? Center(child: Text('لا توجد رسائل بعد', style: GoogleFonts.cairo(color: AppColors.inkSoft)))
+              ? Center(
+                  child: Text('لا توجد رسائل بعد',
+                      style: GoogleFonts.cairo(color: AppColors.inkSoft)))
               : RefreshIndicator(
                   onRefresh: _load,
                   color: AppColors.gold,
@@ -117,21 +128,66 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: item.read ? AppColors.surfaceDark : AppColors.surfaceElevated,
+                            color: item.read
+                                ? AppColors.surfaceDark
+                                : AppColors.surfaceElevated,
                             borderRadius: BorderRadius.circular(18),
-                            border: Border.all(color: item.read ? AppColors.paperLine : AppColors.gold.withOpacity(.65)),
+                            border: Border.all(
+                                color: item.read
+                                    ? AppColors.paperLine
+                                    : AppColors.gold.withOpacity(.65)),
                           ),
-                          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Container(width: 42, height: 42, decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.gold.withOpacity(.10)), child: Icon(item.read ? Icons.notifications_none_rounded : Icons.notifications_active_rounded, color: AppColors.gold, size: 22)),
-                            const SizedBox(width: 12),
-                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Row(children: [Expanded(child: Text(item.title, style: GoogleFonts.cairo(color: AppColors.ivory, fontWeight: item.read ? FontWeight.w600 : FontWeight.w900))), if (!item.read) Container(width: 8, height: 8, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.gold))]),
-                              const SizedBox(height: 5),
-                              Text(item.body, style: GoogleFonts.cairo(color: AppColors.inkSoft, height: 1.5, fontSize: 12)),
-                              const SizedBox(height: 7),
-                              Text(_date(item.createdAt), style: GoogleFonts.tajawal(color: AppColors.textMuted, fontSize: 10)),
-                            ])),
-                          ]),
+                          child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppColors.gold.withOpacity(.10)),
+                                    child: Icon(
+                                        item.read
+                                            ? Icons.notifications_none_rounded
+                                            : Icons
+                                                .notifications_active_rounded,
+                                        color: AppColors.gold,
+                                        size: 22)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                    child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                      Row(children: [
+                                        Expanded(
+                                            child: Text(item.title,
+                                                style: GoogleFonts.cairo(
+                                                    color: AppColors.ivory,
+                                                    fontWeight: item.read
+                                                        ? FontWeight.w600
+                                                        : FontWeight.w900))),
+                                        if (!item.read)
+                                          Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: const BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: AppColors.gold))
+                                      ]),
+                                      const SizedBox(height: 5),
+                                      Text(item.body,
+                                          style: GoogleFonts.cairo(
+                                              color: AppColors.inkSoft,
+                                              height: 1.5,
+                                              fontSize: 12)),
+                                      const SizedBox(height: 7),
+                                      Text(_date(item.createdAt),
+                                          style: GoogleFonts.tajawal(
+                                              color: AppColors.textMuted,
+                                              fontSize: 10)),
+                                    ])),
+                              ]),
                         ),
                       );
                     },

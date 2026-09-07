@@ -14,7 +14,12 @@ class PrayerArchHero extends StatefulWidget {
   final String timeLabel;
   final PrayerDayPeriod period;
 
-  const PrayerArchHero({super.key, required this.next, required this.nextRealTime, required this.timeLabel, required this.period});
+  const PrayerArchHero(
+      {super.key,
+      required this.next,
+      required this.nextRealTime,
+      required this.timeLabel,
+      required this.period});
 
   @override
   State<PrayerArchHero> createState() => _PrayerArchHeroState();
@@ -34,7 +39,9 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
   @override
   void didUpdateWidget(covariant PrayerArchHero oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.nextRealTime != widget.nextRealTime || oldWidget.next != widget.next || oldWidget.timeLabel != widget.timeLabel) _tick();
+    if (oldWidget.nextRealTime != widget.nextRealTime ||
+        oldWidget.next != widget.next ||
+        oldWidget.timeLabel != widget.timeLabel) _tick();
   }
 
   void _tick() {
@@ -50,7 +57,9 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
     // AppState keeps today's prayer times. After Isha, the next prayer is
     // Fajr, but that Fajr belongs to tomorrow. Without this adjustment the
     // countdown was stuck at 00:00:00 all night.
-    if (!target.isAfter(now) && widget.next == Prayer.fajr && now.difference(target) > const Duration(minutes: 1)) {
+    if (!target.isAfter(now) &&
+        widget.next == Prayer.fajr &&
+        now.difference(target) > const Duration(minutes: 1)) {
       target = target.add(const Duration(days: 1));
     }
 
@@ -106,7 +115,11 @@ class _PrayerArchHeroState extends State<PrayerArchHero> {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.black.withValues(alpha: .18), Colors.black.withValues(alpha: .28), AppColors.ink.withValues(alpha: .78)],
+                    colors: [
+                      Colors.black.withValues(alpha: .18),
+                      Colors.black.withValues(alpha: .28),
+                      AppColors.ink.withValues(alpha: .78)
+                    ],
                     stops: const [.0, .52, 1.0],
                   ),
                 ),
@@ -147,12 +160,19 @@ class _HeroPrayerInfo extends StatelessWidget {
   final String timeLabel;
   final String? countdownText;
 
-  const _HeroPrayerInfo({required this.prayerName, required this.timeLabel, required this.countdownText});
+  const _HeroPrayerInfo(
+      {required this.prayerName,
+      required this.timeLabel,
+      required this.countdownText});
 
   Widget _fitText(String text, TextStyle style) => FittedBox(
         fit: BoxFit.scaleDown,
         alignment: Alignment.center,
-        child: Text(text, textAlign: TextAlign.center, maxLines: 1, softWrap: false, style: style),
+        child: Text(text,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            softWrap: false,
+            style: style),
       );
 
   @override
@@ -166,20 +186,69 @@ class _HeroPrayerInfo extends StatelessWidget {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _fitText('الصلاة القادمة', GoogleFonts.cairo(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
+          _fitText(
+              'الصلاة القادمة',
+              GoogleFonts.cairo(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white)),
           const SizedBox(height: 2),
-          _fitText(prayerName, GoogleFonts.amiri(fontSize: nameSize, height: 1, fontWeight: FontWeight.w700, color: AppColors.gold, shadows: const [Shadow(color: Colors.black87, blurRadius: 7)])),
+          _fitText(
+              prayerName,
+              GoogleFonts.amiri(
+                  fontSize: nameSize,
+                  height: 1,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.gold,
+                  shadows: const [
+                    Shadow(color: Colors.black87, blurRadius: 7)
+                  ])),
           const SizedBox(height: 5),
-          _fitText(timeLabel, GoogleFonts.tajawal(fontSize: timeSize, fontWeight: FontWeight.w900, color: Colors.white, fontFeatures: const [FontFeature.tabularFigures()], shadows: const [Shadow(color: Colors.black87, blurRadius: 7)])),
+          _fitText(
+              timeLabel,
+              GoogleFonts.tajawal(
+                  fontSize: timeSize,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  fontFeatures: const [
+                    FontFeature.tabularFigures()
+                  ],
+                  shadows: const [
+                    Shadow(color: Colors.black87, blurRadius: 7)
+                  ])),
           if (countdownText != null) ...[
             const SizedBox(height: 4),
-            _fitText('بعد', GoogleFonts.cairo(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w500)),
+            _fitText(
+                'بعد',
+                GoogleFonts.cairo(
+                    fontSize: 15,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500)),
             const SizedBox(height: 1),
-            _fitText(countdownText!, GoogleFonts.tajawal(fontSize: countdownSize, fontWeight: FontWeight.w900, color: AppColors.gold, fontFeatures: const [FontFeature.tabularFigures()], shadows: const [Shadow(color: Colors.black87, blurRadius: 7)])),
+            _fitText(
+                countdownText!,
+                GoogleFonts.tajawal(
+                    fontSize: countdownSize,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.gold,
+                    fontFeatures: const [
+                      FontFeature.tabularFigures()
+                    ],
+                    shadows: const [
+                      Shadow(color: Colors.black87, blurRadius: 7)
+                    ])),
             const SizedBox(height: 6),
-            Container(width: available * .45, height: 1.2, color: AppColors.gold.withValues(alpha: .82)),
+            Container(
+                width: available * .45,
+                height: 1.2,
+                color: AppColors.gold.withValues(alpha: .82)),
             const SizedBox(height: 5),
-            _fitText('إن شاء الله', GoogleFonts.cairo(fontSize: 15, color: AppColors.goldSoft, fontWeight: FontWeight.w700)),
+            _fitText(
+                'إن شاء الله',
+                GoogleFonts.cairo(
+                    fontSize: 15,
+                    color: AppColors.goldSoft,
+                    fontWeight: FontWeight.w700)),
           ],
         ],
       );

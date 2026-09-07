@@ -5,6 +5,7 @@ import '../services/battery_service.dart';
 import '../services/location_service.dart';
 import '../services/notification_service.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import 'main_shell.dart';
 
@@ -85,7 +86,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('فعّل الموقع واسمح لأقم بالوصول إليه لحساب أوقات الصلاة بدقة.'),
+            content: Text(
+                'فعّل الموقع واسمح لأقم بالوصول إليه لحساب أوقات الصلاة بدقة.'),
           ),
         );
       }
@@ -264,7 +266,8 @@ class _WelcomePage extends StatelessWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: AppColors.ink.withOpacity(.72),
-                            border: Border.all(color: AppColors.gold.withOpacity(.8)),
+                            border: Border.all(
+                                color: AppColors.gold.withOpacity(.8)),
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.gold.withOpacity(.22),
@@ -281,7 +284,10 @@ class _WelcomePage extends StatelessWidget {
                         const SizedBox(height: 18),
                         Text(
                           'مرحبًا بك في أقم',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium
+                              ?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -290,19 +296,21 @@ class _WelcomePage extends StatelessWidget {
                         const SizedBox(height: 8),
                         Text(
                           'لأجل صلاة في وقتها',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: AppColors.gold,
-                                fontWeight: FontWeight.w800,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: AppColors.gold,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'فعّل الأذونات المهمة مرة واحدة ليحسب أقم مواقيت الصلاة بدقة، ويوقظك بالأذان والتذكيرات حتى والهاتف مقفل.',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.white.withOpacity(.82),
-                                height: 1.5,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white.withOpacity(.82),
+                                    height: 1.5,
+                                  ),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -493,7 +501,8 @@ class _PermissionPage extends StatelessWidget {
                   context: context,
                   icon: Icons.notifications_active_rounded,
                   title: 'الإشعارات',
-                  description: 'الأذان وتذكير قبل الصلاة وتذكير الصلاة الفائتة.',
+                  description:
+                      'الأذان وتذكير قبل الصلاة وتذكير الصلاة الفائتة.',
                   ready: notificationsReady,
                   action: 'السماح',
                   onPressed: onNotifications,
@@ -502,7 +511,8 @@ class _PermissionPage extends StatelessWidget {
                   context: context,
                   icon: Icons.alarm_rounded,
                   title: 'المنبّهات الدقيقة',
-                  description: 'لإطلاق الأذان في الموعد المحدد حتى أثناء توفير الطاقة.',
+                  description:
+                      'لإطلاق الأذان في الموعد المحدد حتى أثناء توفير الطاقة.',
                   ready: exactAlarmReady,
                   action: 'تفعيل',
                   onPressed: onExactAlarm,
@@ -511,7 +521,8 @@ class _PermissionPage extends StatelessWidget {
                   context: context,
                   icon: Icons.fullscreen_rounded,
                   title: 'التنبيه على الشاشة المقفلة',
-                  description: 'إظهار تنبيه الصلاة بوضوح عندما يكون الهاتف مقفلًا.',
+                  description:
+                      'إظهار تنبيه الصلاة بوضوح عندما يكون الهاتف مقفلًا.',
                   ready: fullScreenRequested,
                   action: 'السماح',
                   onPressed: onFullScreen,
@@ -520,7 +531,8 @@ class _PermissionPage extends StatelessWidget {
                   context: context,
                   icon: Icons.do_not_disturb_off_rounded,
                   title: 'عدم الإزعاج للأذان',
-                  description: 'يسمح لقناة الأذان بتجاوز وضع عدم الإزعاج إذا اخترت ذلك.',
+                  description:
+                      'يسمح لقناة الأذان بتجاوز وضع عدم الإزعاج إذا اخترت ذلك.',
                   ready: dndReady,
                   action: 'السماح',
                   onPressed: onDnd,
@@ -529,7 +541,8 @@ class _PermissionPage extends StatelessWidget {
                   context: context,
                   icon: Icons.battery_saver_rounded,
                   title: 'التشغيل في الخلفية',
-                  description: 'عطّل تقييد البطارية لأقم حتى لا تتأخر التنبيهات على بعض الأجهزة.',
+                  description:
+                      'عطّل تقييد البطارية لأقم حتى لا تتأخر التنبيهات على بعض الأجهزة.',
                   ready: backgroundReady,
                   action: 'إعداد',
                   onPressed: onBackground,
@@ -540,7 +553,8 @@ class _PermissionPage extends StatelessWidget {
           const SizedBox(height: 7),
           Text(
             'يمكن تغيير هذه الأذونات لاحقًا من إعدادات الهاتف أو إعدادات أقم.',
-            style: TextStyle(color: Colors.white.withOpacity(.42), fontSize: 10.5),
+            style:
+                TextStyle(color: Colors.white.withOpacity(.42), fontSize: 10.5),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
@@ -558,7 +572,8 @@ class _PreferencesPage extends StatelessWidget {
   final AppState state;
   final bool finishing;
   final VoidCallback onFinish;
-  const _PreferencesPage({required this.state, required this.finishing, required this.onFinish});
+  const _PreferencesPage(
+      {required this.state, required this.finishing, required this.onFinish});
 
   @override
   Widget build(BuildContext context) {
@@ -567,9 +582,17 @@ class _PreferencesPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('تخصيص أقم', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
+          Text('تخصيص أقم',
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineMedium
+                  ?.copyWith(color: Colors.white, fontWeight: FontWeight.w900)),
           const SizedBox(height: 6),
-          Text('اختر ما يناسبك الآن، ويمكن تغييره لاحقًا.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white.withOpacity(.65))),
+          Text('اختر ما يناسبك الآن، ويمكن تغييره لاحقًا.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.white.withOpacity(.65))),
           const SizedBox(height: 14),
           Expanded(
             child: ListView(
@@ -585,9 +608,14 @@ class _PreferencesPage extends StatelessWidget {
                       return ChoiceChip(
                         label: Text('$m د'),
                         selected: selected,
-                        onSelected: (_) => state.updateReminderTiming(before: m),
+                        onSelected: (_) =>
+                            state.updateReminderTiming(before: m),
                         selectedColor: AppColors.gold,
-                        labelStyle: TextStyle(color: selected ? AppColors.ink : Colors.white.withOpacity(.72), fontWeight: FontWeight.w800),
+                        labelStyle: TextStyle(
+                            color: selected
+                                ? AppColors.ink
+                                : Colors.white.withOpacity(.72),
+                            fontWeight: FontWeight.w800),
                       );
                     }).toList(),
                   ),
@@ -606,7 +634,11 @@ class _PreferencesPage extends StatelessWidget {
                         selected: selected,
                         onSelected: (_) => state.updateReminderTiming(after: m),
                         selectedColor: AppColors.gold,
-                        labelStyle: TextStyle(color: selected ? AppColors.ink : Colors.white.withOpacity(.72), fontWeight: FontWeight.w800),
+                        labelStyle: TextStyle(
+                            color: selected
+                                ? AppColors.ink
+                                : Colors.white.withOpacity(.72),
+                            fontWeight: FontWeight.w800),
                       );
                     }).toList(),
                   ),
@@ -620,8 +652,13 @@ class _PreferencesPage extends StatelessWidget {
                   ),
                   child: SwitchListTile(
                     activeColor: AppColors.gold,
-                    title: const Text('صوت الأذان', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-                    subtitle: Text('عند دخول وقت كل صلاة', style: TextStyle(color: Colors.white.withOpacity(.55), fontSize: 12)),
+                    title: const Text('صوت الأذان',
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w800)),
+                    subtitle: Text('عند دخول وقت كل صلاة',
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(.55),
+                            fontSize: 12)),
                     value: state.adhanEnabled,
                     onChanged: state.setAdhanEnabled,
                   ),
@@ -634,9 +671,16 @@ class _PreferencesPage extends StatelessWidget {
                     border: Border.all(color: AppColors.gold.withOpacity(.24)),
                   ),
                   child: ListTile(
-                    leading: const Icon(Icons.battery_saver_rounded, color: AppColors.gold),
-                    title: const Text('تحسين البطارية', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-                    subtitle: Text('مهم لوصول التذكيرات في الخلفية، خصوصًا على بعض الأجهزة.', style: TextStyle(color: Colors.white.withOpacity(.55), fontSize: 12)),
+                    leading: const Icon(Icons.battery_saver_rounded,
+                        color: AppColors.gold),
+                    title: const Text('تحسين البطارية',
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w800)),
+                    subtitle: Text(
+                        'مهم لوصول التذكيرات في الخلفية، خصوصًا على بعض الأجهزة.',
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(.55),
+                            fontSize: 12)),
                     onTap: BatteryService.openSettings,
                   ),
                 ),
@@ -649,7 +693,10 @@ class _PreferencesPage extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: finishing ? null : onFinish,
               icon: finishing
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.arrow_back_rounded),
               label: Text(finishing ? 'جاري التجهيز...' : 'ابدأ مع أقم'),
             ),
@@ -664,7 +711,8 @@ class _ChoiceCard extends StatelessWidget {
   final String title;
   final IconData icon;
   final Widget child;
-  const _ChoiceCard({required this.title, required this.icon, required this.child});
+  const _ChoiceCard(
+      {required this.title, required this.icon, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -682,7 +730,10 @@ class _ChoiceCard extends StatelessWidget {
             children: [
               Icon(icon, color: AppColors.gold, size: 22),
               const SizedBox(width: 9),
-              Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800))),
+              Expanded(
+                  child: Text(title,
+                      style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w800))),
             ],
           ),
           const SizedBox(height: 12),

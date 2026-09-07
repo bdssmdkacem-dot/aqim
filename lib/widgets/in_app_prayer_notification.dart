@@ -25,7 +25,8 @@ class InAppPrayerNotification extends StatefulWidget {
   });
 
   @override
-  State<InAppPrayerNotification> createState() => _InAppPrayerNotificationState();
+  State<InAppPrayerNotification> createState() =>
+      _InAppPrayerNotificationState();
 }
 
 class _InAppPrayerNotificationState extends State<InAppPrayerNotification>
@@ -51,10 +52,12 @@ class _InAppPrayerNotificationState extends State<InAppPrayerNotification>
   @override
   Widget build(BuildContext context) {
     final remaining = widget.remaining;
-    final isSoon = remaining != null && remaining.inMinutes < widget.beforeMinutes;
+    final isSoon =
+        remaining != null && remaining.inMinutes < widget.beforeMinutes;
 
     return SizeTransition(
-      sizeFactor: CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+      sizeFactor:
+          CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
       child: FadeTransition(
         opacity: _controller,
         child: Container(
@@ -84,7 +87,9 @@ class _InAppPrayerNotificationState extends State<InAppPrayerNotification>
                   border: Border.all(color: AppColors.gold.withOpacity(0.35)),
                 ),
                 child: Icon(
-                  isSoon ? Icons.notifications_active_rounded : Icons.notifications_none_rounded,
+                  isSoon
+                      ? Icons.notifications_active_rounded
+                      : Icons.notifications_none_rounded,
                   color: AppColors.gold,
                   size: 21,
                 ),
@@ -144,13 +149,15 @@ class _InAppPrayerNotificationState extends State<InAppPrayerNotification>
                 IconButton(
                   tooltip: 'الأذكار',
                   onPressed: widget.onOpenAdhkar,
-                  icon: const Icon(Icons.menu_book_outlined, color: AppColors.gold, size: 19),
+                  icon: const Icon(Icons.menu_book_outlined,
+                      color: AppColors.gold, size: 19),
                 ),
               if (widget.onDismiss != null)
                 IconButton(
                   tooltip: 'إخفاء',
                   onPressed: widget.onDismiss,
-                  icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 18),
+                  icon: const Icon(Icons.close_rounded,
+                      color: Colors.white54, size: 18),
                 ),
             ],
           ),

@@ -40,7 +40,8 @@ class PurchaseService {
   Future<void> buyRemoveAds() async {
     final product = removeAdsProduct;
     if (product == null) {
-      lastError = 'المنتج غير متوفر حاليًا. تأكد من اتصالك بالإنترنت وأن التطبيق مثبَّت من Google Play.';
+      lastError =
+          'المنتج غير متوفر حاليًا. تأكد من اتصالك بالإنترنت وأن التطبيق مثبَّت من Google Play.';
       return;
     }
     final purchaseParam = PurchaseParam(productDetails: product);

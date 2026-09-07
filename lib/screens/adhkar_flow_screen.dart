@@ -4,7 +4,6 @@ import '../data/adhkar_evidence.dart';
 import '../models/adhkar.dart';
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/aqim_logo.dart';
 import 'prayer_guide_screen.dart';
 
 class AdhkarFlowScreen extends StatefulWidget {
@@ -13,7 +12,12 @@ class AdhkarFlowScreen extends StatefulWidget {
   final String audioCategory;
   final Widget Function()? nextScreenBuilder;
 
-  const AdhkarFlowScreen({super.key, required this.title, required this.items, required this.audioCategory, this.nextScreenBuilder});
+  const AdhkarFlowScreen(
+      {super.key,
+      required this.title,
+      required this.items,
+      required this.audioCategory,
+      this.nextScreenBuilder});
   @override
   State<AdhkarFlowScreen> createState() => _AdhkarFlowScreenState();
 }
@@ -23,49 +27,70 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
   int count = 0;
   AdhkarItem get current => widget.items[index];
   bool get isLast => index == widget.items.length - 1;
-  double get itemProgress => current.repeat <= 0 ? 0 : (count / current.repeat).clamp(0.0, 1.0);
-  double get totalProgress => ((index + itemProgress) / widget.items.length).clamp(0.0, 1.0);
+  double get itemProgress =>
+      current.repeat <= 0 ? 0 : (count / current.repeat).clamp(0.0, 1.0);
+  double get totalProgress =>
+      ((index + itemProgress) / widget.items.length).clamp(0.0, 1.0);
 
   String _quranAwareText(AdhkarItem item) {
     final id = item.id;
-    final isIkhlas = id == 'al_ikhlas' || id == 'morning_ikhlas' || id.contains('evening_ikhlas');
-    final isFalaq = id == 'al_falaq' || id == 'morning_falaq' || id.contains('evening_falaq');
-    final isNas = id == 'an_nas' || id == 'morning_nas' || id.contains('evening_nas');
-    if (id == 'ayat_kursi' || id == 'morning_ayat_kursi' || id.contains('evening_ayat_kursi')) return '${item.text.trim()} ﴿٢٥٥﴾';
+    final isIkhlas = id == 'al_ikhlas' ||
+        id == 'morning_ikhlas' ||
+        id.contains('evening_ikhlas');
+    final isFalaq = id == 'al_falaq' ||
+        id == 'morning_falaq' ||
+        id.contains('evening_falaq');
+    final isNas =
+        id == 'an_nas' || id == 'morning_nas' || id.contains('evening_nas');
+    if (id == 'ayat_kursi' ||
+        id == 'morning_ayat_kursi' ||
+        id.contains('evening_ayat_kursi')) return '${item.text.trim()} ﴿٢٥٥﴾';
     if (!isIkhlas && !isFalaq && !isNas) return item.text;
-    final parts = item.text.split('*').map((part) => part.trim()).where((part) => part.isNotEmpty).toList(growable: false);
+    final parts = item.text
+        .split('*')
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList(growable: false);
     final count = isIkhlas ? 4 : (isFalaq ? 5 : 6);
     if (parts.length != count) return item.text;
-    return List<String>.generate(parts.length, (i) => '${parts[i]} ﴿${_arabicNumber(i + 1)}﴾').join(' ');
+    return List<String>.generate(
+        parts.length, (i) => '${parts[i]} ﴿${_arabicNumber(i + 1)}﴾').join(' ');
   }
 
   String _arabicNumber(int value) {
-    const digits = <String>['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+    const digits = <String>['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
     return value.toString().split('').map((d) => digits[int.parse(d)]).join();
   }
 
   void _next() {
     if (isLast) {
       if (widget.nextScreenBuilder != null) {
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => widget.nextScreenBuilder!()));
+        Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => widget.nextScreenBuilder!()));
       } else {
         Navigator.of(context).pop();
       }
       return;
     }
-    setState(() { index++; count = 0; });
+    setState(() {
+      index++;
+      count = 0;
+    });
   }
 
   void _tap() {
     if (count >= current.repeat) return;
     setState(() => count++);
     if (count >= current.repeat) {
-      Future.delayed(const Duration(milliseconds: 260), () { if (mounted) _next(); });
+      Future.delayed(const Duration(milliseconds: 260), () {
+        if (mounted) _next();
+      });
     }
   }
 
   void _openPrayerGuide() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PrayerGuideScreen()));
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const PrayerGuideScreen()));
   }
 
   Widget _evidenceCard(AdhkarItem item) {
@@ -86,13 +111,26 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
         Row(children: [
           const Icon(Icons.menu_book_rounded, size: 17, color: AppColors.gold),
           const SizedBox(width: 7),
-          Text('الفضل من السنة', style: GoogleFonts.cairo(fontSize: 11, color: AppColors.gold, fontWeight: FontWeight.w800)),
+          Text('الفضل من السنة',
+              style: GoogleFonts.cairo(
+                  fontSize: 11,
+                  color: AppColors.gold,
+                  fontWeight: FontWeight.w800)),
         ]),
         const SizedBox(height: 7),
-        Text(virtue, textAlign: TextAlign.right, textDirection: TextDirection.rtl, style: GoogleFonts.cairo(fontSize: 11, height: 1.65, color: AppColors.inkSoft)),
+        Text(virtue,
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.rtl,
+            style: GoogleFonts.cairo(
+                fontSize: 11, height: 1.65, color: AppColors.inkSoft)),
         if (source != null) ...[
           const SizedBox(height: 8),
-          Text('المصدر: $source', textDirection: TextDirection.rtl, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w700)),
+          Text('المصدر: $source',
+              textDirection: TextDirection.rtl,
+              style: GoogleFonts.cairo(
+                  fontSize: 10,
+                  color: AppColors.textMuted,
+                  fontWeight: FontWeight.w700)),
         ],
       ]),
     );
@@ -106,15 +144,40 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
       backgroundColor: AppColors.ink,
       appBar: AppBar(
         backgroundColor: AppColors.ink,
-        title: Text(widget.title, style: GoogleFonts.amiri(fontWeight: FontWeight.w800)),
+        title: Text(widget.title,
+            style: GoogleFonts.amiri(fontWeight: FontWeight.w800)),
         centerTitle: true,
-        bottom: PreferredSize(preferredSize: const Size.fromHeight(5), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 18), child: ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: totalProgress, backgroundColor: AppColors.paperLine, valueColor: const AlwaysStoppedAnimation(AppColors.gold), minHeight: 4))),),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(5),
+          child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                      value: totalProgress,
+                      backgroundColor: AppColors.paperLine,
+                      valueColor: const AlwaysStoppedAnimation(AppColors.gold),
+                      minHeight: 4))),
+        ),
       ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
           child: Column(children: [
-            Row(children: [Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7), decoration: BoxDecoration(color: AppColors.gold.withOpacity(.08), borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.gold.withOpacity(.22))), child: Text('${index + 1} / ${widget.items.length}', style: GoogleFonts.tajawal(color: AppColors.gold, fontWeight: FontWeight.w800))), const Spacer()]),
+            Row(children: [
+              Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                      color: AppColors.gold.withOpacity(.08),
+                      borderRadius: BorderRadius.circular(20),
+                      border:
+                          Border.all(color: AppColors.gold.withOpacity(.22))),
+                  child: Text('${index + 1} / ${widget.items.length}',
+                      style: GoogleFonts.tajawal(
+                          color: AppColors.gold, fontWeight: FontWeight.w800))),
+              const Spacer()
+            ]),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(vertical: 10),
@@ -125,38 +188,109 @@ class _AdhkarFlowScreenState extends State<AdhkarFlowScreen> {
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(28),
-                        onTap: item.repeat > 1 && count < item.repeat ? _tap : _next,
+                        onTap: item.repeat > 1 && count < item.repeat
+                            ? _tap
+                            : _next,
                         splashColor: AppColors.gold.withOpacity(.10),
                         highlightColor: AppColors.gold.withOpacity(.05),
                         child: Container(
                           width: double.infinity,
                           padding: const EdgeInsets.fromLTRB(20, 24, 20, 26),
-                          decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [AppColors.surfaceDark, AppColors.ink.withOpacity(.96)]), borderRadius: BorderRadius.circular(28), border: Border.all(color: AppColors.gold.withOpacity(.32))),
+                          decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                  begin: Alignment.topRight,
+                                  end: Alignment.bottomLeft,
+                                  colors: [
+                                    AppColors.surfaceDark,
+                                    AppColors.ink.withOpacity(.96)
+                                  ]),
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(
+                                  color: AppColors.gold.withOpacity(.32))),
                           child: Column(children: [
-                            const AqimLogo(size: 62),
+                            Image.asset(
+                                'assets/images/aqim_logo_transparent_512.png',
+                                width: 62,
+                                height: 62,
+                                fit: BoxFit.contain),
                             const SizedBox(height: 18),
-                            Text(displayText, textAlign: TextAlign.center, textDirection: TextDirection.rtl, style: GoogleFonts.amiri(fontSize: 22, height: 2.0, color: AppColors.ivory, fontWeight: FontWeight.w600)),
+                            Text(displayText,
+                                textAlign: TextAlign.center,
+                                textDirection: TextDirection.rtl,
+                                style: GoogleFonts.amiri(
+                                    fontSize: 22,
+                                    height: 2.0,
+                                    color: AppColors.ivory,
+                                    fontWeight: FontWeight.w600)),
                             _evidenceCard(item),
                           ]),
                         ),
                       ),
                     ),
-                    Positioned(top: 10, left: 10, child: Material(color: AppColors.ink.withOpacity(.62), shape: const CircleBorder(), child: IconButton(tooltip: 'استماع', icon: const Icon(Icons.volume_up_rounded, color: AppColors.gold, size: 22), onPressed: () => AudioService.instance.playAsset(context, item.audioAsset(widget.audioCategory))))),
+                    Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Material(
+                            color: AppColors.ink.withOpacity(.62),
+                            shape: const CircleBorder(),
+                            child: IconButton(
+                                tooltip: 'استماع',
+                                icon: const Icon(Icons.volume_up_rounded,
+                                    color: AppColors.gold, size: 22),
+                                onPressed: () => AudioService.instance
+                                    .playAsset(
+                                        context,
+                                        item.audioAsset(
+                                            widget.audioCategory))))),
                   ]),
                   const SizedBox(height: 20),
                   if (item.repeat > 1) ...[
-                    Text('$count / ${item.repeat}', style: GoogleFonts.tajawal(fontSize: 30, color: AppColors.gold, fontWeight: FontWeight.w900)),
+                    Text('$count / ${item.repeat}',
+                        style: GoogleFonts.tajawal(
+                            fontSize: 30,
+                            color: AppColors.gold,
+                            fontWeight: FontWeight.w900)),
                     const SizedBox(height: 5),
-                    Text('اضغط على البطاقة لكل تكرار', style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted)),
+                    Text('اضغط على البطاقة لكل تكرار',
+                        style: GoogleFonts.cairo(
+                            fontSize: 11, color: AppColors.textMuted)),
                     const SizedBox(height: 10),
-                    ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: itemProgress, minHeight: 7, backgroundColor: AppColors.paperLine, valueColor: const AlwaysStoppedAnimation(AppColors.gold))),
-                  ] else Text('اضغط على البطاقة للمتابعة', style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted)),
+                    ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                            value: itemProgress,
+                            minHeight: 7,
+                            backgroundColor: AppColors.paperLine,
+                            valueColor:
+                                const AlwaysStoppedAnimation(AppColors.gold))),
+                  ] else
+                    Text('اضغط على البطاقة للمتابعة',
+                        style: GoogleFonts.cairo(
+                            fontSize: 11, color: AppColors.textMuted)),
                   const SizedBox(height: 16),
-                  OutlinedButton.icon(onPressed: _openPrayerGuide, icon: const Icon(Icons.menu_book_rounded, size: 18), label: const Text('كيف أقيم صلاتي؟ من الوضوء إلى التسليم')),
+                  OutlinedButton.icon(
+                      onPressed: _openPrayerGuide,
+                      icon: const Icon(Icons.menu_book_rounded, size: 18),
+                      label:
+                          const Text('كيف أقيم صلاتي؟ من الوضوء إلى التسليم')),
                 ]),
               ),
             ),
-            Row(children: [Expanded(child: OutlinedButton(onPressed: _next, child: Text(isLast ? 'إنهاء' : 'تخطي'))), const SizedBox(width: 10), Expanded(flex: 2, child: ElevatedButton(onPressed: item.repeat > 1 && count < item.repeat ? _tap : _next, child: Text(item.repeat > 1 && count < item.repeat ? 'تسبيح' : (isLast ? 'إنهاء' : 'التالي'))))]),
+            Row(children: [
+              Expanded(
+                  child: OutlinedButton(
+                      onPressed: _next,
+                      child: Text(isLast ? 'إنهاء' : 'تخطي'))),
+              const SizedBox(width: 10),
+              Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                      onPressed:
+                          item.repeat > 1 && count < item.repeat ? _tap : _next,
+                      child: Text(item.repeat > 1 && count < item.repeat
+                          ? 'تسبيح'
+                          : (isLast ? 'إنهاء' : 'التالي'))))
+            ]),
           ]),
         ),
       ),

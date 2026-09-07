@@ -25,15 +25,33 @@ class AppColors {
 class AppTheme {
   static TextTheme _textTheme(TextTheme base) {
     return base.copyWith(
-      headlineLarge: GoogleFonts.amiri(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.ivory),
-      headlineMedium: GoogleFonts.amiri(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.ivory),
-      headlineSmall: GoogleFonts.amiri(fontSize: 19, fontWeight: FontWeight.w700, color: AppColors.ivory),
-      titleLarge: GoogleFonts.cairo(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.ivory),
-      titleMedium: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.ivory),
-      bodyLarge: GoogleFonts.cairo(fontSize: 14.5, fontWeight: FontWeight.w500, color: AppColors.ivory, height: 1.7),
-      bodyMedium: GoogleFonts.cairo(fontSize: 13.5, fontWeight: FontWeight.w500, color: AppColors.inkSoft, height: 1.8),
-      labelLarge: GoogleFonts.tajawal(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.ink),
-      labelSmall: GoogleFonts.tajawal(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textMuted, letterSpacing: 0.35),
+      headlineLarge: GoogleFonts.amiri(
+          fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.ivory),
+      headlineMedium: GoogleFonts.amiri(
+          fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.ivory),
+      headlineSmall: GoogleFonts.amiri(
+          fontSize: 19, fontWeight: FontWeight.w700, color: AppColors.ivory),
+      titleLarge: GoogleFonts.cairo(
+          fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.ivory),
+      titleMedium: GoogleFonts.cairo(
+          fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.ivory),
+      bodyLarge: GoogleFonts.cairo(
+          fontSize: 14.5,
+          fontWeight: FontWeight.w500,
+          color: AppColors.ivory,
+          height: 1.7),
+      bodyMedium: GoogleFonts.cairo(
+          fontSize: 13.5,
+          fontWeight: FontWeight.w500,
+          color: AppColors.inkSoft,
+          height: 1.8),
+      labelLarge: GoogleFonts.tajawal(
+          fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.ink),
+      labelSmall: GoogleFonts.tajawal(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textMuted,
+          letterSpacing: 0.35),
     );
   }
 
@@ -76,8 +94,10 @@ class AppTheme {
           backgroundColor: AppColors.gold,
           foregroundColor: AppColors.inkDeep,
           minimumSize: const Size.fromHeight(52),
-          textStyle: GoogleFonts.cairo(fontWeight: FontWeight.w700, fontSize: 14.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle:
+              GoogleFonts.cairo(fontWeight: FontWeight.w700, fontSize: 14.5),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 0,
         ),
       ),
@@ -91,8 +111,10 @@ class AppTheme {
           visualDensity: VisualDensity.compact,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           side: const BorderSide(color: AppColors.paperLine, width: 0.9),
-          textStyle: GoogleFonts.cairo(fontWeight: FontWeight.w600, fontSize: 12.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle:
+              GoogleFonts.cairo(fontWeight: FontWeight.w600, fontSize: 12.5),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
       dividerColor: AppColors.paperLine,
@@ -112,13 +134,19 @@ class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected) ? AppColors.gold : AppColors.ivory,
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.gold
+              : AppColors.ivory,
         ),
         trackColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected) ? AppColors.gold.withOpacity(0.35) : Colors.white12,
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.gold.withOpacity(0.35)
+              : Colors.white12,
         ),
         trackOutlineColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected) ? AppColors.gold.withOpacity(0.65) : AppColors.paperLine,
+          (states) => states.contains(WidgetState.selected)
+              ? AppColors.gold.withOpacity(0.65)
+              : AppColors.paperLine,
         ),
       ),
     );

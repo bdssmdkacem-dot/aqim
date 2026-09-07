@@ -67,7 +67,9 @@ class _AqimLifecycleRootState extends State<_AqimLifecycleRoot>
     if (state != AppLifecycleState.resumed || !mounted) return;
 
     final appState = context.read<AppState>();
-    if (!appState.ready || !appState.onboardingComplete || appState.timesLoading) {
+    if (!appState.ready ||
+        !appState.onboardingComplete ||
+        appState.timesLoading) {
       return;
     }
 
@@ -127,29 +129,34 @@ class _Gate extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppColors.surfaceDark,
-                    border: Border.all(color: AppColors.gold.withOpacity(.65), width: 1.5),
+                    border: Border.all(
+                        color: AppColors.gold.withOpacity(.65), width: 1.5),
                     boxShadow: [
-                      BoxShadow(color: AppColors.gold.withOpacity(.12), blurRadius: 28, spreadRadius: 2),
+                      BoxShadow(
+                          color: AppColors.gold.withOpacity(.12),
+                          blurRadius: 28,
+                          spreadRadius: 2),
                     ],
                   ),
                   alignment: Alignment.center,
-                  child: const Icon(Icons.mosque_rounded, color: AppColors.gold, size: 42),
+                  child: const Icon(Icons.mosque_rounded,
+                      color: AppColors.gold, size: 42),
                 ),
                 const SizedBox(height: 18),
                 Text(
                   'أقم',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    color: AppColors.ivory,
-                    fontWeight: FontWeight.w900,
-                  ),
+                        color: AppColors.ivory,
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'لأجل صلاة في وقتها',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.goldSoft,
-                    fontWeight: FontWeight.w700,
-                  ),
+                        color: AppColors.goldSoft,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
                 const SizedBox(height: 22),
                 const SizedBox(

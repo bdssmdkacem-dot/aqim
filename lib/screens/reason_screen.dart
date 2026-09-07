@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/prayer.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import 'main_shell.dart';
 
@@ -24,7 +25,8 @@ class _ReasonScreenState extends State<ReasonScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
           children: [
-            Text('لماذا لم تصلِّ بعد؟', style: Theme.of(context).textTheme.headlineSmall),
+            Text('لماذا لم تصلِّ بعد؟',
+                style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 14),
             ...missedReasons.map((r) {
               final isPicked = picked == r;
@@ -34,14 +36,19 @@ class _ReasonScreenState extends State<ReasonScreen> {
                   style: OutlinedButton.styleFrom(
                     alignment: Alignment.centerRight,
                     foregroundColor: isPicked ? AppColors.ember : AppColors.ink,
-                    side: BorderSide(color: isPicked ? AppColors.ember : AppColors.paperLine),
-                    backgroundColor: isPicked ? AppColors.ember.withOpacity(0.06) : Colors.white,
+                    side: BorderSide(
+                        color:
+                            isPicked ? AppColors.ember : AppColors.paperLine),
+                    backgroundColor: isPicked
+                        ? AppColors.ember.withOpacity(0.06)
+                        : Colors.white,
                   ),
                   onPressed: () async {
                     setState(() => picked = r);
                     await context.read<AppState>().markMissed(widget.prayer, r);
                   },
-                  child: Align(alignment: Alignment.centerRight, child: Text(r)),
+                  child:
+                      Align(alignment: Alignment.centerRight, child: Text(r)),
                 ),
               );
             }),
@@ -53,9 +60,11 @@ class _ReasonScreenState extends State<ReasonScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('اقتراح', style: Theme.of(context).textTheme.labelSmall),
+                      Text('اقتراح',
+                          style: Theme.of(context).textTheme.labelSmall),
                       const SizedBox(height: 8),
-                      Text(suggestionForReason(picked!), style: Theme.of(context).textTheme.bodyMedium),
+                      Text(suggestionForReason(picked!),
+                          style: Theme.of(context).textTheme.bodyMedium),
                     ],
                   ),
                 ),

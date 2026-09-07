@@ -24,8 +24,7 @@ class MosqueInfo {
 }
 
 class MosqueService {
-  static const String _endpoint =
-      "https://overpass-api.de/api/interpreter";
+  static const String _endpoint = "https://overpass-api.de/api/interpreter";
 
   static Future<List<MosqueInfo>?> fetchNearby({
     required double latitude,

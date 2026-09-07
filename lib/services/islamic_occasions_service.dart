@@ -86,7 +86,8 @@ class IslamicOccasionsService {
           plugin,
           id: nightId,
           title: 'غدًا ${occasion.name} 🌙',
-          body: 'غدًا ${occasion.name} — ${occasion.hijri}. نسأل الله أن يبارك لكم في هذه المناسبة.',
+          body:
+              'غدًا ${occasion.name} — ${occasion.hijri}. نسأل الله أن يبارك لكم في هذه المناسبة.',
           scheduled: night,
           payload: 'islamic_occasion:${occasion.id}:night',
         );
@@ -97,7 +98,8 @@ class IslamicOccasionsService {
           plugin,
           id: morningId,
           title: occasion.name,
-          body: 'اليوم ${occasion.name} — ${occasion.hijri}. تقبل الله منا ومنكم صالح الأعمال.',
+          body:
+              'اليوم ${occasion.name} — ${occasion.hijri}. تقبل الله منا ومنكم صالح الأعمال.',
           scheduled: morning,
           payload: 'islamic_occasion:${occasion.id}:morning',
         );

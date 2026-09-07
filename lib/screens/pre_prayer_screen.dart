@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/adhkar.dart';
 import '../models/prayer.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import 'adhkar_flow_screen.dart';
 import 'dhikr_screen.dart';
@@ -46,9 +47,11 @@ class PrePrayerScreen extends StatelessWidget {
             Center(
               child: Column(
                 children: [
-                  Text(_timeLabel(state), style: Theme.of(context).textTheme.labelSmall),
+                  Text(_timeLabel(state),
+                      style: Theme.of(context).textTheme.labelSmall),
                   const SizedBox(height: 4),
-                  Text('صلاة ${prayer.arabicName}', style: Theme.of(context).textTheme.headlineMedium),
+                  Text('صلاة ${prayer.arabicName}',
+                      style: Theme.of(context).textTheme.headlineMedium),
                 ],
               ),
             ),
@@ -70,24 +73,27 @@ class PrePrayerScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                leading: const Icon(Icons.menu_book_rounded, color: AppColors.gold),
+                leading:
+                    const Icon(Icons.menu_book_rounded, color: AppColors.gold),
                 title: const Text('أذكار ما بين الأذان والإقامة'),
-                trailing: const Icon(Icons.arrow_back_ios_new, size: 14, color: AppColors.textMuted),
+                trailing: const Icon(Icons.arrow_back_ios_new,
+                    size: 14, color: AppColors.textMuted),
               ),
             ),
             const SizedBox(height: 10),
-
             if (timeArrived) ...[
               ElevatedButton(
                 onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => DhikrScreen(prayer: prayer)),
+                  MaterialPageRoute(
+                      builder: (_) => DhikrScreen(prayer: prayer)),
                 ),
                 child: const Text('صليت'),
               ),
               const SizedBox(height: 8),
               OutlinedButton(
                 onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ReasonScreen(prayer: prayer)),
+                  MaterialPageRoute(
+                      builder: (_) => ReasonScreen(prayer: prayer)),
                 ),
                 child: const Text('لم أُصلِّ بعد'),
               ),
@@ -101,14 +107,18 @@ class PrePrayerScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.lock_clock_outlined, size: 20, color: AppColors.textMuted),
+                    const Icon(Icons.lock_clock_outlined,
+                        size: 20, color: AppColors.textMuted),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         state.realTimes == null
                             ? 'جارٍ تحميل أوقات الصلاة… لا يمكن تسجيل الصلاة قبل معرفة وقتها.'
                             : 'لم يحن وقت صلاة ${prayer.arabicName} بعد — يمكنك تسجيلها فور دخول وقتها.',
-                        style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.textMuted,
+                            fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -125,7 +135,8 @@ class _ReminderCard extends StatelessWidget {
   final String label;
   final String body;
   final bool isQuote;
-  const _ReminderCard({required this.label, required this.body, this.isQuote = false});
+  const _ReminderCard(
+      {required this.label, required this.body, this.isQuote = false});
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +151,8 @@ class _ReminderCard extends StatelessWidget {
             Text(
               body,
               style: isQuote
-                  ? GoogleFonts.amiri(fontSize: 16, height: 2, color: Colors.white)
+                  ? GoogleFonts.amiri(
+                      fontSize: 16, height: 2, color: Colors.white)
                   : Theme.of(context).textTheme.bodyMedium,
             ),
           ],

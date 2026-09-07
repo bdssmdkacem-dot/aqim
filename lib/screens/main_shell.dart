@@ -17,7 +17,12 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   late int _index;
-  static const _tabs = [HomeScreen(), QuranScreen(), AdhkarHomeScreen(), MoreScreen()];
+  static const _tabs = [
+    HomeScreen(),
+    QuranScreen(),
+    AdhkarHomeScreen(),
+    MoreScreen()
+  ];
 
   @override
   void initState() {

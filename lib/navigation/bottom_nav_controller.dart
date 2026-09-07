@@ -5,6 +5,7 @@ import '../models/prayer.dart';
 import '../screens/main_shell.dart';
 import '../screens/pre_prayer_screen.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../widgets/aqim_bottom_nav.dart';
 import 'nav_key.dart';
 
@@ -15,7 +16,8 @@ void setAqimBottomNavIndex(int index) {
   if (index >= 0 && index <= 3) aqimBottomNavIndex.value = index;
 }
 
-void handleAqimBottomNavTap(BuildContext context, int index, {Prayer? nextPrayer}) {
+void handleAqimBottomNavTap(BuildContext context, int index,
+    {Prayer? nextPrayer}) {
   if (index == 4) {
     if (nextPrayer != null) {
       rootNavigatorKey.currentState?.push(

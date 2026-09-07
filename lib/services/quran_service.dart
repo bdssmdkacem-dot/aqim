@@ -13,9 +13,33 @@ class QuranVerse {
   final int surahNumber;
   final String surahName;
 
-  const QuranVerse({required this.number, required this.numberInSurah, required this.text, required this.page, required this.juz, required this.hizbQuarter, required this.surahNumber, required this.surahName});
+  const QuranVerse(
+      {required this.number,
+      required this.numberInSurah,
+      required this.text,
+      required this.page,
+      required this.juz,
+      required this.hizbQuarter,
+      required this.surahNumber,
+      required this.surahName});
 
-  bool get isSajda => const <String>{'7:206','13:15','16:50','17:109','19:58','22:18','22:77','25:60','27:26','32:15','38:24','41:38','53:62','84:21','96:19'}.contains('$surahNumber:$numberInSurah');
+  bool get isSajda => const <String>{
+        '7:206',
+        '13:15',
+        '16:50',
+        '17:109',
+        '19:58',
+        '22:18',
+        '22:77',
+        '25:60',
+        '27:26',
+        '32:15',
+        '38:24',
+        '41:38',
+        '53:62',
+        '84:21',
+        '96:19'
+      }.contains('$surahNumber:$numberInSurah');
 }
 
 class QuranPage {
@@ -33,7 +57,11 @@ class QuranSurah {
   final String name;
   final String englishName;
   final int numberOfAyahs;
-  const QuranSurah({required this.number, required this.name, required this.englishName, required this.numberOfAyahs});
+  const QuranSurah(
+      {required this.number,
+      required this.name,
+      required this.englishName,
+      required this.numberOfAyahs});
 }
 
 class QuranSearchResult {
@@ -55,7 +83,8 @@ class QuranService {
   QuranService._();
   static final QuranService instance = QuranService._();
 
-  final offline_quran.QuranService _metadata = offline_quran.QuranService.instance;
+  final offline_quran.QuranService _metadata =
+      offline_quran.QuranService.instance;
   final Map<String, String> _textByAyah = <String, String>{};
   Future<void>? _loadFuture;
 
@@ -63,30 +92,41 @@ class QuranService {
 
   Future<void> _loadText() async {
     final raw = await rootBundle.loadString('assets/quran/quran-uthmani.txt');
-    final lines = const LineSplitter().convert(raw).where((line) => line.trim().isNotEmpty);
+    final lines = const LineSplitter()
+        .convert(raw)
+        .where((line) => line.trim().isNotEmpty);
 
     for (final line in lines) {
       final parts = line.split('|');
       if (parts.length < 3) {
-        throw StateError('Invalid Tanzil Quran line: ${line.substring(0, line.length.clamp(0, 80))}');
+        throw StateError(
+            'Invalid Tanzil Quran line: ${line.substring(0, line.length.clamp(0, 80))}');
       }
       final surah = int.tryParse(parts[0]);
       final ayah = int.tryParse(parts[1]);
-      if (surah == null || ayah == null || surah < 1 || surah > 114 || ayah < 1) {
-        throw StateError('Invalid Tanzil Quran reference: ${parts.take(2).join(':')}');
+      if (surah == null ||
+          ayah == null ||
+          surah < 1 ||
+          surah > 114 ||
+          ayah < 1) {
+        throw StateError(
+            'Invalid Tanzil Quran reference: ${parts.take(2).join(':')}');
       }
       // Preserve the Quran payload verbatim. Only the SURA|AYA metadata
       // prefix and the line ending are outside the Quran text itself.
       final text = parts.sublist(2).join('|');
-      if (text.isEmpty) throw StateError('Empty Tanzil Quran text at $surah:$ayah');
+      if (text.isEmpty)
+        throw StateError('Empty Tanzil Quran text at $surah:$ayah');
       _textByAyah['$surah:$ayah'] = text;
     }
 
     if (_textByAyah.length != 6236) {
-      throw StateError('Tanzil Quran integrity check failed: expected 6236 ayat, got ${_textByAyah.length}.');
+      throw StateError(
+          'Tanzil Quran integrity check failed: expected 6236 ayat, got ${_textByAyah.length}.');
     }
     if (!_textByAyah.containsKey('1:1') || !_textByAyah.containsKey('114:6')) {
-      throw StateError('Tanzil Quran integrity check failed: first/last ayah missing.');
+      throw StateError(
+          'Tanzil Quran integrity check failed: first/last ayah missing.');
     }
   }
 
@@ -101,7 +141,8 @@ class QuranService {
   QuranVerse _mapMetadataAyah(offline_quran.Ayah ayah) {
     final text = _textByAyah['${ayah.surahNumber}:${ayah.id}'];
     if (text == null || text.isEmpty) {
-      throw StateError('Tanzil Quran text missing for ${ayah.surahNumber}:${ayah.id}.');
+      throw StateError(
+          'Tanzil Quran text missing for ${ayah.surahNumber}:${ayah.id}.');
     }
     final rub = _metadata.getRubIndex(ayah.surahNumber, ayah.id) ?? 1;
     return QuranVerse(
@@ -117,15 +158,25 @@ class QuranService {
   }
 
   Future<QuranPage> fetchPage(int page) async {
-    if (page < 1 || page > 604) throw ArgumentError.value(page, 'page', 'must be between 1 and 604');
+    if (page < 1 || page > 604)
+      throw ArgumentError.value(page, 'page', 'must be between 1 and 604');
     await _ensureTextLoaded();
     final ayahs = _metadata.getPage(page);
-    return QuranPage(page: page, verses: ayahs.map(_mapMetadataAyah).toList(growable: false));
+    return QuranPage(
+        page: page,
+        verses: ayahs.map(_mapMetadataAyah).toList(growable: false));
   }
 
   Future<List<QuranSurah>> fetchSurahs() async {
     await _ensureTextLoaded();
-    return _metadata.getAllSurahs().map((s) => QuranSurah(number: s.number, name: s.nameAr, englishName: s.nameEn, numberOfAyahs: s.ayahCount)).toList(growable: false);
+    return _metadata
+        .getAllSurahs()
+        .map((s) => QuranSurah(
+            number: s.number,
+            name: s.nameAr,
+            englishName: s.nameEn,
+            numberOfAyahs: s.ayahCount))
+        .toList(growable: false);
   }
 
   Future<int> fetchSurahStartPage(int surahNumber) async {
@@ -159,7 +210,8 @@ class QuranService {
       final count = _metadata.getVerseCount(surah);
       if (remaining <= count) {
         final tafsir = _metadata.getTafsir(surah)[remaining];
-        if (tafsir != null && tafsir.trim().isNotEmpty) return QuranTafsir(text: tafsir.trim(), source: 'التفسير الميسر');
+        if (tafsir != null && tafsir.trim().isNotEmpty)
+          return QuranTafsir(text: tafsir.trim(), source: 'التفسير الميسر');
         break;
       }
       remaining -= count;

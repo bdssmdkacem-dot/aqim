@@ -49,7 +49,8 @@ class HijriDate {
     final lastVerifiedStart = _morocco1448.last.gregorian;
     final lastVerifiedEnd = lastVerifiedStart.add(const Duration(days: 30));
 
-    if (!localDate.isBefore(_morocco1448.first.gregorian) && localDate.isBefore(lastVerifiedEnd)) {
+    if (!localDate.isBefore(_morocco1448.first.gregorian) &&
+        localDate.isBefore(lastVerifiedEnd)) {
       for (var i = _morocco1448.length - 1; i >= 0; i--) {
         final start = _morocco1448[i];
         if (!localDate.isBefore(start.gregorian)) {

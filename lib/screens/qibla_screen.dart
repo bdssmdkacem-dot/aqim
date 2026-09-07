@@ -74,7 +74,8 @@ class _QiblaScreenState extends State<QiblaScreen> {
     final dLon = _degToRad(_kaabaLon - longitude);
     final a = math.pow(math.sin(dLat / 2), 2) +
         math.cos(lat1) * math.cos(lat2) * math.pow(math.sin(dLon / 2), 2);
-    final c = 2 * math.atan2(math.sqrt(a.toDouble()), math.sqrt(1 - a.toDouble()));
+    final c =
+        2 * math.atan2(math.sqrt(a.toDouble()), math.sqrt(1 - a.toDouble()));
     return earthRadiusKm * c;
   }
 
@@ -118,7 +119,8 @@ class _QiblaScreenState extends State<QiblaScreen> {
       ),
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.gold))
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.gold))
             : _position == null
                 ? _LocationRequired(
                     message: _locationError ?? 'تعذر تحديد موقعك.',
@@ -201,7 +203,9 @@ class _CompassView extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                aligned ? 'أحسنت! أنت باتجاه القبلة' : 'حرّك الهاتف حتى يشير السهم إلى الكعبة',
+                aligned
+                    ? 'أحسنت! أنت باتجاه القبلة'
+                    : 'حرّك الهاتف حتى يشير السهم إلى الكعبة',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.cairo(
                   fontSize: 14,
@@ -217,7 +221,8 @@ class _CompassView extends StatelessWidget {
                         ? 'اقتربت — حرّكه قليلًا إلى ${angle > 0 ? 'اليمين' : 'اليسار'}.'
                         : 'اجعل مقدمة الهاتف في اتجاه السهم.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted),
+                style:
+                    GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted),
               ),
               const SizedBox(height: 16),
               _CompassDial(angle: angle, aligned: aligned),
@@ -266,7 +271,8 @@ class _CompassView extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         'دقة البوصلة: ±${accuracy!.toStringAsFixed(0)}°',
-                        style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted),
+                        style: GoogleFonts.cairo(
+                            fontSize: 10, color: AppColors.textMuted),
                       ),
                     ],
                   ],
@@ -279,18 +285,23 @@ class _CompassView extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.surface.withOpacity(.75),
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.paperLine.withOpacity(.65)),
+                  border:
+                      Border.all(color: AppColors.paperLine.withOpacity(.65)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.sync_rounded, color: AppColors.goldSoft, size: 23),
+                    const Icon(Icons.sync_rounded,
+                        color: AppColors.goldSoft, size: 23),
                     const SizedBox(width: 9),
                     Expanded(
                       child: Text(
                         'إذا كان السهم يهتز أو الاتجاه غير ثابت، حرّك الهاتف ببطء على شكل رقم 8، وأبعده عن المغناطيس والمعادن والأغطية المغناطيسية.',
                         textAlign: TextAlign.right,
-                        style: GoogleFonts.cairo(fontSize: 10.5, height: 1.7, color: AppColors.inkSoft),
+                        style: GoogleFonts.cairo(
+                            fontSize: 10.5,
+                            height: 1.7,
+                            color: AppColors.inkSoft),
                       ),
                     ),
                   ],
@@ -299,7 +310,8 @@ class _CompassView extends StatelessWidget {
               const SizedBox(height: 9),
               Text(
                 '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}',
-                style: GoogleFonts.tajawal(fontSize: 9.5, color: AppColors.textMuted),
+                style: GoogleFonts.tajawal(
+                    fontSize: 9.5, color: AppColors.textMuted),
               ),
             ],
           ),
@@ -347,7 +359,8 @@ class _CompassDial extends StatelessWidget {
             child: Container(
               width: 7,
               height: 7,
-              decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.gold),
+              decoration: const BoxDecoration(
+                  shape: BoxShape.circle, color: AppColors.gold),
             ),
           ),
           Transform.rotate(
@@ -362,7 +375,8 @@ class _CompassDial extends StatelessWidget {
                 ),
                 Transform.translate(
                   offset: const Offset(0, -14),
-                  child: const Icon(Icons.mosque_rounded, color: AppColors.ivory, size: 31),
+                  child: const Icon(Icons.mosque_rounded,
+                      color: AppColors.ivory, size: 31),
                 ),
               ],
             ),
@@ -371,7 +385,8 @@ class _CompassDial extends StatelessWidget {
             Positioned(
               bottom: 47,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.sage.withOpacity(.16),
                   borderRadius: BorderRadius.circular(20),
@@ -379,7 +394,10 @@ class _CompassDial extends StatelessWidget {
                 ),
                 child: Text(
                   'القبلة ✓',
-                  style: GoogleFonts.cairo(color: AppColors.sage, fontWeight: FontWeight.w800, fontSize: 11),
+                  style: GoogleFonts.cairo(
+                      color: AppColors.sage,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11),
                 ),
               ),
             ),
@@ -422,7 +440,9 @@ class _InfoPill extends StatelessWidget {
           children: [
             Icon(icon, size: 13, color: AppColors.goldSoft),
             const SizedBox(width: 4),
-            Text(label, style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.inkSoft)),
+            Text(label,
+                style:
+                    GoogleFonts.cairo(fontSize: 9.5, color: AppColors.inkSoft)),
           ],
         ),
       );
@@ -433,7 +453,8 @@ class _LocationRequired extends StatelessWidget {
   final VoidCallback onRetry;
   final VoidCallback onSettings;
 
-  const _LocationRequired({required this.message, required this.onRetry, required this.onSettings});
+  const _LocationRequired(
+      {required this.message, required this.onRetry, required this.onSettings});
 
   @override
   Widget build(BuildContext context) => Center(
@@ -442,15 +463,28 @@ class _LocationRequired extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.location_off_rounded, color: AppColors.gold, size: 58),
+              const Icon(Icons.location_off_rounded,
+                  color: AppColors.gold, size: 58),
               const SizedBox(height: 18),
-              Text('نحتاج إلى موقعك', style: GoogleFonts.amiri(fontSize: 25, fontWeight: FontWeight.w800, color: AppColors.ivory)),
+              Text('نحتاج إلى موقعك',
+                  style: GoogleFonts.amiri(
+                      fontSize: 25,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ivory)),
               const SizedBox(height: 8),
-              Text(message, textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 13, height: 1.7, color: AppColors.inkSoft)),
+              Text(message,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(
+                      fontSize: 13, height: 1.7, color: AppColors.inkSoft)),
               const SizedBox(height: 18),
-              SizedBox(width: double.infinity, child: ElevatedButton(onPressed: onRetry, child: const Text('السماح بالموقع'))),
+              SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                      onPressed: onRetry, child: const Text('السماح بالموقع'))),
               const SizedBox(height: 8),
-              TextButton(onPressed: onSettings, child: const Text('فتح إعدادات الموقع')),
+              TextButton(
+                  onPressed: onSettings,
+                  child: const Text('فتح إعدادات الموقع')),
             ],
           ),
         ),
@@ -462,7 +496,10 @@ class _SensorUnavailable extends StatelessWidget {
   final double distanceKm;
   final String Function(double degrees) directionName;
 
-  const _SensorUnavailable({required this.qiblaBearing, required this.distanceKm, required this.directionName});
+  const _SensorUnavailable(
+      {required this.qiblaBearing,
+      required this.distanceKm,
+      required this.directionName});
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
@@ -471,23 +508,48 @@ class _SensorUnavailable extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const SizedBox(height: 35),
-            const Icon(Icons.explore_off_rounded, color: AppColors.gold, size: 62),
+            const Icon(Icons.explore_off_rounded,
+                color: AppColors.gold, size: 62),
             const SizedBox(height: 18),
-            Text('البوصلة غير متوفرة في هذا الجهاز', textAlign: TextAlign.center, style: GoogleFonts.amiri(fontSize: 23, fontWeight: FontWeight.w800, color: AppColors.ivory)),
+            Text('البوصلة غير متوفرة في هذا الجهاز',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.amiri(
+                    fontSize: 23,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ivory)),
             const SizedBox(height: 10),
-            Text('هذا الجهاز لا يوفّر حساس اتجاه مغناطيسي يمكن للتطبيق قراءته. لا يمكن إعطاء سهم حيّ دقيق دون هذا الحساس.', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 12.5, height: 1.7, color: AppColors.inkSoft)),
+            Text(
+                'هذا الجهاز لا يوفّر حساس اتجاه مغناطيسي يمكن للتطبيق قراءته. لا يمكن إعطاء سهم حيّ دقيق دون هذا الحساس.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cairo(
+                    fontSize: 12.5, height: 1.7, color: AppColors.inkSoft)),
             const SizedBox(height: 18),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: AppColors.surfaceDark, borderRadius: BorderRadius.circular(18), border: Border.all(color: AppColors.gold.withOpacity(.3))),
+              decoration: BoxDecoration(
+                  color: AppColors.surfaceDark,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.gold.withOpacity(.3))),
               child: Column(children: [
-                Text('${qiblaBearing.toStringAsFixed(0)}°', style: GoogleFonts.tajawal(fontSize: 30, fontWeight: FontWeight.w900, color: AppColors.gold)),
-                Text('من الشمال — ${directionName(qiblaBearing)}', style: GoogleFonts.cairo(color: AppColors.ivory)),
+                Text('${qiblaBearing.toStringAsFixed(0)}°',
+                    style: GoogleFonts.tajawal(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.gold)),
+                Text('من الشمال — ${directionName(qiblaBearing)}',
+                    style: GoogleFonts.cairo(color: AppColors.ivory)),
                 const SizedBox(height: 7),
-                Text('المسافة التقريبية إلى الكعبة: ${distanceKm.toStringAsFixed(0)} كم', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted)),
+                Text(
+                    'المسافة التقريبية إلى الكعبة: ${distanceKm.toStringAsFixed(0)} كم',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.cairo(
+                        fontSize: 10, color: AppColors.textMuted)),
                 const SizedBox(height: 5),
-                Text('يمكن استخدام هذه الزاوية مع بوصلة خارجية.', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted)),
+                Text('يمكن استخدام هذه الزاوية مع بوصلة خارجية.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.cairo(
+                        fontSize: 10, color: AppColors.textMuted)),
               ]),
             ),
           ],

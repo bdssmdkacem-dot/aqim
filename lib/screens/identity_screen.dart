@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/prayer.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import 'main_shell.dart';
 
@@ -29,11 +30,16 @@ class IdentityScreen extends StatelessWidget {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(color: AppColors.ink, borderRadius: BorderRadius.circular(18)),
+                decoration: BoxDecoration(
+                    color: AppColors.ink,
+                    borderRadius: BorderRadius.circular(18)),
                 child: Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.amiri(fontSize: 19, color: AppColors.gold, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.amiri(
+                      fontSize: 19,
+                      color: AppColors.gold,
+                      fontWeight: FontWeight.w700),
                 ),
               ),
               const SizedBox(height: 18),

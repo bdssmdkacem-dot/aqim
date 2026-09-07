@@ -108,8 +108,7 @@ class _WindowPainter extends CustomPainter {
   });
 
   bool get _isNight =>
-      period == PrayerDayPeriod.night ||
-      period == PrayerDayPeriod.dawn;
+      period == PrayerDayPeriod.night || period == PrayerDayPeriod.dawn;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -122,8 +121,7 @@ class _WindowPainter extends CustomPainter {
       ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.round;
 
-    final goldFill = Paint()
-      ..color = AppColors.gold;
+    final goldFill = Paint()..color = AppColors.gold;
 
     //---------------------------------------
     // Arch
@@ -186,8 +184,7 @@ class _WindowPainter extends CustomPainter {
 
       canvas.restore();
 
-      final starPaint = Paint()
-        ..color = AppColors.goldSoft;
+      final starPaint = Paint()..color = AppColors.goldSoft;
 
       canvas.drawCircle(
         Offset(w * .66, archTop + h * .04),

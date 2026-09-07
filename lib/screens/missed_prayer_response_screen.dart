@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/prayer.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import 'reason_screen.dart';
 
@@ -21,7 +22,8 @@ class MissedPrayerResponseScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.ink,
       appBar: AppBar(
-        title: Text('صلاة ${prayer.arabicName}', style: GoogleFonts.amiri(fontWeight: FontWeight.w700)),
+        title: Text('صلاة ${prayer.arabicName}',
+            style: GoogleFonts.amiri(fontWeight: FontWeight.w700)),
       ),
       body: SafeArea(
         child: ListView(
@@ -32,7 +34,8 @@ class MissedPrayerResponseScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.surfaceDark,
                 borderRadius: BorderRadius.circular(26),
-                border: Border.all(color: AppColors.ember.withOpacity(.65), width: 1.2),
+                border: Border.all(
+                    color: AppColors.ember.withOpacity(.65), width: 1.2),
               ),
               child: Column(
                 children: [
@@ -42,19 +45,33 @@ class MissedPrayerResponseScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppColors.ember.withOpacity(.12),
-                      border: Border.all(color: AppColors.ember.withOpacity(.7)),
+                      border:
+                          Border.all(color: AppColors.ember.withOpacity(.7)),
                     ),
-                    child: const Icon(Icons.notifications_active_rounded, color: AppColors.ember, size: 36),
+                    child: const Icon(Icons.notifications_active_rounded,
+                        color: AppColors.ember, size: 36),
                   ),
                   const SizedBox(height: 16),
-                  Text('فاتتك صلاة ${prayer.arabicName}', textAlign: TextAlign.center, style: GoogleFonts.amiri(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.ivory)),
+                  Text('فاتتك صلاة ${prayer.arabicName}',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.amiri(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ivory)),
                   const SizedBox(height: 7),
-                  Text('اختر حالتها مرة واحدة ليُحدَّث سجل أقم.', textAlign: TextAlign.center, style: GoogleFonts.cairo(fontSize: 12.5, color: AppColors.inkSoft)),
+                  Text('اختر حالتها مرة واحدة ليُحدَّث سجل أقم.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.cairo(
+                          fontSize: 12.5, color: AppColors.inkSoft)),
                 ],
               ),
             ),
             const SizedBox(height: 18),
-            Text('ماذا حدث؟', style: GoogleFonts.cairo(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w700)),
+            Text('ماذا حدث؟',
+                style: GoogleFonts.cairo(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             _ChoiceButton(
               icon: Icons.check_circle_rounded,
@@ -74,7 +91,8 @@ class MissedPrayerResponseScreen extends StatelessWidget {
               color: AppColors.ember,
               onTap: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ReasonScreen(prayer: prayer)),
+                  MaterialPageRoute(
+                      builder: (_) => ReasonScreen(prayer: prayer)),
                 );
               },
             ),
@@ -89,7 +107,8 @@ class MissedPrayerResponseScreen extends StatelessWidget {
               child: Text(
                 'لن يظهر لك زوج آخر من أزرار «صليت / لم أصلِّ بعد» في نفس الشاشة.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.textMuted, height: 1.6),
+                style: GoogleFonts.cairo(
+                    fontSize: 10.5, color: AppColors.textMuted, height: 1.6),
               ),
             ),
           ],
@@ -136,13 +155,20 @@ class _ChoiceButton extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: GoogleFonts.cairo(fontSize: 17, color: AppColors.ivory, fontWeight: FontWeight.w800)),
+                    Text(title,
+                        style: GoogleFonts.cairo(
+                            fontSize: 17,
+                            color: AppColors.ivory,
+                            fontWeight: FontWeight.w800)),
                     const SizedBox(height: 2),
-                    Text(subtitle, style: GoogleFonts.cairo(fontSize: 10.5, color: AppColors.textMuted)),
+                    Text(subtitle,
+                        style: GoogleFonts.cairo(
+                            fontSize: 10.5, color: AppColors.textMuted)),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_back_ios_new_rounded, color: color.withOpacity(.75), size: 15),
+              Icon(Icons.arrow_back_ios_new_rounded,
+                  color: color.withOpacity(.75), size: 15),
             ],
           ),
         ),

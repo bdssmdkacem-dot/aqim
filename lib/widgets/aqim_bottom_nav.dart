@@ -6,7 +6,8 @@ class AqimBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  const AqimBottomNav({super.key, required this.currentIndex, required this.onTap});
+  const AqimBottomNav(
+      {super.key, required this.currentIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -21,8 +22,18 @@ class AqimBottomNav extends StatelessWidget {
           height: 66,
           child: Row(
             children: [
-              _NavItem(icon: Icons.home_outlined, selectedIcon: Icons.home, label: 'الرئيسية', selected: currentIndex == 0, onTap: () => onTap(0)),
-              _NavItem(icon: Icons.menu_book_outlined, selectedIcon: Icons.menu_book, label: 'القرآن', selected: currentIndex == 1, onTap: () => onTap(1)),
+              _NavItem(
+                  icon: Icons.home_outlined,
+                  selectedIcon: Icons.home,
+                  label: 'الرئيسية',
+                  selected: currentIndex == 0,
+                  onTap: () => onTap(0)),
+              _NavItem(
+                  icon: Icons.menu_book_outlined,
+                  selectedIcon: Icons.menu_book,
+                  label: 'القرآن',
+                  selected: currentIndex == 1,
+                  onTap: () => onTap(1)),
               Expanded(
                 child: Transform.translate(
                   offset: const Offset(0, -14),
@@ -35,18 +46,35 @@ class AqimBottomNav extends StatelessWidget {
                         child: Container(
                           width: 54,
                           height: 54,
-                          decoration: const BoxDecoration(color: AppColors.gold, shape: BoxShape.circle),
-                          child: const Icon(Icons.timer_outlined, color: AppColors.ink, size: 26),
+                          decoration: const BoxDecoration(
+                              color: AppColors.gold, shape: BoxShape.circle),
+                          child: const Icon(Icons.timer_outlined,
+                              color: AppColors.ink, size: 26),
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text('استعد للصلاة', style: GoogleFonts.cairo(fontSize: 9.5, color: AppColors.gold, fontWeight: FontWeight.w700, decoration: TextDecoration.none)),
+                      Text('استعد للصلاة',
+                          style: GoogleFonts.cairo(
+                              fontSize: 9.5,
+                              color: AppColors.gold,
+                              fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.none)),
                     ],
                   ),
                 ),
               ),
-              _NavItem(icon: Icons.auto_awesome_outlined, selectedIcon: Icons.auto_awesome, label: 'أذكار', selected: currentIndex == 2, onTap: () => onTap(2)),
-              _NavItem(icon: Icons.more_horiz_rounded, selectedIcon: Icons.more_horiz_rounded, label: 'المزيد', selected: currentIndex == 3, onTap: () => onTap(3)),
+              _NavItem(
+                  icon: Icons.auto_awesome_outlined,
+                  selectedIcon: Icons.auto_awesome,
+                  label: 'أذكار',
+                  selected: currentIndex == 2,
+                  onTap: () => onTap(2)),
+              _NavItem(
+                  icon: Icons.more_horiz_rounded,
+                  selectedIcon: Icons.more_horiz_rounded,
+                  label: 'المزيد',
+                  selected: currentIndex == 3,
+                  onTap: () => onTap(3)),
             ],
           ),
         ),
@@ -62,7 +90,12 @@ class _NavItem extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _NavItem({required this.icon, required this.selectedIcon, required this.label, required this.selected, required this.onTap});
+  const _NavItem(
+      {required this.icon,
+      required this.selectedIcon,
+      required this.label,
+      required this.selected,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +108,12 @@ class _NavItem extends StatelessWidget {
           children: [
             Icon(selected ? selectedIcon : icon, color: color, size: 22),
             const SizedBox(height: 3),
-            Text(label, style: GoogleFonts.cairo(fontSize: 10, color: color, fontWeight: FontWeight.w600, decoration: TextDecoration.none)),
+            Text(label,
+                style: GoogleFonts.cairo(
+                    fontSize: 10,
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.none)),
           ],
         ),
       ),

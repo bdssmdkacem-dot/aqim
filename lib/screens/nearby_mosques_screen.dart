@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/location_service.dart';
 import '../services/mosque_service.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 
 class NearbyMosquesScreen extends StatefulWidget {
@@ -45,7 +46,8 @@ class _NearbyMosquesScreenState extends State<NearbyMosquesScreen> {
       return;
     }
 
-    final results = await MosqueService.fetchNearby(latitude: lat, longitude: lng);
+    final results =
+        await MosqueService.fetchNearby(latitude: lat, longitude: lng);
     if (!mounted) return;
 
     if (results == null) {
@@ -82,7 +84,8 @@ class _NearbyMosquesScreenState extends State<NearbyMosquesScreen> {
       case _LoadState.noLocation:
         return _message(
           icon: Icons.location_off_outlined,
-          text: 'تعذّر تحديد موقعك. تأكد من تفعيل خدمة الموقع والصلاحية، ثم أعد المحاولة.',
+          text:
+              'تعذّر تحديد موقعك. تأكد من تفعيل خدمة الموقع والصلاحية، ثم أعد المحاولة.',
         );
       case _LoadState.error:
         return _message(
@@ -92,7 +95,8 @@ class _NearbyMosquesScreenState extends State<NearbyMosquesScreen> {
       case _LoadState.noResults:
         return _message(
           icon: Icons.mosque_outlined,
-          text: 'لم نجد مساجد قريبة ضمن 3 كم. جرّب موقعًا آخر أو تحقق من الإنترنت.',
+          text:
+              'لم نجد مساجد قريبة ضمن 3 كم. جرّب موقعًا آخر أو تحقق من الإنترنت.',
         );
       case _LoadState.done:
         return ListView.separated(
@@ -127,9 +131,12 @@ class _NearbyMosquesScreenState extends State<NearbyMosquesScreen> {
           children: [
             Icon(icon, size: 40, color: AppColors.textMuted),
             const SizedBox(height: 12),
-            Text(text, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+            Text(text,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: _load, child: const Text('إعادة المحاولة')),
+            OutlinedButton(
+                onPressed: _load, child: const Text('إعادة المحاولة')),
           ],
         ),
       ),

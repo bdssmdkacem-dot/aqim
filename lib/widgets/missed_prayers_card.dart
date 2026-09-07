@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/prayer.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 
 /// بطاقة "الصلوات غير المؤداة": تُحاسب المستخدم على صلوات اليوم التي
@@ -46,7 +47,8 @@ class MissedPrayersCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded, color: AppColors.ember, size: 20),
+              const Icon(Icons.warning_amber_rounded,
+                  color: AppColors.ember, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -59,7 +61,8 @@ class MissedPrayersCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.ember.withOpacity(0.18),
                   borderRadius: BorderRadius.circular(20),
@@ -78,7 +81,8 @@ class MissedPrayersCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'يُفضَّل قضاؤها بالترتيب — ابدأ بأول صلاة الآن',
-            style: TextStyle(fontSize: 11.5, color: Colors.white.withOpacity(0.6)),
+            style:
+                TextStyle(fontSize: 11.5, color: Colors.white.withOpacity(0.6)),
           ),
           const SizedBox(height: 12),
           ...List.generate(missed.length, (i) {
@@ -132,7 +136,10 @@ class _MissedRow extends StatelessWidget {
             ),
             child: Text(
               '$order',
-              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: AppColors.ember),
+              style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ember),
             ),
           ),
           const SizedBox(width: 10),
@@ -141,7 +148,10 @@ class _MissedRow extends StatelessWidget {
           Expanded(
             child: Text(
               prayer.arabicName,
-              style: GoogleFonts.amiri(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+              style: GoogleFonts.amiri(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white),
             ),
           ),
           InkWell(
@@ -157,11 +167,15 @@ class _MissedRow extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.check_rounded, size: 14, color: AppColors.sage),
+                  const Icon(Icons.check_rounded,
+                      size: 14, color: AppColors.sage),
                   const SizedBox(width: 4),
                   Text(
                     'قمت بقضائها',
-                    style: GoogleFonts.cairo(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.sage),
+                    style: GoogleFonts.cairo(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.sage),
                   ),
                 ],
               ),
@@ -177,7 +191,8 @@ class _ProgressBar extends StatelessWidget {
   final double progress;
   final int done;
   final int total;
-  const _ProgressBar({required this.progress, required this.done, required this.total});
+  const _ProgressBar(
+      {required this.progress, required this.done, required this.total});
 
   @override
   Widget build(BuildContext context) {
@@ -188,12 +203,18 @@ class _ProgressBar extends StatelessWidget {
           children: [
             Text(
               'قضاء اليوم',
-              style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white70),
+              style: GoogleFonts.cairo(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white70),
             ),
             const Spacer(),
             Text(
               '$done / $total',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.goldSoft),
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.goldSoft),
             ),
           ],
         ),
@@ -223,7 +244,8 @@ class _EmptyMissedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final emoji = allDone ? '🌿' : '✅';
     final title = allDone ? 'جميع الصلوات مؤداة' : 'بارك الله فيك';
-    final subtitle = allDone ? 'تقبّل الله منك' : 'ليس عليك أي صلاة فائتة اليوم';
+    final subtitle =
+        allDone ? 'تقبّل الله منك' : 'ليس عليك أي صلاة فائتة اليوم';
 
     return Container(
       width: double.infinity,
@@ -240,12 +262,16 @@ class _EmptyMissedCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             title,
-            style: GoogleFonts.amiri(fontSize: 16.5, fontWeight: FontWeight.w700, color: Colors.white),
+            style: GoogleFonts.amiri(
+                fontSize: 16.5,
+                fontWeight: FontWeight.w700,
+                color: Colors.white),
           ),
           const SizedBox(height: 2),
           Text(
             subtitle,
-            style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.65)),
+            style:
+                TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.65)),
           ),
         ],
       ),

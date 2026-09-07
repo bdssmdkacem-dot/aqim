@@ -27,9 +27,8 @@ class ReviewService {
       final prefs = await SharedPreferences.getInstance();
       final today = _dateKey(DateTime.now());
       final savedDate = prefs.getString(_requestDateKey);
-      final requestCount = savedDate == today
-          ? (prefs.getInt(_requestCountKey) ?? 0)
-          : 0;
+      final requestCount =
+          savedDate == today ? (prefs.getInt(_requestCountKey) ?? 0) : 0;
 
       if (requestCount >= _maxRequestsPerDay) return;
       if (!await _review.isAvailable()) return;
@@ -39,9 +38,10 @@ class ReviewService {
 
       final refreshedPrefs = await SharedPreferences.getInstance();
       final refreshedDate = _dateKey(DateTime.now());
-      final refreshedCount = refreshedPrefs.getString(_requestDateKey) == refreshedDate
-          ? (refreshedPrefs.getInt(_requestCountKey) ?? 0)
-          : 0;
+      final refreshedCount =
+          refreshedPrefs.getString(_requestDateKey) == refreshedDate
+              ? (refreshedPrefs.getInt(_requestCountKey) ?? 0)
+              : 0;
       if (refreshedCount >= _maxRequestsPerDay) return;
 
       // Record the request, not a successful rating. The API does not expose

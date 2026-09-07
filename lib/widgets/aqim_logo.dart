@@ -99,7 +99,8 @@ class _AqimLogoPainter extends CustomPainter {
       ..addOval(Rect.fromCircle(center: moonCenter, radius: moonR));
     final cutout = Path()
       ..addOval(Rect.fromCenter(
-        center: Offset(moonCenter.dx + moonR * .57, moonCenter.dy - moonR * .12),
+        center:
+            Offset(moonCenter.dx + moonR * .57, moonCenter.dy - moonR * .12),
         width: moonR * 1.7,
         height: moonR * 2.05,
       ));

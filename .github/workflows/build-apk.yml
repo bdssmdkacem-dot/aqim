@@ -27,18 +27,6 @@ jobs:
       - name: Apply persistent pre-prayer alarm fix
         run: python3 scripts/apply_persistent_pre_prayer_alarm.py
 
-      - name: Persist generated notification source fixes
-        run: |
-          if git diff --quiet -- lib/services/notification_service.dart; then
-            echo "No generated notification source changes to persist."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add lib/services/notification_service.dart
-            git commit -m "fix: persist notification and adhan scheduling fixes [skip ci]"
-            git push
-          fi
-
       - name: Download and verify Tanzil Uthmani Quran
         run: python3 scripts/download_tanzil_uthmani.py
 
@@ -66,6 +54,30 @@ jobs:
 
       - name: Prepare release compile fixes
         run: python3 scripts/prepare_release_compile_fixes.py
+
+      - name: Format Dart sources
+        run: dart format lib test
+
+      - name: Persist generated and formatted Dart changes
+        run: |
+          if git diff --quiet -- lib test; then
+            echo "No generated or formatting changes to persist."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lib test
+            git commit -m "chore: format Dart sources and persist generated fixes [skip ci]"
+            git push
+          fi
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Flutter analyze
+        run: flutter analyze
+
+      - name: Flutter tests
+        run: flutter test
 
       - name: Verify Quran asset
         run: |
@@ -107,7 +119,6 @@ jobs:
 
       - name: Verify signing files
         run: |
-          ls -lah android
           test -f android/upload-keystore.jks
           test -f android/key.properties
 

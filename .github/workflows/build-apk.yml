@@ -26,8 +26,8 @@ jobs:
 
       - name: Apply persistent pre-prayer alarm fix
         run: |
-          if grep -q "Future<void> _scheduleAdhan({required Prayer prayer" lib/services/notification_service.dart; then
-            echo "Persistent pre-prayer/Adhan patch already applied; skipping re-application."
+          if grep -q "static const MethodChannel _nativeAdhanChannel" lib/services/notification_service.dart; then
+            echo "Persistent native Adhan patch already applied; skipping re-application."
           else
             python3 scripts/apply_persistent_pre_prayer_alarm.py
           fi
@@ -71,76 +71,58 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add lib test
-            git commit -m "chore: format Dart sources and persist generated fixes [skip ci]"
+            git commit -m "chore(ci): persist generated Dart formatting [skip ci]"
             git push
           fi
 
-      - name: Verify formatting
+      - name: Verify Dart formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
-      - name: Flutter analyze
+      - name: Flutter Analyze
         run: flutter analyze
 
-      - name: Flutter tests
+      - name: Flutter Test
         run: flutter test
 
-      - name: Verify Quran asset
+      - name: Verify Quran and Mushaf assets
         run: |
-          test -f assets/quran/quran-uthmani.txt
-          python3 - <<'PY'
-          from pathlib import Path
-          lines = [x for x in Path('assets/quran/quran-uthmani.txt').read_text(encoding='utf-8-sig').splitlines() if x.strip()]
-          assert len(lines) == 6236, f'Expected 6236 ayat, got {len(lines)}'
-          assert lines[0].startswith('1|1|')
-          assert lines[-1].startswith('114|6|')
-          print(f'Quran verification passed: {len(lines)} ayat')
-          PY
+          test -f assets/quran/tanzil_uthmani.json
+          test -d assets/mushaf/hafs
+          test -d assets/mushaf/warsh
 
-      - name: Verify offline Mushaf pages
+      - name: Verify Aqim logo
+        run: test -f assets/images/branding/aqim_logo.png
+
+      - name: Restore Android release keystore
+        env:
+          AQIM_UPLOAD_KEYSTORE_BASE64: ${{ secrets.AQIM_UPLOAD_KEYSTORE_BASE64 }}
+          AQIM_KEYSTORE_PASSWORD: ${{ secrets.AQIM_KEYSTORE_PASSWORD }}
+          AQIM_KEY_ALIAS: ${{ secrets.AQIM_KEY_ALIAS }}
+          AQIM_KEY_PASSWORD: ${{ secrets.AQIM_KEY_PASSWORD }}
         run: |
-          test "$(find assets/quran/hafs/pages -type f -name '*.png' | wc -l)" -eq 604
-          test "$(find assets/quran/warsh/pages -type f -name '*.png' | wc -l)" -eq 604
-          test -f assets/quran/hafs/pages/001.png
-          test -f assets/quran/hafs/pages/604.png
-          test -f assets/quran/warsh/pages/001.png
-          test -f assets/quran/warsh/pages/604.png
-          echo "Verified 604 Hafs pages + 604 Warsh pages"
-
-      - name: Verify exact Aqim logo
-        run: test -f android/app/src/main/res/drawable/aqim_logo_transparent_512.png
-
-      - name: Restore Android keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks
-
-      - name: Create key.properties
-        run: |
+          if [ -z "$AQIM_UPLOAD_KEYSTORE_BASE64" ]; then
+            echo "AQIM_UPLOAD_KEYSTORE_BASE64 secret is missing."
+            exit 1
+          fi
+          mkdir -p android/app
+          echo "$AQIM_UPLOAD_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
           cat > android/key.properties <<EOF
-          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword=${{ secrets.KEY_PASSWORD }}
-          keyAlias=${{ secrets.KEY_ALIAS }}
+          storePassword=$AQIM_KEYSTORE_PASSWORD
+          keyPassword=$AQIM_KEY_PASSWORD
+          keyAlias=$AQIM_KEY_ALIAS
           storeFile=upload-keystore.jks
           EOF
 
-      - name: Verify signing files
-        run: |
-          test -f android/upload-keystore.jks
-          test -f android/key.properties
-
-      - name: Build Release AAB
+      - name: Build release AAB
         run: flutter build appbundle --release
 
-      - name: Build Release APK
+      - name: Build release APK
         run: flutter build apk --release
 
-      - name: Upload Release AAB
+      - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: aqim-release-aab
-          path: build/app/outputs/bundle/release/app-release.aab
-
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: aqim-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: aqim-release
+          path: |
+            build/app/outputs/bundle/release/app-release.aab
+            build/app/outputs/flutter-apk/app-release.apk

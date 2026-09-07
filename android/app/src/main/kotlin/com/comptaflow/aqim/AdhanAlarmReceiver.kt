@@ -1,4 +1,4 @@
-package com.comptaflow.aqim
+package com.aqim.app
 
 import android.app.AlarmManager
 import android.app.NotificationChannel
@@ -18,19 +18,16 @@ class AdhanAlarmReceiver : BroadcastReceiver() {
             AdhanAlarmScheduler.refreshCurrentDayAsync(context)
             return
         }
-
         val soundName = intent.getStringExtra(EXTRA_SOUND) ?: return
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "حان وقت الصلاة"
         val body = intent.getStringExtra(EXTRA_BODY) ?: "حيّ على الصلاة، حيّ على الفلاح."
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, DEFAULT_NOTIFICATION_ID)
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
         val exactAvailable = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager?.canScheduleExactAlarms() == true
-
         if (!exactAvailable) {
             postFallbackAdhan(context, soundName, title, body, notificationId)
             return
         }
-
         val serviceIntent = Intent(context, AdhanAlarmService::class.java).apply {
             putExtra(AdhanAlarmService.EXTRA_SOUND, soundName)
             putExtra(AdhanAlarmService.EXTRA_TITLE, title)
@@ -58,30 +55,29 @@ class AdhanAlarmReceiver : BroadcastReceiver() {
         val stopPendingIntent = PendingIntent.getBroadcast(context, notificationId, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             android.app.Notification.Builder(context, channelId)
-                .setSmallIcon(com.comptaflow.aqim.R.drawable.ic_aqim_logo)
+                .setSmallIcon(com.aqim.app.R.drawable.ic_aqim_logo)
                 .setContentTitle(title).setContentText(body)
                 .setCategory(android.app.Notification.CATEGORY_ALARM)
                 .setPriority(android.app.Notification.PRIORITY_MAX)
                 .setVisibility(android.app.Notification.VISIBILITY_PUBLIC)
                 .setOngoing(true)
-                .addAction(android.app.Notification.Action.Builder(android.graphics.drawable.Icon.createWithResource(context, com.comptaflow.aqim.R.drawable.ic_aqim_notification), "إيقاف الأذان", stopPendingIntent).build())
+                .addAction(android.app.Notification.Action.Builder(android.graphics.drawable.Icon.createWithResource(context, com.aqim.app.R.drawable.ic_aqim_notification), "إيقاف الأذان", stopPendingIntent).build())
                 .build()
         } else {
             android.app.Notification.Builder(context)
-                .setSmallIcon(com.comptaflow.aqim.R.drawable.ic_aqim_logo)
+                .setSmallIcon(com.aqim.app.R.drawable.ic_aqim_logo)
                 .setContentTitle(title).setContentText(body)
                 .setSound(Uri.parse("android.resource://${context.packageName}/raw/$soundName"), AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build())
                 .setCategory(android.app.Notification.CATEGORY_ALARM)
                 .setPriority(android.app.Notification.PRIORITY_MAX)
                 .setOngoing(true)
-                .addAction(android.app.Notification.Action.Builder(android.graphics.drawable.Icon.createWithResource(context, com.comptaflow.aqim.R.drawable.ic_aqim_notification), "إيقاف الأذان", stopPendingIntent).build())
                 .build()
         }
         manager.notify(notificationId, notification)
     }
 
     companion object {
-        const val ACTION_DAILY_MAINTENANCE = "com.comptaflow.aqim.action.DAILY_ADHAN_MAINTENANCE"
+        const val ACTION_DAILY_MAINTENANCE = "com.aqim.app.action.DAILY_ADHAN_MAINTENANCE"
         const val EXTRA_SOUND = "sound_name"
         const val EXTRA_TITLE = "title"
         const val EXTRA_BODY = "body"

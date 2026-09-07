@@ -5,7 +5,6 @@ import '../services/battery_service.dart';
 import '../services/location_service.dart';
 import '../services/notification_service.dart';
 import '../state/app_state.dart';
-import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import 'main_shell.dart';
 

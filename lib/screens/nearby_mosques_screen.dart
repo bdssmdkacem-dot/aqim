@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/location_service.dart';
 import '../services/mosque_service.dart';
 import '../state/app_state.dart';
-import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 
 class NearbyMosquesScreen extends StatefulWidget {

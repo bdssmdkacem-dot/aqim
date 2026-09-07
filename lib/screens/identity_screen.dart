@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/prayer.dart';
 import '../state/app_state.dart';
-import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import 'main_shell.dart';
 

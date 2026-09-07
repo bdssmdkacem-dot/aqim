@@ -17,15 +17,6 @@ const _dayLabels = [
   'الجمعة',
   'السبت'
 ];
-const _calendarDayLabels = [
-  'السبت',
-  'الأحد',
-  'الإثنين',
-  'الثلاثاء',
-  'الأربعاء',
-  'الخميس',
-  'الجمعة'
-];
 
 class WeekReportScreen extends StatelessWidget {
   const WeekReportScreen({super.key});

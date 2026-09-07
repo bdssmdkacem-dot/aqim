@@ -7,7 +7,6 @@ import '../models/prayer.dart';
 import '../services/audio_service.dart';
 import '../services/battery_service.dart';
 import '../state/app_state.dart';
-import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import '../widgets/aqim_bottom_nav.dart';
 import 'main_shell.dart';
@@ -18,19 +17,6 @@ const _afterOptions = [10, 15, 20, 30, 45];
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  void _navigate(BuildContext context, int index) {
-    if (index == 4) {
-      final next = context.read<AppState>().nextPrayer;
-      if (next != null) {
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => PrePrayerScreen(prayer: next)));
-      }
-      return;
-    }
-    Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => MainShell(initialIndex: index)));
-  }
 
   @override
   Widget build(BuildContext context) {

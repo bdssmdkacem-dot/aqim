@@ -5,7 +5,6 @@ import '../models/prayer.dart';
 import '../screens/main_shell.dart';
 import '../screens/pre_prayer_screen.dart';
 import '../state/app_state.dart';
-import '../state/app_state_actions.dart';
 import '../widgets/aqim_bottom_nav.dart';
 import 'nav_key.dart';
 

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../ads/app_interstitial_ad.dart';
 import '../state/app_state.dart';
-import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import 'nearby_mosques_screen.dart';
 import 'prayer_guide_screen.dart';

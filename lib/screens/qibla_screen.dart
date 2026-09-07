@@ -270,7 +270,7 @@ class _CompassView extends StatelessWidget {
                     if (accuracy != null) ...[
                       const SizedBox(height: 8),
                       Text(
-                        'دقة البوصلة: ±${accuracy!.toStringAsFixed(0)}°',
+                        'دقة البوصلة: ±${accuracy.toStringAsFixed(0)}°',
                         style: GoogleFonts.cairo(
                             fontSize: 10, color: AppColors.textMuted),
                       ),

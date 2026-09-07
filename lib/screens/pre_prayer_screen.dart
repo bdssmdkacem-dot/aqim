@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../models/adhkar.dart';
 import '../models/prayer.dart';
 import '../state/app_state.dart';
-import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 import 'adhkar_flow_screen.dart';
 import 'dhikr_screen.dart';

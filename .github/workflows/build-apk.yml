@@ -60,6 +60,24 @@ jobs:
       - name: Prepare release compile fixes
         run: python3 scripts/prepare_release_compile_fixes.py
 
+      - name: Ensure AppState exposes safe notification method
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('lib/state/app_state.dart')
+          text = path.read_text()
+          marker = '  void notifyAppStateChanged() => notifyListeners();\n'
+          if marker not in text:
+              needle = 'class AppState extends ChangeNotifier {\n'
+              if needle not in text:
+                  raise SystemExit('AppState class marker not found; refusing partial patch.')
+              text = text.replace(needle, needle + marker, 1)
+              path.write_text(text)
+              print('Added safe AppState notification method.')
+          else:
+              print('Safe AppState notification method already present.')
+          PY
+
       - name: Format Dart sources
         run: dart format lib test
 

@@ -159,8 +159,9 @@ jobs:
           storePassword=$AQIM_KEYSTORE_PASSWORD
           keyPassword=$AQIM_KEY_PASSWORD
           keyAlias=$AQIM_KEY_ALIAS
-          storeFile=upload-keystore.jks
+          storeFile=app/upload-keystore.jks
           EOF
+          echo "Android release keystore restored at android/app/upload-keystore.jks."
 
       - name: Build release AAB
         run: flutter build appbundle --release

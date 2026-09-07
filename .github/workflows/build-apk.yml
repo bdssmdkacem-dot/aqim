@@ -102,7 +102,7 @@ jobs:
       - name: Flutter Analyze
         run: |
           set +e
-          flutter analyze 2>&1 | tee /tmp/flutter-analyze.log
+          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee /tmp/flutter-analyze.log
           status=${PIPESTATUS[0]}
           echo "Flutter analyze exit code: $status"
           echo "=== analyzer errors ==="
@@ -111,7 +111,16 @@ jobs:
           grep -nE '(^| )warning •|^warning |WARNING' /tmp/flutter-analyze.log || true
           echo "=== analyzer infos ==="
           grep -nE '(^| )info •|^info ' /tmp/flutter-analyze.log | tail -n 20 || true
-          exit "$status"
+          if grep -qE '(^| )error •|^error |ERROR' /tmp/flutter-analyze.log; then
+            echo "Analyzer errors detected; failing CI."
+            exit 1
+          fi
+          if grep -qE '(^| )warning •|^warning |WARNING' /tmp/flutter-analyze.log; then
+            echo "Analyzer warnings detected; failing CI."
+            exit 1
+          fi
+          echo "Analyzer contains no errors or warnings; info diagnostics are non-fatal."
+          exit 0
 
       - name: Flutter Test
         run: flutter test

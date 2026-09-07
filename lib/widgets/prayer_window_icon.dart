@@ -1,7 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../widgets/prayer_window_icon.dart'
-    show PrayerDayPeriod, currentPrayerDayPeriod;
 import '../theme/app_theme.dart';
 
 /// فترة اليوم الخاصة بالتطبيق.
@@ -123,10 +121,6 @@ class _WindowPainter extends CustomPainter {
 
     final goldFill = Paint()..color = AppColors.gold;
 
-    //---------------------------------------
-    // Arch
-    //---------------------------------------
-
     final archTop = h * .10;
     final sideMargin = w * .08;
 
@@ -146,10 +140,6 @@ class _WindowPainter extends CustomPainter {
       Offset(w - sideMargin, h * .92),
       gold,
     );
-
-    //---------------------------------------
-    // Sky
-    //---------------------------------------
 
     if (_isNight) {
       final moonCenter = Offset(
@@ -241,10 +231,6 @@ class _WindowPainter extends CustomPainter {
       }
     }
 
-    //---------------------------------------
-    // Mosque
-    //---------------------------------------
-
     final baseY = h * .86;
 
     final domeCenter = Offset(
@@ -282,10 +268,6 @@ class _WindowPainter extends CustomPainter {
       Offset(domeCenter.dx + domeRadius, baseY),
       gold,
     );
-
-    //---------------------------------------
-    // Minaret
-    //---------------------------------------
 
     final minaretX = w * .72;
 

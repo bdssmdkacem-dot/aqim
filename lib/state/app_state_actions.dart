@@ -78,6 +78,47 @@ extension AppStateActions on AppState {
     return dailyHistory[key];
   }
 
+  /// Returns the recorded prayer statuses for a calendar day.
+  /// The current day is always backed by the live state; historical days are
+  /// read from the persisted per-day history. Returns null when no historical
+  /// record exists for the requested day.
+  Map<Prayer, PrayerStatus>? prayerStatusForDate(DateTime date) {
+    final key = _dateKey(date);
+    if (key == _dateKey(DateTime.now())) {
+      return Map<Prayer, PrayerStatus>.from(todayStatus);
+    }
+    final statuses = dailyPrayerHistory[key];
+    return statuses == null
+        ? null
+        : Map<Prayer, PrayerStatus>.from(statuses);
+  }
+
+  /// Overall commitment across all recorded prayer days, including today.
+  int? get overallCommitmentPercent {
+    var completed = 0;
+    var recorded = 0;
+
+    for (final statuses in dailyPrayerHistory.values) {
+      for (final prayer in activePrayers) {
+        final status = statuses[prayer];
+        if (status == null) continue;
+        recorded++;
+        if (status == PrayerStatus.done) completed++;
+      }
+    }
+
+    final todayRecorded = activePrayers
+        .where((prayer) => todayStatus[prayer] != PrayerStatus.pending)
+        .toList();
+    recorded += todayRecorded.length;
+    completed += todayRecorded
+        .where((prayer) => todayStatus[prayer] == PrayerStatus.done)
+        .length;
+
+    if (recorded == 0) return null;
+    return ((completed / recorded) * 100).round().clamp(0, 100);
+  }
+
   Prayer? get weakestPrayer {
     Prayer? weakest;
     var lowest = double.infinity;

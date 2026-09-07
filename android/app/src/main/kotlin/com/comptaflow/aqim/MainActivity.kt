@@ -8,7 +8,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
-import io.flutter.embedding.android.FlutterEngine
+import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
@@ -84,6 +84,6 @@ class MainActivity : FlutterActivity() {
     private fun cancelPrePrayerAlarm(id: Int) { val am = getSystemService(ALARM_SERVICE) as AlarmManager; val pi = PendingIntent.getBroadcast(this, id, Intent(this, PrePrayerAlarmReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE); am.cancel(pi); pi.cancel() }
     private fun cancelAdhanAlarm(id: Int) { val am = getSystemService(ALARM_SERVICE) as AlarmManager; val pi = PendingIntent.getBroadcast(this, id, Intent(this, AdhanAlarmReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE); am.cancel(pi); pi.cancel() }
     private fun cancelAllAdhanAlarms() { for (prayerIndex in 0..4) cancelAdhanAlarm(prayerIndex * 10 + 2) }
-    private fun isIgnoringBatteryOptimizations(): Boolean { if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true; val pm = getSystemService(POWER_SERVICE) as? PowerManager ?: return false; return pm.isIgnoringIgnoringBatteryOptimizations(packageName) }
+    private fun isIgnoringBatteryOptimizations(): Boolean { if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true; val pm = getSystemService(POWER_SERVICE) as? PowerManager ?: return false; return pm.isIgnoringBatteryOptimizations(packageName) }
     private fun requestIgnoreBatteryOptimizations() { if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || isIgnoringBatteryOptimizations()) return; try { startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply { data = Uri.parse("package:$packageName") }) } catch (_: Exception) { try { startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) } catch (_: Exception) { startActivity(Intent(Settings.ACTION_SETTINGS)) } } }
 }

@@ -11,7 +11,7 @@ extension AppStateActions on AppState {
     onboardingComplete = true;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('ob_complete', true);
-    notifyListeners();
+    notifyAppStateChanged();
   }
 
   Future<void> markDone(Prayer prayer) async {
@@ -20,7 +20,7 @@ extension AppStateActions on AppState {
     todayReasons.remove(prayer);
     await _persistActions();
     if (wasMissed) await _clearMissedPrayerArtifacts(prayer);
-    notifyListeners();
+    notifyAppStateChanged();
   }
 
   /// Marks a missed prayer as completed/qada exactly once.
@@ -30,7 +30,7 @@ extension AppStateActions on AppState {
     todayReasons.remove(prayer);
     await _persistActions();
     await _clearMissedPrayerArtifacts(prayer);
-    notifyListeners();
+    notifyAppStateChanged();
   }
 
   Future<void> _clearMissedPrayerArtifacts(Prayer prayer) async {
@@ -63,7 +63,7 @@ extension AppStateActions on AppState {
           'فات وقت ${prayer.arabicName}. اضغط هنا للانتقال مباشرة إلى تسجيل القضاء.',
       createdAt: now,
     );
-    notifyListeners();
+    notifyAppStateChanged();
   }
 
   int? percentForDate(DateTime date) {

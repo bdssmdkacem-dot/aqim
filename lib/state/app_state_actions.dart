@@ -88,9 +88,7 @@ extension AppStateActions on AppState {
       return Map<Prayer, PrayerStatus>.from(todayStatus);
     }
     final statuses = dailyPrayerHistory[key];
-    return statuses == null
-        ? null
-        : Map<Prayer, PrayerStatus>.from(statuses);
+    return statuses == null ? null : Map<Prayer, PrayerStatus>.from(statuses);
   }
 
   /// Overall commitment across all recorded prayer days, including today.

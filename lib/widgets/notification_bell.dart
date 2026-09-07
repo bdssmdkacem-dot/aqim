@@ -5,6 +5,7 @@ import '../screens/notification_inbox_screen.dart';
 import '../services/notification_inbox_service.dart';
 import '../services/religious_events_service.dart';
 import '../state/app_state.dart';
+import '../state/app_state_actions.dart';
 import '../theme/app_theme.dart';
 
 class NotificationBell extends StatefulWidget {

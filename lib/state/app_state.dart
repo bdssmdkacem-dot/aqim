@@ -21,6 +21,7 @@ const List<Prayer> _allPrayers = [
 ];
 
 class AppState extends ChangeNotifier {
+  void notifyAppStateChanged() => notifyListeners();
   bool onboardingComplete = false;
   int currentWeek = 1;
   int weekDaysCompleted = 0;

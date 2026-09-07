@@ -100,7 +100,18 @@ jobs:
         run: dart format --output=none --set-exit-if-changed lib test
 
       - name: Flutter Analyze
-        run: flutter analyze
+        run: |
+          set +e
+          flutter analyze 2>&1 | tee /tmp/flutter-analyze.log
+          status=${PIPESTATUS[0]}
+          echo "Flutter analyze exit code: $status"
+          echo "=== analyzer errors ==="
+          grep -nE '(^| )error •|^error |ERROR' /tmp/flutter-analyze.log || true
+          echo "=== analyzer warnings ==="
+          grep -nE '(^| )warning •|^warning |WARNING' /tmp/flutter-analyze.log || true
+          echo "=== analyzer infos ==="
+          grep -nE '(^| )info •|^info ' /tmp/flutter-analyze.log | tail -n 20 || true
+          exit "$status"
 
       - name: Flutter Test
         run: flutter test

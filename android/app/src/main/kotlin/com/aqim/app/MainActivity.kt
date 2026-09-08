@@ -76,10 +76,16 @@ class MainActivity : FlutterActivity() {
         val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
         val intent = Intent(this, AdhanAlarmReceiver::class.java).apply { putExtra(AdhanAlarmReceiver.EXTRA_SOUND, soundName); putExtra(AdhanAlarmReceiver.EXTRA_TITLE, title); putExtra(AdhanAlarmReceiver.EXTRA_BODY, body); putExtra(AdhanAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId) }
         val pendingIntent = PendingIntent.getBroadcast(this, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
-            else alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
-        } else alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+                val alarmClock = AlarmManager.AlarmClockInfo(timeMillis, pendingIntent)
+                alarmManager.setAlarmClock(alarmClock, pendingIntent)
+            } else {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+            }
+        } else {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        }
     }
     private fun cancelPrePrayerAlarm(id: Int) { val am = getSystemService(ALARM_SERVICE) as AlarmManager; val pi = PendingIntent.getBroadcast(this, id, Intent(this, PrePrayerAlarmReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE); am.cancel(pi); pi.cancel() }
     private fun cancelAdhanAlarm(id: Int) { val am = getSystemService(ALARM_SERVICE) as AlarmManager; val pi = PendingIntent.getBroadcast(this, id, Intent(this, AdhanAlarmReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE); am.cancel(pi); pi.cancel() }

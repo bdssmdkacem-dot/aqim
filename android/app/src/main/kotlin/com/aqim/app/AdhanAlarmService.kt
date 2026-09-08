@@ -10,6 +10,7 @@ import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.IBinder
+import java.io.File
 
 class AdhanAlarmService : Service() {
     private var player: MediaPlayer? = null
@@ -19,7 +20,8 @@ class AdhanAlarmService : Service() {
     override fun onCreate() { super.onCreate(); createChannel() }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val soundName = intent?.getStringExtra(EXTRA_SOUND)?.trim() ?: run { stopSelf(startId); return START_NOT_STICKY }
+        val rawSoundName = intent?.getStringExtra(EXTRA_SOUND) ?: run { stopSelf(startId); return START_NOT_STICKY }
+        val soundName = rawSoundName.trim()
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "حان وقت الصلاة"
         val body = intent.getStringExtra(EXTRA_BODY) ?: "حيّ على الصلاة، حيّ على الفلاح."
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, AdhanAlarmReceiver.DEFAULT_NOTIFICATION_ID)
@@ -28,18 +30,47 @@ class AdhanAlarmService : Service() {
         if (player?.isPlaying == true && activeSoundName == soundName) return START_NOT_STICKY
         startForeground(notificationId, buildNotification(title, body, notificationId))
         releasePlayer()
-        val resId = resources.getIdentifier(soundName, "raw", packageName)
-        if (resId == 0) { stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(startId); return START_NOT_STICKY }
         try {
-            val afd = resources.openRawResourceFd(resId) ?: throw IllegalStateException("Audio resource descriptor unavailable")
+            val assetFile = copyAdhanAssetToCache(soundName)
             val newPlayer = MediaPlayer()
             newPlayer.setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
-            newPlayer.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length); afd.close(); newPlayer.prepare(); newPlayer.isLooping = false
+            newPlayer.setDataSource(assetFile.absolutePath)
+            newPlayer.prepare()
+            newPlayer.isLooping = false
             newPlayer.setOnCompletionListener { if (player === newPlayer) { releasePlayer(); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf() } }
             newPlayer.setOnErrorListener { _, _, _ -> if (player === newPlayer) { releasePlayer(); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf() }; true }
-            player = newPlayer; activeSoundName = soundName; activeNotificationId = notificationId; newPlayer.start()
-        } catch (_: Exception) { releasePlayer(); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(startId) }
+            player = newPlayer
+            activeSoundName = soundName
+            activeNotificationId = notificationId
+            newPlayer.start()
+        } catch (_: Exception) {
+            releasePlayer()
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf(startId)
+        }
         return START_NOT_STICKY
+    }
+
+    private fun copyAdhanAssetToCache(soundName: String): File {
+        val assetName = when (soundName.lowercase()) {
+            "azan-fajr-madina", "azan_fajr_madina" -> "azan-Fajr-madina .mp3"
+            else -> "$soundName.mp3"
+        }
+        val candidates = listOf(
+            "assets/adhan/$assetName",
+            "assets/adhan/${assetName.trim()}",
+            "assets/adhan/${assetName.replace("-", "_").trim()}"
+        ).distinct()
+        val cacheFile = File(cacheDir, "adhan_${soundName.replace(Regex("[^A-Za-z0-9_-]"), "_")}.mp3")
+        if (cacheFile.exists() && cacheFile.length() > 0L) return cacheFile
+        var lastError: Exception? = null
+        for (path in candidates) {
+            try {
+                assets.open(path).use { input -> cacheFile.outputStream().use { output -> input.copyTo(output) } }
+                if (cacheFile.length() > 0L) return cacheFile
+            } catch (e: Exception) { lastError = e }
+        }
+        throw lastError ?: IllegalStateException("Adhan asset not found: $soundName")
     }
 
     override fun onDestroy() { releasePlayer(); activeNotificationId = null; super.onDestroy() }
@@ -64,7 +95,7 @@ class AdhanAlarmService : Service() {
         val stopIntent = Intent(this, StopAdhanReceiver::class.java).apply { putExtra(StopAdhanReceiver.EXTRA_NOTIFICATION_ID, notificationId) }
         val stopPendingIntent = PendingIntent.getBroadcast(this, notificationId, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(this, CHANNEL_ID) else Notification.Builder(this)
-        return builder.setSmallIcon(com.aqim.app.R.drawable.ic_aqim_logo).setContentTitle(title).setContentText(body).setOngoing(true).setCategory(Notification.CATEGORY_ALARM).setVisibility(Notification.VISIBILITY_PUBLIC)
+        return builder.setSmallIcon(com.aqim.app.R.drawable.ic_aqim_logo).setContentTitle(title).setContentText(body).setOngoing(false).setAutoCancel(true).setDeleteIntent(stopPendingIntent).setCategory(Notification.CATEGORY_ALARM).setVisibility(Notification.VISIBILITY_PUBLIC)
             .addAction(Notification.Action.Builder(android.graphics.drawable.Icon.createWithResource(this, com.aqim.app.R.drawable.ic_aqim_notification), "إيقاف الأذان", stopPendingIntent).build()).build()
     }
 

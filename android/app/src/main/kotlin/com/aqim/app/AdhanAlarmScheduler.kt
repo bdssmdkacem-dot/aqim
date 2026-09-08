@@ -132,10 +132,17 @@ object AdhanAlarmScheduler {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, AdhanAlarmReceiver::class.java).apply { putExtra(AdhanAlarmReceiver.EXTRA_SOUND, soundName); putExtra(AdhanAlarmReceiver.EXTRA_TITLE, title); putExtra(AdhanAlarmReceiver.EXTRA_BODY, body); putExtra(AdhanAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId) }
         val pendingIntent = PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
-            else alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
-        } else alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(timeMillis, pendingIntent), pendingIntent)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+            } else {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+            }
+        } else {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        }
     }
 
     private fun cancelAlarm(context: Context, id: Int) {

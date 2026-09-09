@@ -3,17 +3,20 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Adhan native service resolves Flutter assets and has robust cleanup', () {
-    final source = File(
-      'android/app/src/main/kotlin/com/aqim/app/AdhanAlarmService.kt',
-    ).readAsStringSync();
+  test(
+    'Adhan native service resolves Flutter assets and has robust cleanup',
+    () {
+      final source = File(
+        'android/app/src/main/kotlin/com/aqim/app/AdhanAlarmService.kt',
+      ).readAsStringSync();
 
-    expect(source, contains('flutter_assets/assets/adhan/'));
-    expect(source, contains('assets/adhan/'));
-    expect(source, contains('setAudioAttributes'));
-    expect(source, contains('USAGE_ALARM'));
-    expect(source, contains('releasePlayer()'));
-  });
+      expect(source, contains('flutter_assets/assets/adhan/'));
+      expect(source, contains('assets/adhan/'));
+      expect(source, contains('setAudioAttributes'));
+      expect(source, contains('USAGE_ALARM'));
+      expect(source, contains('releasePlayer()'));
+    },
+  );
 
   test('Adhan native scheduler uses exact alarms when available', () {
     final source = File(
@@ -45,8 +48,10 @@ void main() {
 
     expect(manifest, contains('FOREGROUND_SERVICE'));
     expect(manifest, contains('FOREGROUND_SERVICE_MEDIA_PLAYBACK'));
-    expect(manifest,
-        contains('android:foregroundServiceType="mediaPlayback"'));
+    expect(
+      manifest,
+      contains('android:foregroundServiceType="mediaPlayback"'),
+    );
     expect(manifest, contains('.AdhanAlarmService'));
     expect(manifest, contains('.PrePrayerAlarmService'));
   });

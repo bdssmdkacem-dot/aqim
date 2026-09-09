@@ -10,6 +10,7 @@ import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import java.io.File
 
 class AdhanAlarmService : Service() {
@@ -17,28 +18,70 @@ class AdhanAlarmService : Service() {
     private var activeSoundName: String? = null
     private var activeNotificationId: Int? = null
 
-    override fun onCreate() { super.onCreate(); createChannel() }
+    override fun onCreate() {
+        super.onCreate()
+        createChannel()
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val rawSoundName = intent?.getStringExtra(EXTRA_SOUND) ?: run { stopSelf(startId); return START_NOT_STICKY }
-        val soundName = rawSoundName.trim()
+        val rawSoundName = intent?.getStringExtra(EXTRA_SOUND)
+            ?: run {
+                stopSelf(startId)
+                return START_NOT_STICKY
+            }
+        val soundName = normalizeSoundName(rawSoundName)
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "حان وقت الصلاة"
         val body = intent.getStringExtra(EXTRA_BODY) ?: "حيّ على الصلاة، حيّ على الفلاح."
-        val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, AdhanAlarmReceiver.DEFAULT_NOTIFICATION_ID)
+        val notificationId = intent.getIntExtra(
+            EXTRA_NOTIFICATION_ID,
+            AdhanAlarmReceiver.DEFAULT_NOTIFICATION_ID
+        )
+
+        // FlutterSharedPreferences is the source of truth for the user's
+        // global Adhan switch. This check happens at delivery time as well as
+        // during scheduling, so a disabled Adhan can never start playback.
         val prefs = getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE)
-        if (!prefs.getBoolean("flutter.adhan_enabled", true)) { stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(startId); return START_NOT_STICKY }
-        if (player?.isPlaying == true && activeSoundName == soundName) return START_NOT_STICKY
+        if (!prefs.getBoolean("flutter.adhan_enabled", true)) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+
+        if (player?.isPlaying == true && activeSoundName == soundName) {
+            return START_NOT_STICKY
+        }
+
         startForeground(notificationId, buildNotification(title, body, notificationId))
         releasePlayer()
+
         try {
             val assetFile = copyAdhanAssetToCache(soundName)
             val newPlayer = MediaPlayer()
-            newPlayer.setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
+            newPlayer.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
+            newPlayer.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+            )
             newPlayer.setDataSource(assetFile.absolutePath)
             newPlayer.prepare()
             newPlayer.isLooping = false
-            newPlayer.setOnCompletionListener { if (player === newPlayer) { releasePlayer(); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf() } }
-            newPlayer.setOnErrorListener { _, _, _ -> if (player === newPlayer) { releasePlayer(); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf() }; true }
+            newPlayer.setOnCompletionListener {
+                if (player === newPlayer) {
+                    releasePlayer()
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }
+            }
+            newPlayer.setOnErrorListener { _, _, _ ->
+                if (player === newPlayer) {
+                    releasePlayer()
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }
+                true
+            }
             player = newPlayer
             activeSoundName = soundName
             activeNotificationId = notificationId
@@ -51,52 +94,127 @@ class AdhanAlarmService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun copyAdhanAssetToCache(soundName: String): File {
-        val assetName = when (soundName.lowercase()) {
-            "azan-fajr-madina", "azan_fajr_madina" -> "azan-Fajr-madina .mp3"
-            else -> "$soundName.mp3"
+    private fun normalizeSoundName(raw: String): String {
+        val normalized = raw.trim()
+        return when (normalized.lowercase()) {
+            "azan-fajr-madina", "azan_fajr_madina", "azanfajrmadina" -> "azan-Fajr-madina"
+            else -> normalized
         }
+    }
+
+    private fun copyAdhanAssetToCache(soundName: String): File {
+        val normalized = normalizeSoundName(soundName)
         val candidates = listOf(
-            "assets/adhan/$assetName",
-            "assets/adhan/${assetName.trim()}",
-            "assets/adhan/${assetName.replace("-", "_").trim()}"
+            "assets/adhan/$normalized.mp3",
+            "assets/adhan/${normalized.replace("-", "_")}.mp3",
+            "assets/adhan/${normalized.lowercase()}.mp3"
         ).distinct()
-        val cacheFile = File(cacheDir, "adhan_${soundName.replace(Regex("[^A-Za-z0-9_-]"), "_")}.mp3")
+        val cacheFile = File(
+            cacheDir,
+            "adhan_${normalized.replace(Regex("[^A-Za-z0-9_-]"), "_")}.mp3"
+        )
         if (cacheFile.exists() && cacheFile.length() > 0L) return cacheFile
+
         var lastError: Exception? = null
         for (path in candidates) {
             try {
-                assets.open(path).use { input -> cacheFile.outputStream().use { output -> input.copyTo(output) } }
+                assets.open(path).use { input ->
+                    cacheFile.outputStream().use { output -> input.copyTo(output) }
+                }
                 if (cacheFile.length() > 0L) return cacheFile
-            } catch (e: Exception) { lastError = e }
+            } catch (e: Exception) {
+                lastError = e
+            }
         }
-        throw lastError ?: IllegalStateException("Adhan asset not found: $soundName")
+        throw lastError ?: IllegalStateException("Adhan asset not found: $normalized")
     }
 
-    override fun onDestroy() { releasePlayer(); activeNotificationId = null; super.onDestroy() }
+    override fun onDestroy() {
+        releasePlayer()
+        activeNotificationId = null
+        super.onDestroy()
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun releasePlayer() {
-        val current = player ?: run { activeSoundName = null; return }
-        try { current.setOnCompletionListener(null); current.setOnErrorListener(null) } catch (_: Exception) {}
-        try { if (current.isPlaying) current.stop() } catch (_: Exception) {}
-        try { current.reset() } catch (_: Exception) {}
-        try { current.release() } catch (_: Exception) {}
-        player = null; activeSoundName = null
+        val current = player ?: run {
+            activeSoundName = null
+            return
+        }
+        try {
+            current.setOnCompletionListener(null)
+            current.setOnErrorListener(null)
+        } catch (_: Exception) {}
+        try {
+            if (current.isPlaying) current.stop()
+        } catch (_: Exception) {}
+        try {
+            current.reset()
+        } catch (_: Exception) {}
+        try {
+            current.release()
+        } catch (_: Exception) {}
+        player = null
+        activeSoundName = null
     }
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val channel = NotificationChannel(CHANNEL_ID, "أذان أقم", NotificationManager.IMPORTANCE_HIGH).apply { description = "تشغيل أذان وقت الصلاة بالكامل"; setSound(null, null); enableVibration(true) }
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "أذان أقم",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "تشغيل أذان وقت الصلاة بالكامل"
+            setSound(null, null)
+            enableVibration(true)
+            setShowBadge(false)
+        }
         getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
     }
 
-    private fun buildNotification(title: String, body: String, notificationId: Int): Notification {
-        val stopIntent = Intent(this, StopAdhanReceiver::class.java).apply { putExtra(StopAdhanReceiver.EXTRA_NOTIFICATION_ID, notificationId) }
-        val stopPendingIntent = PendingIntent.getBroadcast(this, notificationId, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(this, CHANNEL_ID) else Notification.Builder(this)
-        return builder.setSmallIcon(com.aqim.app.R.drawable.ic_aqim_logo).setContentTitle(title).setContentText(body).setOngoing(false).setAutoCancel(true).setDeleteIntent(stopPendingIntent).setCategory(Notification.CATEGORY_ALARM).setVisibility(Notification.VISIBILITY_PUBLIC)
-            .addAction(Notification.Action.Builder(android.graphics.drawable.Icon.createWithResource(this, com.aqim.app.R.drawable.ic_aqim_notification), "إيقاف الأذان", stopPendingIntent).build()).build()
+    private fun buildNotification(
+        title: String,
+        body: String,
+        notificationId: Int
+    ): Notification {
+        val stopIntent = Intent(this, StopAdhanReceiver::class.java).apply {
+            putExtra(StopAdhanReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+        }
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            this,
+            notificationId,
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, CHANNEL_ID)
+        } else {
+            Notification.Builder(this)
+        }
+        return builder
+            .setSmallIcon(com.aqim.app.R.drawable.ic_aqim_logo)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setOngoing(false)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            // Deleting/swiping the notification is an explicit stop action.
+            .setDeleteIntent(stopPendingIntent)
+            .setCategory(Notification.CATEGORY_ALARM)
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
+            .addAction(
+                Notification.Action.Builder(
+                    android.graphics.drawable.Icon.createWithResource(
+                        this,
+                        com.aqim.app.R.drawable.ic_aqim_notification
+                    ),
+                    "إيقاف الأذان",
+                    stopPendingIntent
+                ).build()
+            )
+            .build()
     }
 
     companion object {

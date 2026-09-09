@@ -1,4 +1,4 @@
-name: Verify Aqim APK
+name: Build Aqim Closed Alpha AAB
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  verify-apk:
+  build-aab:
     runs-on: ubuntu-latest
 
     steps:
@@ -74,16 +74,16 @@ jobs:
           find assets/adhan -maxdepth 1 -type f -name '*.mp3' -print
           test "$(find assets/adhan -maxdepth 1 -type f -name '*.mp3' | wc -l)" -ge 1
 
-      - name: Build release APK
-        run: flutter build apk --release
+      - name: Build release AAB
+        run: flutter build appbundle --release
 
-      - name: Verify APK output
+      - name: Verify AAB output
         run: |
-          test -s build/app/outputs/flutter-apk/app-release.apk
-          ls -lh build/app/outputs/flutter-apk/app-release.apk
+          test -s build/app/outputs/bundle/release/app-release.aab
+          ls -lh build/app/outputs/bundle/release/app-release.aab
 
-      - name: Upload release APK
+      - name: Upload release AAB
         uses: actions/upload-artifact@v4
         with:
-          name: aqim-adhan-path-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: aqim-closed-alpha-aab
+          path: build/app/outputs/bundle/release/app-release.aab

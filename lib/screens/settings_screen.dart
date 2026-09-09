@@ -42,7 +42,7 @@ class _SettingsContentScreenState extends State<_SettingsContentScreen>
   };
   static const _fajrAdhanSounds = <String, String>{
     'azan-fajr': 'أذان فجر مكي',
-    'azan-Fajr-madina ': 'أذان المدينة',
+    'azan-Fajr-madina': 'أذان المدينة',
     'azan-fajr-maghribi': 'أذان مغربي'
   };
   static const _prePrayerModes = <String, String>{

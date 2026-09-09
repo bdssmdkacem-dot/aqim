@@ -36,11 +36,24 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Prepare Quran assets
+        run: |
+          python3 scripts/download_tanzil_uthmani.py
+          python3 scripts/download_maknoon_mushaf_pages.py
+
       - name: Flutter Analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Flutter Test
         run: flutter test
+
+      - name: Verify Quran and Mushaf assets
+        run: |
+          test -f assets/quran/quran-uthmani.txt
+          test -d assets/quran/hafs/pages
+          test -d assets/quran/warsh/pages
+          test "$(find assets/quran/hafs/pages -type f -name '*.png' | wc -l)" -eq 604
+          test "$(find assets/quran/warsh/pages -type f -name '*.png' | wc -l)" -eq 604
 
       - name: Verify Android Adhan assets
         run: |

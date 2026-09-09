@@ -20,13 +20,17 @@ if '    - assets/adhan/' not in s:
 
 settings = ROOT / 'lib/screens/settings_screen.dart'
 ss = settings.read_text(encoding='utf-8')
-ss = ss.replace("'azanfajrmadina': 'أذان المدينة'", "'azan-Fajr-madina ': 'أذان المدينة'")
+# The real repository asset has no trailing space. Normalize legacy preference keys
+# while accepting the old value when upgrading an existing installation.
+ss = ss.replace("'azan-Fajr-madina ': 'أذان المدينة'", "'azan-Fajr-madina': 'أذان المدينة'")
+ss = ss.replace("'azanfajrmadina': 'أذان المدينة'", "'azan-Fajr-madina': 'أذان المدينة'")
+ss = ss.replace("'azan-Fajr-madina '", "'azan-Fajr-madina'")
 settings.write_text(ss, encoding='utf-8')
 
 required_settings = (
     '_fajrAdhanSounds', "'adhan_fajr_sound'", "'adhan_alert_mode'",
     "'pre_prayer_alert_mode'", '_prePrayerModes', '_adhanModes',
-    'تشغيل أذان الفجر', 'تشغيل الأذان', "'azan-Fajr-madina '",
+    'تشغيل أذان الفجر', 'تشغيل الأذان', "'azan-Fajr-madina'",
 )
 missing = [item for item in required_settings if item not in ss]
 if missing:
@@ -36,7 +40,7 @@ notification = ROOT / 'lib/services/notification_service.dart'
 ns = notification.read_text(encoding='utf-8')
 ns = ns.replace(
     "final selectedSound = prayer == Prayer.fajr ? (prefs.getString('adhan_fajr_sound') ?? 'azan-fajr') : (prefs.getString('adhan_sound') ?? 'azan_maroc_1');",
-    "final selectedSound = prayer == Prayer.fajr ? ((prefs.getString('adhan_fajr_sound') ?? 'azan-fajr') == 'azanfajrmadina' ? 'azan-Fajr-madina ' : (prefs.getString('adhan_fajr_sound') ?? 'azan-fajr')) : (prefs.getString('adhan_sound') ?? 'azan_maroc_1');",
+    "final selectedSound = prayer == Prayer.fajr ? ((prefs.getString('adhan_fajr_sound') ?? 'azan-fajr').trim() == 'azanfajrmadina' ? 'azan-Fajr-madina' : (prefs.getString('adhan_fajr_sound') ?? 'azan-fajr').trim()) : (prefs.getString('adhan_sound') ?? 'azan_maroc_1').trim();",
 )
 
 # Collapse accidental duplicate native cancellation passes to one pass.
@@ -57,16 +61,15 @@ notification.write_text(ns, encoding='utf-8')
 
 required_notification = (
     'Future<void> _scheduleWakeAlarm', "prefs.getString('pre_prayer_alert_mode')",
-    'RawResourceAndroidNotificationSound(selectedSound)', 'Future<void> _scheduleAdhan',
-    "prefs.getString('adhan_alert_mode')", "prefs.getString('adhan_fajr_sound')",
-    'RawResourceAndroidNotificationSound(selectedSound)',
+    'Future<void> _scheduleAdhan', "prefs.getString('adhan_alert_mode')",
+    "prefs.getString('adhan_fajr_sound')",
 )
 missing = [item for item in required_notification if item not in ns]
 if missing:
     raise SystemExit('notification contract incomplete: ' + ', '.join(sorted(set(missing))))
 
 adhan_dir = ROOT / 'assets/adhan'
-required_assets = ('azan-fajr.mp3', 'azan-Fajr-madina .mp3', 'azan-fajr-maghribi.mp3')
+required_assets = ('azan-fajr.mp3', 'azan-Fajr-madina.mp3', 'azan-fajr-maghribi.mp3')
 missing_assets = [name for name in required_assets if not (adhan_dir / name).exists()]
 if missing_assets:
     raise SystemExit('missing Fajr adhan asset(s): ' + ', '.join(missing_assets))

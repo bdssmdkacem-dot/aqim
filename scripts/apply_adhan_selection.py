@@ -3,14 +3,8 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# Keep this migration idempotent: normalize the current adhan contract
-# instead of relying on exact older function bodies.
-
 pubspec = ROOT / 'pubspec.yaml'
 s = pubspec.read_text(encoding='utf-8')
-
-# Flutter assets are a top-level pubspec section. Older Aqim pubspecs may not
-# have had a top-level `flutter:` section at all; create it instead of failing.
 if '    - assets/adhan/' not in s:
     lines = s.splitlines()
     top_level_flutter = next((i for i, line in enumerate(lines) if line == 'flutter:'), None)
@@ -26,22 +20,13 @@ if '    - assets/adhan/' not in s:
 
 settings = ROOT / 'lib/screens/settings_screen.dart'
 ss = settings.read_text(encoding='utf-8')
-
-# The actual repository filename contains a capital F and a space before
-# .mp3: assets/adhan/azan-Fajr-madina .mp3. Keep that filename unchanged.
 ss = ss.replace("'azanfajrmadina': 'أذان المدينة'", "'azan-Fajr-madina ': 'أذان المدينة'")
 settings.write_text(ss, encoding='utf-8')
 
 required_settings = (
-    '_fajrAdhanSounds',
-    "'adhan_fajr_sound'",
-    "'adhan_alert_mode'",
-    "'pre_prayer_alert_mode'",
-    '_prePrayerModes',
-    '_adhanModes',
-    'تشغيل أذان الفجر',
-    'تشغيل الأذان',
-    "'azan-Fajr-madina '",
+    '_fajrAdhanSounds', "'adhan_fajr_sound'", "'adhan_alert_mode'",
+    "'pre_prayer_alert_mode'", '_prePrayerModes', '_adhanModes',
+    'تشغيل أذان الفجر', 'تشغيل الأذان', "'azan-Fajr-madina '",
 )
 missing = [item for item in required_settings if item not in ss]
 if missing:
@@ -49,36 +34,31 @@ if missing:
 
 notification = ROOT / 'lib/services/notification_service.dart'
 ns = notification.read_text(encoding='utf-8')
-
-# Migrate the old stored preference value, if a tester already has it saved.
 ns = ns.replace(
     "final selectedSound = prayer == Prayer.fajr ? (prefs.getString('adhan_fajr_sound') ?? 'azan-fajr') : (prefs.getString('adhan_sound') ?? 'azan_maroc_1');",
     "final selectedSound = prayer == Prayer.fajr ? ((prefs.getString('adhan_fajr_sound') ?? 'azan-fajr') == 'azanfajrmadina' ? 'azan-Fajr-madina ' : (prefs.getString('adhan_fajr_sound') ?? 'azan-fajr')) : (prefs.getString('adhan_sound') ?? 'azan_maroc_1');",
 )
 
-# Keep one cancellation pass only. Previous generated revisions accidentally
-# repeated the same native cancellation loop many times, which was harmless
-# but made scheduling slow and obscured the real alarm lifecycle.
-ns = re.sub(
+# Collapse accidental duplicate native cancellation passes to one pass.
+pattern = (
     r"(?:    for \(final id in <int>\[0, 3, 4, 10, 20, 30, 40\]\) \{\n"
     r"      await _nativeAdhanChannel\n"
-    r"          \.invokeMethod\('cancel', <String, dynamic>\>\{'id': id\}\);\n"
-    r"    \}\n)+",
+    r"          \.invokeMethod\('cancel', <String, dynamic>\{'id': id\}\);\n"
+    r"    \}\n)+"
+)
+replacement = (
     "    for (final id in <int>[0, 3, 4, 10, 20, 30, 40]) {\n"
     "      await _nativeAdhanChannel\n"
     "          .invokeMethod('cancel', <String, dynamic>{'id': id});\n"
-    "    }\n",
-    ns,
+    "    }\n"
 )
+ns = re.sub(pattern, replacement, ns)
 notification.write_text(ns, encoding='utf-8')
 
 required_notification = (
-    'Future<void> _scheduleWakeAlarm',
-    "prefs.getString('pre_prayer_alert_mode')",
-    'RawResourceAndroidNotificationSound(selectedSound)',
-    'Future<void> _scheduleAdhan',
-    "prefs.getString('adhan_alert_mode')",
-    "prefs.getString('adhan_fajr_sound')",
+    'Future<void> _scheduleWakeAlarm', "prefs.getString('pre_prayer_alert_mode')",
+    'RawResourceAndroidNotificationSound(selectedSound)', 'Future<void> _scheduleAdhan',
+    "prefs.getString('adhan_alert_mode')", "prefs.getString('adhan_fajr_sound')",
     'RawResourceAndroidNotificationSound(selectedSound)',
 )
 missing = [item for item in required_notification if item not in ns]
@@ -86,11 +66,7 @@ if missing:
     raise SystemExit('notification contract incomplete: ' + ', '.join(sorted(set(missing))))
 
 adhan_dir = ROOT / 'assets/adhan'
-required_assets = (
-    'azan-fajr.mp3',
-    'azan-Fajr-madina .mp3',
-    'azan-fajr-maghribi.mp3',
-)
+required_assets = ('azan-fajr.mp3', 'azan-Fajr-madina .mp3', 'azan-fajr-maghribi.mp3')
 missing_assets = [name for name in required_assets if not (adhan_dir / name).exists()]
 if missing_assets:
     raise SystemExit('missing Fajr adhan asset(s): ' + ', '.join(missing_assets))

@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -53,6 +54,21 @@ ns = notification.read_text(encoding='utf-8')
 ns = ns.replace(
     "final selectedSound = prayer == Prayer.fajr ? (prefs.getString('adhan_fajr_sound') ?? 'azan-fajr') : (prefs.getString('adhan_sound') ?? 'azan_maroc_1');",
     "final selectedSound = prayer == Prayer.fajr ? ((prefs.getString('adhan_fajr_sound') ?? 'azan-fajr') == 'azanfajrmadina' ? 'azan-Fajr-madina ' : (prefs.getString('adhan_fajr_sound') ?? 'azan-fajr')) : (prefs.getString('adhan_sound') ?? 'azan_maroc_1');",
+)
+
+# Keep one cancellation pass only. Previous generated revisions accidentally
+# repeated the same native cancellation loop many times, which was harmless
+# but made scheduling slow and obscured the real alarm lifecycle.
+ns = re.sub(
+    r"(?:    for \(final id in <int>\[0, 3, 4, 10, 20, 30, 40\]\) \{\n"
+    r"      await _nativeAdhanChannel\n"
+    r"          \.invokeMethod\('cancel', <String, dynamic>\>\{'id': id\}\);\n"
+    r"    \}\n)+",
+    "    for (final id in <int>[0, 3, 4, 10, 20, 30, 40]) {\n"
+    "      await _nativeAdhanChannel\n"
+    "          .invokeMethod('cancel', <String, dynamic>{'id': id});\n"
+    "    }\n",
+    ns,
 )
 notification.write_text(ns, encoding='utf-8')
 

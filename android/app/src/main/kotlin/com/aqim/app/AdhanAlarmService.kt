@@ -199,7 +199,7 @@ class AdhanAlarmService : Service() {
             Notification.Builder(this)
         }
         return builder
-            .setSmallIcon(com.aqim.app.R.drawable.ic_aqim_logo)
+            .setSmallIcon(com.aqim.app.R.drawable.aqim_logo_transparent_512)
             .setContentTitle(title)
             .setContentText(body)
             .setOngoing(false)
@@ -212,7 +212,7 @@ class AdhanAlarmService : Service() {
                 Notification.Action.Builder(
                     android.graphics.drawable.Icon.createWithResource(
                         this,
-                        com.aqim.app.R.drawable.ic_aqim_notification
+                        com.aqim.app.R.drawable.aqim_logo_transparent_512
                     ),
                     "إيقاف الأذان",
                     stopPendingIntent

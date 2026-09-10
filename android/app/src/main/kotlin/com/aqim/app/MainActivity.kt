@@ -100,10 +100,22 @@ class MainActivity : FlutterActivity() {
             putExtra(PrePrayerAlarmReceiver.EXTRA_NOTIFICATION_ID, notificationId)
         }
         val pendingIntent = PendingIntent.getBroadcast(this, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
-            else alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
-        } else alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms())
+            ) {
+                // Match the Adhan path: AlarmClock is the strongest exact alarm
+                // delivery path and remains visible to the system alarm scheduler.
+                val alarmClock = AlarmManager.AlarmClockInfo(timeMillis, pendingIntent)
+                alarmManager.setAlarmClock(alarmClock, pendingIntent)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+            } else {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+            }
+        } else {
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        }
     }
 
     private fun scheduleAdhanAlarm(id: Int, timeMillis: Long, soundName: String, title: String, body: String, notificationId: Int) {

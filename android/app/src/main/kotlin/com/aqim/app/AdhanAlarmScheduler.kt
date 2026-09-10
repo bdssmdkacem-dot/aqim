@@ -90,10 +90,6 @@ object AdhanAlarmScheduler {
         cancelMaintenance(context)
     }
 
-    /**
-     * Reboot can restore the already-valid alarms immediately. A later refresh
-     * reconciles them with the current prayer times without requiring Flutter.
-     */
     fun requestReschedule(context: Context) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_ENABLED, false)) return
@@ -101,11 +97,10 @@ object AdhanAlarmScheduler {
         refreshCurrentDayAsync(context)
     }
 
-    /** Used for TIME_SET/TIMEZONE_CHANGED: absolute trigger times are no longer trusted. */
+    /** Used for TIME_SET/TIMEZONE_CHANGED: refresh before replacing valid stored alarms. */
     fun requestSystemTimeReschedule(context: Context) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_ENABLED, false)) return
-        cancelAllStoredAlarms(context)
         refreshCurrentDayAsync(context)
     }
 
@@ -178,10 +173,7 @@ object AdhanAlarmScheduler {
             val response = connection.inputStream.bufferedReader().use { it.readText() }
             val timings = JSONObject(response).getJSONObject("data").getJSONObject("timings")
             val now = System.currentTimeMillis()
-
-            // Always remove today's old native triggers first. This is essential
-            // after manual clock changes and timezone changes.
-            for (id in prayerIds) cancelAlarm(context, id)
+            val newAlarms = mutableListOf<AlarmData>()
 
             for (i in 0 until MAX_PRAYERS) {
                 val timeText = timings.optString(prayerKeys[i]).substringBefore(" ")
@@ -214,14 +206,49 @@ object AdhanAlarmScheduler {
                     prefix + KEY_NOTIFICATION_ID,
                     10000 + id
                 )
-                persist(context, id, timeMillis, sound, title, body, notificationId)
-                scheduleNativeAlarm(context, id, timeMillis, sound, title, body, notificationId)
+                newAlarms += AlarmData(id, timeMillis, sound, title, body, notificationId)
+            }
+
+            // Do not destroy valid alarms until a complete, parseable refresh is ready.
+            // If the response is valid but all five prayers are already past, keep the
+            // stored alarms; the daily maintenance alarm will reconcile the next cycle.
+            if (newAlarms.isEmpty()) return
+
+            for (id in prayerIds) cancelAlarm(context, id)
+            for (alarm in newAlarms) {
+                persist(
+                    context,
+                    alarm.id,
+                    alarm.timeMillis,
+                    alarm.sound,
+                    alarm.title,
+                    alarm.body,
+                    alarm.notificationId
+                )
+                scheduleNativeAlarm(
+                    context,
+                    alarm.id,
+                    alarm.timeMillis,
+                    alarm.sound,
+                    alarm.title,
+                    alarm.body,
+                    alarm.notificationId
+                )
             }
         } finally {
             connection.disconnect()
             scheduleMaintenance(context)
         }
     }
+
+    private data class AlarmData(
+        val id: Int,
+        val timeMillis: Long,
+        val sound: String,
+        val title: String,
+        val body: String,
+        val notificationId: Int
+    )
 
     private fun readDouble(
         prefs: android.content.SharedPreferences,

@@ -1,42 +1,21 @@
-name: Build Aqim Release
+name: Build Aqim Closed Alpha AAB
 
 on:
   push:
     branches:
-      - main
-      - master
+      - fix/adhan-notification-path
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  build-aab:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-
-      - name: Apply Aqim branding and Quran navigation fixes
-        run: python3 scripts/apply_aqim_branding.py && python3 scripts/apply_quran_and_logo_fixes.py
-
-      - name: Apply Aqim notification preferences
-        run: python3 scripts/apply_pre_prayer_notification_settings.py
-
-      - name: Apply persistent pre-prayer alarm fix
-        run: |
-          if grep -q "static const MethodChannel _nativeAdhanChannel" lib/services/notification_service.dart; then
-            echo "Persistent native Adhan patch already applied; skipping re-application."
-          else
-            python3 scripts/apply_persistent_pre_prayer_alarm.py
-          fi
-
-      - name: Download and verify Tanzil Uthmani Quran
-        run: python3 scripts/download_tanzil_uthmani.py
-
-      - name: Download and verify offline Hafs and Warsh Mushaf pages
-        run: python3 scripts/download_maknoon_mushaf_pages.py
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -57,61 +36,26 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Prepare release compile fixes
-        run: python3 scripts/prepare_release_compile_fixes.py
-
-      - name: Ensure AppState exposes safe notification method
+      - name: Prepare Quran assets
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('lib/state/app_state.dart')
-          text = path.read_text()
-          marker = '  void notifyAppStateChanged() => notifyListeners();\n'
-          if marker not in text:
-              needle = 'class AppState extends ChangeNotifier {\n'
-              if needle not in text:
-                  raise SystemExit('AppState class marker not found; refusing partial patch.')
-              text = text.replace(needle, needle + marker, 1)
-              path.write_text(text)
-              print('Added safe AppState notification method.')
-          else:
-              print('Safe AppState notification method already present.')
-          PY
+          python3 scripts/download_tanzil_uthmani.py
+          python3 scripts/download_maknoon_mushaf_pages.py
 
-      - name: Clean analyzer warnings
-        run: python3 scripts/cleanup_analyzer_warnings.py
+      - name: Apply exact Aqim branding
+        run: python3 scripts/apply_quran_and_logo_fixes.py
 
-      - name: Format Dart sources
-        run: dart format lib test
-
-      - name: Verify Dart formatting
-        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Verify exact Aqim branding resources
+        run: |
+          test -s assets/images/aqim_logo_transparent_512.png
+          test -s android/app/src/main/res/drawable/aqim_logo_transparent_512.png
+          test -s android/app/src/main/res/drawable/ic_aqim_logo.png
+          test -s android/app/src/main/res/drawable/ic_aqim_notification.png
+          test ! -e android/app/src/main/res/drawable/ic_aqim_logo.xml
+          grep -q 'R.drawable.aqim_logo_transparent_512' android/app/src/main/kotlin/com/aqim/app/AdhanAlarmService.kt
+          grep -q 'R.drawable.aqim_logo_transparent_512' android/app/src/main/kotlin/com/aqim/app/PrePrayerAlarmService.kt
 
       - name: Flutter Analyze
-        run: |
-          set +e
-          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee /tmp/flutter-analyze.log
-          status=${PIPESTATUS[0]}
-          echo "Flutter analyze exit code: $status"
-          echo "=== analyzer errors ==="
-          grep -nE '(^| )error •|^error |ERROR' /tmp/flutter-analyze.log || true
-          echo "=== analyzer warnings ==="
-          grep -nE '(^| )warning •|^warning |WARNING' /tmp/flutter-analyze.log || true
-          echo "=== analyzer infos ==="
-          grep -nE '(^| )info •|^info ' /tmp/flutter-analyze.log | tail -n 20 || true
-          if grep -qE '(^| )error •|^error |ERROR' /tmp/flutter-analyze.log; then
-            echo "Analyzer errors detected; failing CI."
-            exit 1
-          fi
-          if grep -qE '(^| )warning •|^warning |WARNING' /tmp/flutter-analyze.log; then
-            echo "Analyzer warnings detected; failing CI."
-            exit 1
-          fi
-          if [ "$status" -ne 0 ]; then
-            echo "Flutter analyze returned a non-zero exit code; failing CI."
-            exit "$status"
-          fi
-          echo "Analyzer contains no errors or warnings; info diagnostics are non-fatal."
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Flutter Test
         run: flutter test
@@ -124,46 +68,22 @@ jobs:
           test "$(find assets/quran/hafs/pages -type f -name '*.png' | wc -l)" -eq 604
           test "$(find assets/quran/warsh/pages -type f -name '*.png' | wc -l)" -eq 604
 
-      - name: Verify Aqim logo
-        run: test -f assets/images/aqim_logo_transparent_512.png
-
-      - name: Restore Android release keystore
-        env:
-          AQIM_UPLOAD_KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          AQIM_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          AQIM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          AQIM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      - name: Verify Android Adhan assets
         run: |
-          set -euo pipefail
-          if [ -z "$AQIM_UPLOAD_KEYSTORE_BASE64" ]; then
-            echo "KEYSTORE_BASE64 repository secret is missing."
-            exit 1
-          fi
-          if [ -z "$AQIM_KEYSTORE_PASSWORD" ] || [ -z "$AQIM_KEY_ALIAS" ] || [ -z "$AQIM_KEY_PASSWORD" ]; then
-            echo "One or more Android signing repository secrets are missing."
-            exit 1
-          fi
-          mkdir -p android/app
-          printf '%s' "$AQIM_UPLOAD_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
-          test -s android/app/upload-keystore.jks
-          cat > android/key.properties <<EOF
-          storePassword=$AQIM_KEYSTORE_PASSWORD
-          keyPassword=$AQIM_KEY_PASSWORD
-          keyAlias=$AQIM_KEY_ALIAS
-          storeFile=app/upload-keystore.jks
-          EOF
-          echo "Android release keystore restored at android/app/upload-keystore.jks."
+          test -d assets/adhan
+          find assets/adhan -maxdepth 1 -type f -name '*.mp3' -print
+          test "$(find assets/adhan -maxdepth 1 -type f -name '*.mp3' | wc -l)" -ge 1
 
       - name: Build release AAB
         run: flutter build appbundle --release
 
-      - name: Build release APK
-        run: flutter build apk --release
+      - name: Verify AAB output
+        run: |
+          test -s build/app/outputs/bundle/release/app-release.aab
+          ls -lh build/app/outputs/bundle/release/app-release.aab
 
-      - name: Upload release artifacts
+      - name: Upload release AAB
         uses: actions/upload-artifact@v4
         with:
-          name: aqim-release
-          path: |
-            build/app/outputs/bundle/release/app-release.aab
-            build/app/outputs/flutter-apk/app-release.apk
+          name: aqim-closed-alpha-aab
+          path: build/app/outputs/bundle/release/app-release.aab

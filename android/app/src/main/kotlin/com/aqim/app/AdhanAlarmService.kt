@@ -37,9 +37,6 @@ class AdhanAlarmService : Service() {
             AdhanAlarmReceiver.DEFAULT_NOTIFICATION_ID
         )
 
-        // FlutterSharedPreferences is the source of truth for the user's
-        // global Adhan switch. This check happens at delivery time as well as
-        // during scheduling, so a disabled Adhan can never start playback.
         val prefs = getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE)
         if (!prefs.getBoolean("flutter.adhan_enabled", true)) {
             stopForeground(STOP_FOREGROUND_REMOVE)
@@ -104,11 +101,19 @@ class AdhanAlarmService : Service() {
 
     private fun copyAdhanAssetToCache(soundName: String): File {
         val normalized = normalizeSoundName(soundName)
-        val candidates = listOf(
-            "assets/adhan/$normalized.mp3",
-            "assets/adhan/${normalized.replace("-", "_")}.mp3",
-            "assets/adhan/${normalized.lowercase()}.mp3"
+        // Flutter assets are packaged in the APK below flutter_assets.
+        // Keep the direct path as a compatibility fallback for native assets.
+        val relativeNames = listOf(
+            "$normalized.mp3",
+            "${normalized.replace("-", "_")}.mp3",
+            "${normalized.lowercase()}.mp3"
         ).distinct()
+        val candidates = relativeNames.flatMap { name ->
+            listOf(
+                "flutter_assets/assets/adhan/$name",
+                "assets/adhan/$name"
+            )
+        }
         val cacheFile = File(
             cacheDir,
             "adhan_${normalized.replace(Regex("[^A-Za-z0-9_-]"), "_")}.mp3"
@@ -194,13 +199,12 @@ class AdhanAlarmService : Service() {
             Notification.Builder(this)
         }
         return builder
-            .setSmallIcon(com.aqim.app.R.drawable.ic_aqim_logo)
+            .setSmallIcon(com.aqim.app.R.drawable.aqim_logo_transparent_512)
             .setContentTitle(title)
             .setContentText(body)
             .setOngoing(false)
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
-            // Deleting/swiping the notification is an explicit stop action.
             .setDeleteIntent(stopPendingIntent)
             .setCategory(Notification.CATEGORY_ALARM)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
@@ -208,7 +212,7 @@ class AdhanAlarmService : Service() {
                 Notification.Action.Builder(
                     android.graphics.drawable.Icon.createWithResource(
                         this,
-                        com.aqim.app.R.drawable.ic_aqim_notification
+                        com.aqim.app.R.drawable.aqim_logo_transparent_512
                     ),
                     "إيقاف الأذان",
                     stopPendingIntent

@@ -18,11 +18,20 @@ text = text.replace("import '../widgets/aqim_logo.dart';\n", '')
 text = text.replace("const AqimLogo(size: 62),", "Image.asset('assets/images/aqim_logo_transparent_512.png', width: 62, height: 62, fit: BoxFit.contain),")
 adhkar.write_text(text, encoding='utf-8')
 
-# 3) Android launcher icon: copy the exact same PNG into Android resources.
+# 3) Android branding: the exact Flutter PNG is copied into Android resources
+# under every resource name used by the app. The old vector is removed so
+# notifications and launcher cannot silently fall back to the previous logo.
 source = Path('assets/images/aqim_logo_transparent_512.png')
-target = Path('android/app/src/main/res/drawable/aqim_logo_transparent_512.png')
-target.parent.mkdir(parents=True, exist_ok=True)
-shutil.copy2(source, target)
+res = Path('android/app/src/main/res/drawable')
+res.mkdir(parents=True, exist_ok=True)
+
+legacy = res / 'ic_aqim_logo.xml'
+if legacy.exists():
+    legacy.unlink()
+
+shutil.copy2(source, res / 'aqim_logo_transparent_512.png')
+shutil.copy2(source, res / 'ic_aqim_logo.png')
+shutil.copy2(source, res / 'ic_aqim_notification.png')
 
 manifest = Path('android/app/src/main/AndroidManifest.xml')
 manifest_text = manifest.read_text(encoding='utf-8')

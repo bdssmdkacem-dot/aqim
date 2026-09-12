@@ -27,7 +27,10 @@ object AdhanAlarmScheduler {
     private const val KEY_DATE = "date"
     private const val KEY_TZ_OFFSET = "tz_offset"
     private const val KEY_ENABLED = "enabled"
-    private const val MAINTENANCE_REQUEST_CODE = 90001
+    private const val MAINTENANCE_EVENING_REQUEST_CODE = 90001
+    private const val MAINTENANCE_MORNING_REQUEST_CODE = 90002
+    private const val PRE_MIDNIGHT_REFRESH_HOUR = 23
+    private const val PRE_MIDNIGHT_REFRESH_MINUTE = 45
     private const val MAX_PRAYERS = 5
     private const val ALADHAN_METHOD = 21
 
@@ -104,52 +107,102 @@ object AdhanAlarmScheduler {
         refreshCurrentDayAsync(context)
     }
 
+    /**
+     * Keep two independent maintenance opportunities every day:
+     * - 23:45 prepares tomorrow before the date rolls over.
+     * - 00:05 refreshes today's schedule as a second recovery attempt.
+     *
+     * This avoids making the whole day dependent on one network/API attempt at 00:05.
+     */
     fun scheduleMaintenance(context: Context) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_ENABLED, false)) return
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, AdhanAlarmReceiver::class.java).apply {
-            action = AdhanAlarmReceiver.ACTION_DAILY_MAINTENANCE
+
+        val eveningCalendar = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, PRE_MIDNIGHT_REFRESH_HOUR)
+            set(Calendar.MINUTE, PRE_MIDNIGHT_REFRESH_MINUTE)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (timeInMillis <= System.currentTimeMillis()) add(Calendar.DAY_OF_YEAR, 1)
         }
-        val pendingIntent = PendingIntent.getBroadcast(
+        scheduleMaintenanceAlarm(
             context,
-            MAINTENANCE_REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            alarmManager,
+            MAINTENANCE_EVENING_REQUEST_CODE,
+            eveningCalendar.timeInMillis
         )
-        val calendar = Calendar.getInstance().apply {
+
+        val morningCalendar = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 5)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
             if (timeInMillis <= System.currentTimeMillis()) add(Calendar.DAY_OF_YEAR, 1)
         }
-        scheduleAlarm(context, alarmManager, calendar.timeInMillis, pendingIntent)
+        scheduleMaintenanceAlarm(
+            context,
+            alarmManager,
+            MAINTENANCE_MORNING_REQUEST_CODE,
+            morningCalendar.timeInMillis
+        )
+    }
+
+    private fun scheduleMaintenanceAlarm(
+        context: Context,
+        alarmManager: AlarmManager,
+        requestCode: Int,
+        timeMillis: Long
+    ) {
+        val intent = Intent(context, AdhanAlarmReceiver::class.java).apply {
+            action = AdhanAlarmReceiver.ACTION_DAILY_MAINTENANCE
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        scheduleAlarm(context, alarmManager, timeMillis, pendingIntent)
     }
 
     private fun cancelMaintenance(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            MAINTENANCE_REQUEST_CODE,
-            Intent(context, AdhanAlarmReceiver::class.java).apply {
-                action = AdhanAlarmReceiver.ACTION_DAILY_MAINTENANCE
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        alarmManager.cancel(pendingIntent)
-        pendingIntent.cancel()
+        for (requestCode in intArrayOf(
+            MAINTENANCE_EVENING_REQUEST_CODE,
+            MAINTENANCE_MORNING_REQUEST_CODE
+        )) {
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                Intent(context, AdhanAlarmReceiver::class.java).apply {
+                    action = AdhanAlarmReceiver.ACTION_DAILY_MAINTENANCE
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel()
+        }
     }
 
     fun refreshCurrentDayAsync(context: Context) {
         Thread {
             try {
-                refreshForDate(context, Calendar.getInstance())
+                val target = Calendar.getInstance()
+                if (isPreMidnightWindow(target)) {
+                    target.add(Calendar.DAY_OF_YEAR, 1)
+                }
+                refreshForDate(context, target)
             } catch (_: Exception) {
                 scheduleMaintenance(context)
             }
         }.start()
     }
+
+    private fun isPreMidnightWindow(calendar: Calendar): Boolean =
+        calendar.get(Calendar.HOUR_OF_DAY) >= PRE_MIDNIGHT_REFRESH_HOUR &&
+            (calendar.get(Calendar.HOUR_OF_DAY) > PRE_MIDNIGHT_REFRESH_HOUR ||
+                calendar.get(Calendar.MINUTE) >= PRE_MIDNIGHT_REFRESH_MINUTE)
 
     private fun refreshForDate(context: Context, calendar: Calendar) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -209,9 +262,9 @@ object AdhanAlarmScheduler {
                 newAlarms += AlarmData(id, timeMillis, sound, title, body, notificationId)
             }
 
-            // Do not destroy valid alarms until a complete, parseable refresh is ready.
-            // If the response is valid but all five prayers are already past, keep the
-            // stored alarms; the daily maintenance alarm will reconcile the next cycle.
+            // Never destroy valid stored alarms because a refresh returned no future
+            // prayer (for example, because the target date is already past or the
+            // response was incomplete). The next maintenance cycle will retry.
             if (newAlarms.isEmpty()) return
 
             for (id in prayerIds) cancelAlarm(context, id)
@@ -337,7 +390,11 @@ object AdhanAlarmScheduler {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_ENABLED, false)) return
         val now = System.currentTimeMillis()
+        val currentCalendar = Calendar.getInstance()
         val currentDate = dateString(now)
+        val tomorrowCalendar = currentCalendar.clone() as Calendar
+        tomorrowCalendar.add(Calendar.DAY_OF_YEAR, 1)
+        val tomorrowDate = dateString(tomorrowCalendar.timeInMillis)
         val currentOffset = TimeZone.getDefault().getOffset(now)
         var restored = 0
 
@@ -348,10 +405,11 @@ object AdhanAlarmScheduler {
             val sound = prefs.getString(prefix + KEY_SOUND, null)?.trim()
             val storedDate = prefs.getString(prefix + KEY_DATE, null)
             val storedOffset = prefs.getInt(prefix + KEY_TZ_OFFSET, Int.MIN_VALUE)
+            val lateNightTomorrow = isPreMidnightWindow(currentCalendar) && storedDate == tomorrowDate
             if (
                 time > now &&
                 !sound.isNullOrBlank() &&
-                storedDate == currentDate &&
+                (storedDate == currentDate || lateNightTomorrow) &&
                 storedOffset == currentOffset
             ) {
                 scheduleNativeAlarm(

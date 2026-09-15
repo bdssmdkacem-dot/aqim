@@ -2,7 +2,7 @@ name: aqim
 description: "Aqim — Personal Prayer Habit Coach"
 publish_to: "none"
 
-version: 1.0.19+24
+version: 1.0.20+25
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -56,7 +56,10 @@ flutter:
     - assets/audio/food/
     - assets/audio/travel/
     - assets/audio/protection/
-    - assets/images/
+    - assets/audio/wudu/
+    - assets/audio/food/
+    - assets/audio/travel/
+    - assets/audio/protection/
     - assets/quran/quran-uthmani.txt
     - assets/quran/hafs/pages/
     - assets/quran/warsh/pages/

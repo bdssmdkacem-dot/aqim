@@ -101,8 +101,6 @@ class AdhanAlarmService : Service() {
 
     private fun copyAdhanAssetToCache(soundName: String): File {
         val normalized = normalizeSoundName(soundName)
-        // Flutter assets are packaged in the APK below flutter_assets.
-        // Keep the direct path as a compatibility fallback for native assets.
         val relativeNames = listOf(
             "$normalized.mp3",
             "${normalized.replace("-", "_")}.mp3",
@@ -202,10 +200,9 @@ class AdhanAlarmService : Service() {
             .setSmallIcon(com.aqim.app.R.drawable.aqim_logo_transparent_512)
             .setContentTitle(title)
             .setContentText(body)
-            .setOngoing(false)
-            .setAutoCancel(true)
+            .setOngoing(true)
+            .setAutoCancel(false)
             .setOnlyAlertOnce(true)
-            .setDeleteIntent(stopPendingIntent)
             .setCategory(Notification.CATEGORY_ALARM)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .addAction(

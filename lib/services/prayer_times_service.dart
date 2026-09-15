@@ -3,9 +3,9 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import '../models/prayer.dart';
 
-/// Fetches prayer times from AlAdhan. The API returns the prayer clock time
-/// for the requested coordinates; Aqim keeps that local civil time so Home
-/// and scheduling use the same DateTime behavior as the original app.
+/// Fetches prayer times from AlAdhan using the local calendar date.
+/// Aqim keeps the returned HH:mm as local civil time so Home and native
+/// scheduling use exactly the same API request and clock interpretation.
 class PrayerTimesService {
   static const _baseUrl = 'https://api.aladhan.com/v1/timings';
 
@@ -14,9 +14,13 @@ class PrayerTimesService {
     required double longitude,
   }) async {
     try {
-      final timestamp = (DateTime.now().millisecondsSinceEpoch / 1000).round();
+      final now = DateTime.now();
+      final date =
+          '${now.day.toString().padLeft(2, '0')}-'
+          '${now.month.toString().padLeft(2, '0')}-'
+          '${now.year.toString().padLeft(4, '0')}';
       final uri = Uri.parse(
-        '$_baseUrl/$timestamp?latitude=$latitude&longitude=$longitude&method=21',
+        '$_baseUrl/$date?latitude=$latitude&longitude=$longitude&method=21',
       );
       final res = await http.get(uri).timeout(const Duration(seconds: 12));
       if (res.statusCode != 200) return null;
@@ -25,15 +29,13 @@ class PrayerTimesService {
       final timings = json['data']?['timings'] as Map<String, dynamic>?;
       if (timings == null) return null;
 
-      final now = DateTime.now();
       DateTime? parseTime(String? key) {
         if (key == null) return null;
         final value = timings[key];
         if (value is! String) return null;
 
-        // Preserve the original Aqim behavior: AlAdhan's HH:mm clock value
-        // is interpreted as local civil time. Do not convert the (+01) label
-        // into a second timezone conversion on the device.
+        // Preserve the HH:mm clock value as local civil time. Do not convert
+        // AlAdhan's timezone label into a second timezone conversion.
         final raw = value.split(' ').first;
         final parts = raw.split(':');
         if (parts.length != 2) return null;

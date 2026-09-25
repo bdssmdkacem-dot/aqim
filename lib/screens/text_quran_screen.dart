@@ -294,7 +294,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                         style: GoogleFonts.amiri(color: AppColors.ivory,
                             fontSize: 23, fontWeight: FontWeight.w800)),
                     Text(
-                      '${{verse.surahName} • الآية ${{_ar(verse.numberInSurah)} • الصفحة ${{_ar(verse.page)}',
+                      '${verse.surahName} • الآية ${_ar(verse.numberInSurah)} • الصفحة ${_ar(verse.page)}',
                       textAlign: TextAlign.right,
                       style: const TextStyle(
                           color: AppColors.textMuted, fontSize: 11)),
@@ -340,7 +340,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                   style: GoogleFonts.amiri(color: AppColors.ivory,
                       fontSize: 23, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
-              Text('${{verse.surahName} • الآية ${{_ar(verse.numberInSurah)}',
+              Text('${verse.surahName} • الآية ${_ar(verse.numberInSurah)}',
                   style: const TextStyle(color: AppColors.gold)),
               const SizedBox(height: 10),
               Text('۩  موضع سجدة التلاوة في هذه الصفحة.',
@@ -364,11 +364,11 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
       Expanded(child: Text(data.surahName, textAlign: TextAlign.right,
           style: GoogleFonts.amiri(color: const Color(0xFF3B3328),
               fontSize: 18, fontWeight: FontWeight.w800))),
-      Text('الجزء ${{_ar(data.juz)} • الحزب ${{_ar(data.hizb)}',
+      Text('الجزء ${_ar(data.juz)} • الحزب ${_ar(data.hizb)}',
           style: GoogleFonts.cairo(color: AppColors.gold,
               fontSize: 10, fontWeight: FontWeight.w700)),
       const SizedBox(width: 8),
-      Text('ص ${{_ar(data.page)}',
+      Text('ص ${_ar(data.page)}',
           style: GoogleFonts.cairo(color: const Color(0xFF5E5549),
               fontSize: 11, fontWeight: FontWeight.w800)),
     ]),
@@ -377,7 +377,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
   Widget _body(QuranPage data) => Directionality(
     textDirection: TextDirection.rtl,
     child: ListView.builder(
-      key: PageStorageKey<String>('${{riwaya.name}:${{data.page}'),
+      key: PageStorageKey<String>('${riwaya.name}:${data.page}'),
       padding: const EdgeInsets.fromLTRB(18, 82, 18, 84),
       itemCount: data.verses.length + 1,
       itemBuilder: (_, index) {
@@ -403,7 +403,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                '۞ بداية ربع الحزب ${{_ar(((verse.hizbQuarter - 1) % 4) + 1)}',
+                '۞ بداية ربع الحزب ${_ar(((verse.hizbQuarter - 1) % 4) + 1)}',
                 style: GoogleFonts.cairo(color: AppColors.gold,
                     fontSize: 10, fontWeight: FontWeight.w700),
               ),
@@ -530,7 +530,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
       IconButton(onPressed: () => _go(page == 1 ? pages : page - 1),
           icon: const Icon(Icons.chevron_right_rounded,
               color: Colors.white, size: 30)),
-      Expanded(child: Text('${{_ar(page)} / ${{_ar(pages)}',
+      Expanded(child: Text('${_ar(page)} / ${_ar(pages)}',
           textAlign: TextAlign.center,
           style: const TextStyle(color: Colors.white,
               fontWeight: FontWeight.w800))),

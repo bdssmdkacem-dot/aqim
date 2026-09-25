@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'text_quran_screen.dart';
 import 'mushaf_quran_screen.dart';
 
 /// Backwards-compatible entry point used by AQIM navigation.
-/// Restores the last selected riwaya; new users start with Warsh.
+/// Restores the last selected riwaya; new users start with Warsh text mode.
 class QuranScreen extends StatefulWidget {
   final int? initialPage;
   const QuranScreen({super.key, this.initialPage});
@@ -33,7 +34,7 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => MushafQuranScreen(
+  Widget build(BuildContext context) => TextQuranScreen(
         initialPage: widget.initialPage,
         initialRiwaya: _riwaya,
       );

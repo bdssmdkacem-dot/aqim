@@ -47,7 +47,7 @@ class QuranVerse {
         '53:62',
         '84:21',
         '96:19',
-      }.contains('\${surahNumber}:\$ayah'));
+      }.contains('${surahNumber}:$ayah'));
 
   int get hizb => ((hizbQuarter + 3) ~/ 4).clamp(1, 60);
 }
@@ -130,8 +130,8 @@ class QuranService {
         throw StateError('Invalid Tanzil Quran reference.');
       }
       final text = parts.sublist(2).join('|');
-      if (text.isEmpty) throw StateError('Empty Quran text at \$surah:\$ayah');
-      _textByAyah['\$surah:\$ayah'] = text;
+      if (text.isEmpty) throw StateError('Empty Quran text at $surah:$ayah');
+      _textByAyah['$surah:$ayah'] = text;
     }
 
     if (_textByAyah.length != 6236 ||
@@ -160,7 +160,7 @@ class QuranService {
       final name = surah['name'] as String;
       final rawAyahs = surah['ayahs'] as List<dynamic>;
       if (rawAyahs.isEmpty) {
-        throw StateError('Warsh surah \$number has no ayahs.');
+        throw StateError('Warsh surah $number has no ayahs.');
       }
       final firstPage = rawAyahs.first['page'] as int;
       _warshSurahs.add(QuranSurah(
@@ -229,9 +229,9 @@ class QuranService {
   }
 
   QuranVerse _mapHafsAyah(offline_quran.Ayah ayah) {
-    final text = _textByAyah['\${ayah.surahNumber}:\${ayah.id}'];
+    final text = _textByAyah['${ayah.surahNumber}:${ayah.id}'];
     if (text == null || text.isEmpty) {
-      throw StateError('Tanzil Quran text missing for \${ayah.surahNumber}:\${ayah.id}.');
+      throw StateError('Tanzil Quran text missing for ${ayah.surahNumber}:${ayah.id}.');
     }
     final rub = _metadata.getRubIndex(ayah.surahNumber, ayah.id) ?? 1;
     return QuranVerse(

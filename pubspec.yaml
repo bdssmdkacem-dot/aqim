@@ -58,5 +58,4 @@ flutter:
     - assets/audio/protection/
     - assets/images/
     - assets/quran/quran-uthmani.txt
-    - assets/quran/hafs/pages/
-    - assets/quran/warsh/pages/
+    - assets/quran/warsh.json

@@ -6,9 +6,11 @@ on:
       - main
       - master
       - feat/quran-text-warsh
+      - feat/quran-visual-identity
   pull_request:
     branches:
       - main
+      - feat/quran-text-warsh
   workflow_dispatch:
 
 permissions:

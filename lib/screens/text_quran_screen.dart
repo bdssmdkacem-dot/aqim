@@ -247,7 +247,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                               style: GoogleFonts.amiri(
                                   color: Colors.white, fontSize: 18, height: 1.7)),
                           subtitle: Text(
-                            '${{v.surahName} • الآية ${{_ar(v.numberInSurah)} • ص ${{v.page}',
+                            '${v.surahName} • الآية ${_ar(v.numberInSurah)} • ص ${v.page}',
                             style: const TextStyle(
                                 color: AppColors.textMuted, fontSize: 11)),
                           onTap: () {

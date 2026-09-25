@@ -15,7 +15,7 @@ from pathlib import Path
 
 SOURCE_URL = "https://api.quranpedia.net/dumps/mushafs-4.json.gz"
 SOURCE_PAGE = "https://quranpedia.net/dumps"
-EXPECTED_VERSION = "2026-09-25"
+EXPECTED_VERSION = "2026-09-24"
 OUT = Path("assets/quran/warsh.json")
 PAGE_COUNT = 604
 SURAH_COUNT = 114
@@ -45,9 +45,50 @@ def main() -> None:
             f"Unexpected Quranpedia dump version: {version}; expected {EXPECTED_VERSION}"
         )
 
-    surahs = root.get("surahs")
+    def extract_surahs(value):
+        if isinstance(value, dict):
+            direct = value.get("surahs")
+            if isinstance(direct, list) and all(
+                isinstance(item, dict) and isinstance(item.get("ayahs"), list)
+                for item in direct
+            ):
+                return direct
+
+            if isinstance(direct, dict):
+                values = list(direct.values())
+                if values and all(
+                    isinstance(item, dict) and isinstance(item.get("ayahs"), list)
+                    for item in values
+                ):
+                    return values
+
+            for child in value.values():
+                found = extract_surahs(child)
+                if found is not None:
+                    return found
+
+        if isinstance(value, list):
+            if value and all(
+                isinstance(item, dict) and isinstance(item.get("ayahs"), list)
+                for item in value
+            ):
+                return value
+            for child in value:
+                found = extract_surahs(child)
+                if found is not None:
+                    return found
+
+        return None
+
+    surahs = extract_surahs(root)
     if not isinstance(surahs, list) or len(surahs) != SURAH_COUNT:
-        raise SystemExit("Warsh dump does not contain exactly 114 surahs")
+        shape = type(root).__name__
+        if isinstance(root, dict):
+            shape += f" keys={list(root.keys())[:12]}"
+        raise SystemExit(
+            "Could not locate exactly 114 Warsh surahs in the Quranpedia dump "
+            f"(root shape: {shape})"
+        )
 
     compact_surahs = []
     seen_pages = set()

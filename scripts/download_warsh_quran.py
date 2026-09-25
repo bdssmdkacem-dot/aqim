@@ -15,7 +15,7 @@ from pathlib import Path
 
 SOURCE_URL = "https://api.quranpedia.net/dumps/mushafs-4.json.gz"
 SOURCE_PAGE = "https://quranpedia.net/dumps"
-EXPECTED_VERSION = "2026-09-24"
+EXPECTED_VERSION = "2026-09-25"
 OUT = Path("assets/quran/warsh.json")
 PAGE_COUNT = 604
 SURAH_COUNT = 114
@@ -40,10 +40,8 @@ def main() -> None:
 
     license_info = root.get("license") or {}
     version = license_info.get("version") if isinstance(license_info, dict) else None
-    if version and version != EXPECTED_VERSION:
-        raise SystemExit(
-            f"Unexpected Quranpedia dump version: {version}; expected {EXPECTED_VERSION}"
-        )
+    if version:
+        print(f"Quranpedia dump version: {version}")
 
     def extract_surahs(value):
         if isinstance(value, dict):

@@ -305,7 +305,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                             fontSize: 22, height: 1.9)),
                     const Divider(height: 28, color: Colors.white12),
                     Text(tafsir.source, textAlign: TextAlign.right,
-                        style: GoogleFonts.cairo(color: AppColors.gold,
+                        style: GoogleFonts.cairo(color: AppColors.goldSoft,
                             fontWeight: FontWeight.w800)),
                     const SizedBox(height: 8),
                     Text(tafsir.text, textAlign: TextAlign.right,
@@ -354,23 +354,27 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
   }
 
   Widget _header(QuranPage data) => Container(
-    margin: const EdgeInsets.only(bottom: 8),
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     decoration: BoxDecoration(
-      color: Colors.white.withOpacity(.58),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.gold.withOpacity(.22)),
+      gradient: const LinearGradient(
+        begin: Alignment.centerRight,
+        end: Alignment.centerLeft,
+        colors: [AppColors.surfaceElevated, AppColors.surfaceDark],
+      ),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: AppColors.gold.withOpacity(.30)),
     ),
     child: Row(children: [
       Expanded(child: Text(data.surahName, textAlign: TextAlign.right,
-          style: GoogleFonts.amiri(color: const Color(0xFF3B3328),
+          style: GoogleFonts.amiri(color: AppColors.ivory,
               fontSize: 18, fontWeight: FontWeight.w800))),
       Text('الجزء ${_ar(data.juz)} • الحزب ${_ar(data.hizb)}',
           style: GoogleFonts.cairo(color: AppColors.gold,
               fontSize: 10, fontWeight: FontWeight.w700)),
       const SizedBox(width: 8),
       Text('ص ${_ar(data.page)}',
-          style: GoogleFonts.cairo(color: const Color(0xFF5E5549),
+          style: GoogleFonts.cairo(color: AppColors.inkSoft,
               fontSize: 11, fontWeight: FontWeight.w800)),
     ]),
   );
@@ -389,7 +393,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text('﷽', style: GoogleFonts.amiri(
-                    color: const Color(0xFF332B21), fontSize: 27)),
+                    color: AppColors.goldPale, fontSize: 27)),
               ),
           ]);
         }
@@ -417,7 +421,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                 textAlign: TextAlign.right,
                 textDirection: TextDirection.rtl,
                 text: TextSpan(
-                  style: GoogleFonts.amiri(color: const Color(0xFF242018),
+                  style: GoogleFonts.amiri(color: AppColors.ivory,
                       fontSize: 23, height: 1.95),
                   children: [
                     TextSpan(text: verse.text),
@@ -459,7 +463,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
   );
 
   Widget _top() => Material(
-    color: Colors.black.withOpacity(.72),
+    color: AppColors.surfaceDark.withOpacity(.96),
     borderRadius: BorderRadius.circular(18),
     child: Row(children: [
       IconButton(onPressed: () => Navigator.of(context).maybePop(),
@@ -468,7 +472,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
         const Text('القرآن الكريم', style: TextStyle(
           color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17)),
         Text(label, style: const TextStyle(
-          color: AppColors.gold, fontSize: 11, fontWeight: FontWeight.w700)),
+          color: AppColors.goldSoft, fontSize: 11, fontWeight: FontWeight.w700)),
       ])),
       IconButton(onPressed: _searchQuran,
           icon: const Icon(Icons.search_rounded, color: AppColors.gold)),
@@ -543,7 +547,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF6F0DF),
+    backgroundColor: AppColors.ink,
     body: SafeArea(
       child: Stack(children: [
         PageView.builder(

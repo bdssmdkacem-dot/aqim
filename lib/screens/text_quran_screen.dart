@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/quran_service.dart';
+import 'mushaf_quran_screen.dart';
 import '../theme/app_theme.dart';
 
 class TextQuranScreen extends StatefulWidget {

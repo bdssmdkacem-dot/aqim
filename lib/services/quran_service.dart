@@ -49,7 +49,7 @@ class QuranVerse {
         '96:19',
       }.contains('${surahNumber}:$ayah'));
 
-  int get hizb => ((hizbQuarter + 3) ~/ 4).clamp(1, 60);
+  int get hizb => ((hizbQuarter + 3) ~/ 4).clamp(1, 60).toInt();
 }
 
 class QuranPage {

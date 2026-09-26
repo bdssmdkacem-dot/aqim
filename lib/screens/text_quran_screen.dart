@@ -71,9 +71,12 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     final prefs = await SharedPreferences.getInstance();
     final id = prefs.getInt('quran_audio_reciter_id');
     final fallback = _defaultAudioReciter(riwaya);
+    final wanted = fallback.riwaya;
     final matches = id == null
         ? const <QuranReciter>[]
-        : QuranAudioService.reciters.where((r) => r.id == id).toList();
+        : QuranAudioService.reciters
+            .where((r) => r.id == id && r.riwaya == wanted)
+            .toList();
     if (!mounted) return;
     setState(() => audioReciter = matches.isEmpty ? fallback : matches.first);
   }
@@ -170,7 +173,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     final max = audioDuration.inMilliseconds > 0
         ? audioDuration.inMilliseconds.toDouble()
         : 1.0;
-    final position = rawPosition.clamp(0.0, max);
+    final position = rawPosition.clamp(0.0, max).toDouble();
     return Material(
       color: AppColors.surfaceDark.withOpacity(.98),
       borderRadius: BorderRadius.circular(18),

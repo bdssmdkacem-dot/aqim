@@ -104,6 +104,12 @@ object AdhanAlarmScheduler {
     fun requestSystemTimeReschedule(context: Context) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_ENABLED, false)) return
+
+        // A timezone change must invalidate alarms created under the old offset
+        // before attempting the network refresh. If the device is offline, keeping
+        // those alarms would fire at the old wall-clock time and a later Flutter
+        // offline schedule could then produce a duplicate Adhan.
+        rescheduleStored(context)
         refreshCurrentDayAsync(context)
     }
 

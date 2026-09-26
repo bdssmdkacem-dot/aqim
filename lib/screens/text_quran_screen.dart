@@ -597,87 +597,99 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     ]),
   );
 
-  Widget _body(QuranPage data) => Directionality(
-    textDirection: TextDirection.rtl,
-    child: ListView.builder(
-      key: PageStorageKey<String>('${riwaya.name}:${data.page}'),
-      padding: const EdgeInsets.fromLTRB(18, 82, 18, 84),
-      itemCount: data.verses.length + 1,
-      itemBuilder: (_, index) {
-        if (index == 0) {
-          return Column(children: [
-            _header(data),
-            if (data.page == 1 || data.verses.first.numberInSurah == 1)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text('﷽', style: GoogleFonts.amiri(
-                    color: AppColors.goldPale, fontSize: 27)),
-              ),
-          ]);
-        }
-
-        final verse = data.verses[index - 1];
-        final previous = index > 1 ? data.verses[index - 2] : null;
-        final rubChanged =
-            previous != null && previous.hizbQuarter != verse.hizbQuarter;
-
-        return Column(children: [
-          if (rubChanged)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                '۞ بداية ربع الحزب ${_ar(((verse.hizbQuarter - 1) % 4) + 1)}',
-                style: GoogleFonts.cairo(color: AppColors.gold,
-                    fontSize: 10, fontWeight: FontWeight.w700),
-              ),
-            ),
-          InkWell(
-            onTap: () => _tafsir(verse),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 7),
-              child: RichText(
-                textAlign: TextAlign.right,
-                textDirection: TextDirection.rtl,
-                text: TextSpan(
-                  style: GoogleFonts.amiri(color: AppColors.ivory,
-                      fontSize: 23, height: 1.95),
+  Widget _body(QuranPage data) => LayoutBuilder(
+    builder: (context, constraints) {
+      final availableWidth = constraints.maxWidth - 24;
+      return Directionality(
+        textDirection: TextDirection.rtl,
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: availableWidth,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextSpan(text: verse.text),
-                    const TextSpan(text: ' '),
-                    if (verse.isSajda)
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.middle,
-                        child: GestureDetector(
-                          onTap: () => _sajda(verse),
-                          child: const Text('۩', style: TextStyle(
-                            color: AppColors.gold, fontSize: 24,
-                            fontWeight: FontWeight.w800)),
-                        ),
+                    _header(data),
+                    if (data.page == 1 || data.verses.first.numberInSurah == 1)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text('﷽', style: GoogleFonts.amiri(
+                            color: AppColors.goldPale, fontSize: 27)),
                       ),
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: 30, height: 30,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: AppColors.gold.withOpacity(.7)),
+                    ...data.verses.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final verse = entry.value;
+                      final previous = index > 0 ? data.verses[index - 1] : null;
+                      final rubChanged = previous != null &&
+                          previous.hizbQuarter != verse.hizbQuarter;
+                      return Column(children: [
+                        if (rubChanged)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              '۞ بداية ربع الحزب ' + _ar(((verse.hizbQuarter - 1) % 4) + 1),
+                              style: GoogleFonts.cairo(color: AppColors.gold,
+                                  fontSize: 9, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        InkWell(
+                          onTap: () => _tafsir(verse),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: RichText(
+                              textAlign: TextAlign.right,
+                              textDirection: TextDirection.rtl,
+                              text: TextSpan(
+                                style: GoogleFonts.amiri(color: AppColors.ivory,
+                                    fontSize: 23, height: 1.65),
+                                children: [
+                                  TextSpan(text: verse.text),
+                                  const TextSpan(text: ' '),
+                                  if (verse.isSajda)
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.middle,
+                                      child: GestureDetector(
+                                        onTap: () => _sajda(verse),
+                                        child: const Text('۩', style: TextStyle(
+                                          color: AppColors.gold, fontSize: 22,
+                                          fontWeight: FontWeight.w800)),
+                                      ),
+                                    ),
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    child: Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                                      width: 28, height: 28,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                            color: AppColors.gold.withOpacity(.7)),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(_ar(verse.numberInSurah),
+                                          style: GoogleFonts.amiri(color: AppColors.gold,
+                                              fontSize: 12, fontWeight: FontWeight.w700)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                        alignment: Alignment.center,
-                        child: Text(_ar(verse.numberInSurah),
-                            style: GoogleFonts.amiri(color: AppColors.gold,
-                                fontSize: 13, fontWeight: FontWeight.w700)),
-                      ),
-                    ),
+                      ]);
+                    }),
                   ],
                 ),
               ),
             ),
           ),
-        ]);
-      },
-    ),
+        ),
+      );
+    },
   );
 
   Widget _top() => Material(
@@ -751,14 +763,14 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     borderRadius: BorderRadius.circular(20),
     child: Row(children: [
       IconButton(onPressed: () => _go(page == 1 ? pages : page - 1),
-          icon: const Icon(Icons.chevron_right_rounded,
+          icon: const Icon(Icons.chevron_left_rounded,
               color: Colors.white, size: 30)),
       Expanded(child: Text('${_ar(page)} / ${_ar(pages)}',
           textAlign: TextAlign.center,
           style: const TextStyle(color: Colors.white,
               fontWeight: FontWeight.w800))),
       IconButton(onPressed: () => _go(page == pages ? 1 : page + 1),
-          icon: const Icon(Icons.chevron_left_rounded,
+          icon: const Icon(Icons.chevron_right_rounded,
               color: Colors.white, size: 30)),
     ]),
   );
@@ -770,7 +782,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
       child: Stack(children: [
         PageView.builder(
           controller: controller,
-          reverse: true,
+          reverse: false,
           itemCount: pages,
           onPageChanged: (i) {
             page = i + 1;

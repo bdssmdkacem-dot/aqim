@@ -23,7 +23,8 @@ class OfflinePrayerTimesService {
       final localDate = DateTime(date.year, date.month, date.day);
       final jd = _julianDate(localDate.year, localDate.month, localDate.day);
       final sun = _sunPosition(jd);
-      final tzOffsetHours = DateTime.now().timeZoneOffset.inMinutes / 60.0;
+      final localNoon = DateTime(date.year, date.month, date.day, 12);
+      final tzOffsetHours = localNoon.timeZoneOffset.inMinutes / 60.0;
       final dhuhrLocal =
           12 + tzOffsetHours - longitude / 15 - sun.equationOfTime;
       final fajrH = _hourAngle(18.0, latitude, sun.declination);

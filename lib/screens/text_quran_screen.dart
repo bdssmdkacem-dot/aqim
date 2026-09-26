@@ -69,6 +69,13 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     audioPlayer.onDurationChanged.listen((duration) {
       if (mounted) setState(() => audioDuration = duration);
     });
+    audioPlayer.onPlayerError.listen((message) {
+      if (!mounted) return;
+      setState(() => audioLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر تشغيل صوت القارئ: $message')),
+      );
+    });
     _restore();
     _restoreAudio();
     _load(page);
@@ -111,29 +118,42 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
   }
 
   Future<List<QuranAyahTiming>> _timingsFor(int surah) async {
-    final timings = await QuranAudioService.instance.fetchAyahTimings(
-      reciter: audioReciter,
-      surah: surah,
-    );
-    if (mounted) setState(() => audioTimings = timings);
-    return timings;
+    try {
+      final timings = await QuranAudioService.instance.fetchAyahTimings(
+        reciter: audioReciter,
+        surah: surah,
+      );
+      if (mounted) setState(() => audioTimings = timings);
+      return timings;
+    } catch (_) {
+      // Timing is optional: audio playback must not depend on the timing API.
+      if (mounted) setState(() => audioTimings = const []);
+      return const [];
+    }
   }
 
   Future<void> _playAyah(QuranVerse verse) async {
     setState(() => audioLoading = true);
     try {
-      final timings = await _timingsFor(verse.surahNumber);
-      final timing = timings.where((t) => t.ayah == verse.numberInSurah).firstOrNull;
-      if (timing == null) {
-        throw Exception('هذا القارئ لا يوفر توقيتًا لهذه الآية');
-      }
-      await audioPlayer.play(UrlSource(audioReciter.audioUrl(verse.surahNumber)));
-      await audioPlayer.seek(Duration(milliseconds: timing.startTime));
+      // Start the MP3 first. Timing data is optional and must never block audio.
+      await audioPlayer.play(
+        UrlSource(audioReciter.audioUrl(verse.surahNumber)),
+      );
       if (mounted) {
         setState(() {
           audioSurah = verse.surahNumber;
           audioCurrentAyah = verse.numberInSurah;
         });
+      }
+
+      final timings = await _timingsFor(verse.surahNumber);
+      final timing = timings
+          .where((t) => t.ayah == verse.numberInSurah)
+          .firstOrNull;
+      if (timing != null && audioState == PlayerState.playing) {
+        await audioPlayer.seek(
+          Duration(milliseconds: timing.startTime),
+        );
       }
     } finally {
       if (mounted) setState(() => audioLoading = false);
@@ -155,17 +175,21 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     final surahNumber = firstVerse.surahNumber;
     setState(() => audioLoading = true);
     try {
-      final timings = await _timingsFor(surahNumber);
-      final timing = timings.where((t) => t.ayah == firstVerse.numberInSurah).firstOrNull;
+      // Start the full surah immediately; timing is only used for positioning.
       await audioPlayer.play(UrlSource(audioReciter.audioUrl(surahNumber)));
-      if (timing != null) {
-        await audioPlayer.seek(Duration(milliseconds: timing.startTime));
-      }
       if (mounted) {
         setState(() {
           audioSurah = surahNumber;
           audioCurrentAyah = firstVerse.numberInSurah;
         });
+      }
+
+      final timings = await _timingsFor(surahNumber);
+      final timing = timings
+          .where((t) => t.ayah == firstVerse.numberInSurah)
+          .firstOrNull;
+      if (timing != null && audioState == PlayerState.playing) {
+        await audioPlayer.seek(Duration(milliseconds: timing.startTime));
       }
     } finally {
       if (mounted) setState(() => audioLoading = false);

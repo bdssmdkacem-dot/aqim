@@ -101,6 +101,9 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
       audioState = PlayerState.stopped;
       audioPosition = Duration.zero;
       audioDuration = Duration.zero;
+      audioSurah = null;
+      audioCurrentAyah = null;
+      audioTimings = const [];
     });
   }
 

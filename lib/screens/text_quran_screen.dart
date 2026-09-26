@@ -151,15 +151,20 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
       await _playAyah(data.verses.first);
       return;
     }
-    final surahNumber = _audioSurahForPage(data);
+    final firstVerse = data.verses.first;
+    final surahNumber = firstVerse.surahNumber;
     setState(() => audioLoading = true);
     try {
+      final timings = await _timingsFor(surahNumber);
+      final timing = timings.where((t) => t.ayah == firstVerse.numberInSurah).firstOrNull;
       await audioPlayer.play(UrlSource(audioReciter.audioUrl(surahNumber)));
+      if (timing != null) {
+        await audioPlayer.seek(Duration(milliseconds: timing.startTime));
+      }
       if (mounted) {
         setState(() {
           audioSurah = surahNumber;
-          audioCurrentAyah = null;
-          audioTimings = const [];
+          audioCurrentAyah = firstVerse.numberInSurah;
         });
       }
     } finally {
@@ -656,10 +661,6 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
       Text('الجزء ${_ar(data.juz)} • الحزب ${_ar(data.hizb)}',
           style: GoogleFonts.cairo(color: AppColors.gold,
               fontSize: 10, fontWeight: FontWeight.w700)),
-      const SizedBox(width: 8),
-      Text('ص ${_ar(data.page)}',
-          style: GoogleFonts.cairo(color: AppColors.inkSoft,
-              fontSize: 11, fontWeight: FontWeight.w800)),
     ]),
   );
 
@@ -692,6 +693,10 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                       final previous = index > 0 ? data.verses[index - 1] : null;
                       final rubChanged = previous != null &&
                           previous.hizbQuarter != verse.hizbQuarter;
+                      final isPlayingVerse =
+                          audioState == PlayerState.playing &&
+                          audioSurah == verse.surahNumber &&
+                          audioCurrentAyah == verse.numberInSurah;
                       return Column(children: [
                         if (rubChanged)
                           Padding(
@@ -704,8 +709,14 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                           ),
                         InkWell(
                           onTap: () => _tafsir(verse),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isPlayingVerse ? AppColors.gold.withOpacity(.16) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                              border: isPlayingVerse ? Border.all(color: AppColors.gold.withOpacity(.45)) : null,
+                            ),
                             child: RichText(
                               textAlign: TextAlign.right,
                               textDirection: TextDirection.rtl,
@@ -833,9 +844,18 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
           controller: controller,
           reverse: true,
           itemCount: pages,
-          onPageChanged: (i) {
+          onPageChanged: (i) async {
+            if (audioState == PlayerState.playing || audioState == PlayerState.paused) {
+              await audioPlayer.stop();
+            }
             page = i + 1;
-            setState(() {});
+            setState(() {
+              audioCurrentAyah = null;
+              audioSurah = null;
+              audioTimings = const [];
+              audioPosition = Duration.zero;
+              audioDuration = Duration.zero;
+            });
             _load(page);
             _save();
           },

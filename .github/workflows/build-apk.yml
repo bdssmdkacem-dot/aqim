@@ -7,6 +7,7 @@ on:
       - master
       - feat/quran-text-warsh
       - feat/quran-visual-identity
+      - feat/quran-radio-v2
   pull_request:
     branches:
       - main

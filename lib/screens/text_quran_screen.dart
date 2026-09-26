@@ -17,6 +17,8 @@ class TextQuranScreen extends StatefulWidget {
   State<TextQuranScreen> createState() => _TextQuranScreenState();
 }
 
+enum QuranPlaybackMode { ayah, surah }
+
 class _TextQuranScreenState extends State<TextQuranScreen> {
   static const pages = 604;
   final service = QuranService.instance;
@@ -32,6 +34,11 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
   Duration audioPosition = Duration.zero;
   Duration audioDuration = Duration.zero;
   bool audioLoading = false;
+  QuranPlaybackMode audioMode = QuranPlaybackMode.ayah;
+  int? audioSurah;
+  int? audioCurrentAyah;
+  bool audioAdvancing = false;
+  List<QuranAyahTiming> audioTimings = const [];
 
   QuranRiwaya get mode =>
       riwaya == MushafRiwaya.warsh ? QuranRiwaya.warsh : QuranRiwaya.hafs;
@@ -51,7 +58,10 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
       if (mounted) setState(() => audioState = state);
     });
     audioPlayer.onPositionChanged.listen((position) {
-      if (mounted) setState(() => audioPosition = position);
+      if (mounted) {
+        setState(() => audioPosition = position);
+        _advanceAyahIfNeeded(position);
+      }
     });
     audioPlayer.onDurationChanged.listen((duration) {
       if (mounted) setState(() => audioDuration = duration);
@@ -97,22 +107,78 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
   int _audioSurahForPage(QuranPage data) =>
       data.verses.isEmpty ? 1 : data.verses.first.surahNumber;
 
-  Future<void> _playCurrentAudio() async {
-    final data = _data(page);
-    if (data == null || data.verses.isEmpty) return;
-    final surahNumber = _audioSurahForPage(data);
+  Future<List<QuranAyahTiming>> _timingsFor(int surah) async {
+    final timings = await QuranAudioService.instance.fetchAyahTimings(
+      reciter: audioReciter,
+      surah: surah,
+    );
+    if (mounted) setState(() => audioTimings = timings);
+    return timings;
+  }
+
+  Future<void> _playAyah(QuranVerse verse) async {
     setState(() => audioLoading = true);
     try {
-      if (audioState == PlayerState.playing) {
-        await audioPlayer.pause();
-      } else if (audioState == PlayerState.paused &&
-          audioPosition < audioDuration) {
-        await audioPlayer.resume();
-      } else {
-        await audioPlayer.play(UrlSource(audioReciter.audioUrl(surahNumber)));
+      final timings = await _timingsFor(verse.surahNumber);
+      final timing = timings.where((t) => t.ayah == verse.numberInSurah).firstOrNull;
+      if (timing == null) {
+        throw Exception('هذا القارئ لا يوفر توقيتًا لهذه الآية');
+      }
+      await audioPlayer.play(UrlSource(audioReciter.audioUrl(verse.surahNumber)));
+      await audioPlayer.seek(Duration(milliseconds: timing.startTime));
+      if (mounted) {
+        setState(() {
+          audioSurah = verse.surahNumber;
+          audioCurrentAyah = verse.numberInSurah;
+        });
       }
     } finally {
       if (mounted) setState(() => audioLoading = false);
+    }
+  }
+
+  Future<void> _playCurrentAudio() async {
+    final data = _data(page);
+    if (data == null || data.verses.isEmpty) return;
+    if (audioState == PlayerState.playing) {
+      await audioPlayer.pause();
+      return;
+    }
+    if (audioMode == QuranPlaybackMode.ayah) {
+      await _playAyah(data.verses.first);
+      return;
+    }
+    final surahNumber = _audioSurahForPage(data);
+    setState(() => audioLoading = true);
+    try {
+      await audioPlayer.play(UrlSource(audioReciter.audioUrl(surahNumber)));
+      if (mounted) {
+        setState(() {
+          audioSurah = surahNumber;
+          audioCurrentAyah = null;
+          audioTimings = const [];
+        });
+      }
+    } finally {
+      if (mounted) setState(() => audioLoading = false);
+    }
+  }
+
+  Future<void> _advanceAyahIfNeeded(Duration position) async {
+    if (audioMode != QuranPlaybackMode.ayah ||
+        audioCurrentAyah == null ||
+        audioTimings.isEmpty ||
+        audioAdvancing) return;
+    final current = audioTimings.where((t) => t.ayah == audioCurrentAyah).firstOrNull;
+    if (current == null || position.inMilliseconds < current.endTime - 120) return;
+    final next = audioTimings.where((t) => t.ayah == audioCurrentAyah! + 1).firstOrNull;
+    if (next == null) return;
+    audioAdvancing = true;
+    try {
+      await audioPlayer.seek(Duration(milliseconds: next.startTime));
+      if (mounted) setState(() => audioCurrentAyah = next.ayah);
+    } finally {
+      audioAdvancing = false;
     }
   }
 
@@ -168,83 +234,87 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
   }
 
   Widget _audioBar(QuranPage data) {
-    final surahNumber = _audioSurahForPage(data);
-    final rawPosition = audioPosition.inMilliseconds.toDouble();
-    final max = audioDuration.inMilliseconds > 0
-        ? audioDuration.inMilliseconds.toDouble()
-        : 1.0;
-    final position = rawPosition.clamp(0.0, max).toDouble();
+    final modeLabel = audioMode == QuranPlaybackMode.ayah ? 'آية' : 'سورة';
     return Material(
-      color: AppColors.surfaceDark.withOpacity(.98),
-      borderRadius: BorderRadius.circular(18),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 7, 8, 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      color: AppColors.surfaceDark.withOpacity(.97),
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(
+        height: 58,
+        child: Row(
           children: [
-            Row(
-              children: [
-                IconButton(
-                  tooltip: 'اختيار القارئ',
-                  onPressed: _showAudioReciters,
-                  icon: const Icon(Icons.record_voice_over_rounded, color: AppColors.gold),
+            IconButton(
+              tooltip: 'اختيار القارئ',
+              onPressed: _showAudioReciters,
+              icon: const Icon(Icons.record_voice_over_rounded,
+                  color: AppColors.gold, size: 21),
+            ),
+            Expanded(
+              child: InkWell(
+                onTap: _showAudioReciters,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(audioReciter.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.ivory,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        )),
+                    Text(data.surahName + ' • ' + modeLabel,
+                        style: const TextStyle(
+                            color: AppColors.textMuted, fontSize: 9)),
+                  ],
                 ),
-                Expanded(
-                  child: InkWell(
-                    onTap: _showAudioReciters,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(audioReciter.name,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.ivory,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                            )),
-                        Text(
-                          data.surahName + ' • ' + audioReciter.riwaya,
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
-                        ),
-                      ],
+              ),
+            ),
+            PopupMenuButton<QuranPlaybackMode>(
+              tooltip: 'طريقة التشغيل',
+              icon: const Icon(Icons.tune_rounded,
+                  color: AppColors.goldSoft, size: 20),
+              color: AppColors.surfaceDark,
+              onSelected: (value) async {
+                await audioPlayer.stop();
+                if (mounted) {
+                  setState(() {
+                    audioMode = value;
+                    audioCurrentAyah = null;
+                    audioSurah = null;
+                    audioTimings = const [];
+                  });
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: QuranPlaybackMode.ayah,
+                  child: Text('آية بآية',
+                      style: TextStyle(color: Colors.white)),
+                ),
+                PopupMenuItem(
+                  value: QuranPlaybackMode.surah,
+                  child: Text('السورة كاملة',
+                      style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+            IconButton(
+              tooltip: audioState == PlayerState.playing ? 'إيقاف مؤقت' : 'تشغيل',
+              onPressed: audioLoading ? null : _playCurrentAudio,
+              icon: audioLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: AppColors.gold))
+                  : Icon(
+                      audioState == PlayerState.playing
+                          ? Icons.pause_circle_filled_rounded
+                          : Icons.play_circle_fill_rounded,
+                      color: AppColors.gold,
+                      size: 30,
                     ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: audioState == PlayerState.playing ? 'إيقاف مؤقت' : 'تشغيل',
-                  onPressed: audioLoading ? null : _playCurrentAudio,
-                  icon: audioLoading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold))
-                      : Icon(
-                          audioState == PlayerState.playing
-                              ? Icons.pause_circle_filled_rounded
-                              : Icons.play_circle_fill_rounded,
-                          color: AppColors.gold,
-                          size: 32,
-                        ),
-                ),
-              ],
-            ),
-            Slider(
-              value: position,
-              max: max,
-              onChanged: audioDuration.inMilliseconds <= 0
-                  ? null
-                  : (value) => audioPlayer.seek(Duration(milliseconds: value.round())),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(_audioTime(audioPosition),
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: 9)),
-                Text('السورة ' + _ar(surahNumber).toString(),
-                    style: const TextStyle(color: AppColors.goldSoft, fontSize: 9)),
-                Text(_audioTime(audioDuration),
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: 9)),
-              ],
             ),
           ],
         ),
@@ -758,23 +828,6 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     if (selected != null && mounted) _go(selected);
   }
 
-  Widget _bottom() => Material(
-    color: Colors.black.withOpacity(.72),
-    borderRadius: BorderRadius.circular(20),
-    child: Row(children: [
-      IconButton(onPressed: () => _go(page == 1 ? pages : page - 1),
-          icon: const Icon(Icons.chevron_left_rounded,
-              color: Colors.white, size: 30)),
-      Expanded(child: Text('${_ar(page)} / ${_ar(pages)}',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white,
-              fontWeight: FontWeight.w800))),
-      IconButton(onPressed: () => _go(page == pages ? 1 : page + 1),
-          icon: const Icon(Icons.chevron_right_rounded,
-              color: Colors.white, size: 30)),
-    ]),
-  );
-
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.ink,
@@ -782,7 +835,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
       child: Stack(children: [
         PageView.builder(
           controller: controller,
-          reverse: false,
+          reverse: true,
           itemCount: pages,
           onPageChanged: (i) {
             page = i + 1;
@@ -823,9 +876,8 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
           ),
         if (controls) ...[
           Positioned(top: 8, left: 8, right: 8, child: _top()),
-          Positioned(bottom: 10, left: 12, right: 12, child: _bottom()),
           if (_data(page) != null)
-            Positioned(bottom: 68, left: 12, right: 12, child: _audioBar(_data(page)!)),
+            Positioned(bottom: 10, left: 12, right: 12, child: _audioBar(_data(page)!)),
         ],
       ]),
     ),

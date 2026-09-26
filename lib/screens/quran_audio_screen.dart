@@ -10,7 +10,7 @@ class _QuranAudioScreenState extends State<QuranAudioScreen>{
  @override void dispose(){player.dispose();super.dispose();}
  Future<void> play()async{setState(()=>loading=true);try{await player.stop();await player.play(UrlSource(reciter.audioUrl(surah)));}finally{if(mounted)setState(()=>loading=false);}}
  @override Widget build(BuildContext context)=>Scaffold(backgroundColor:AppColors.ink,appBar:AppBar(title:const Text('الاستماع إلى القرآن')),body:Directionality(textDirection:TextDirection.rtl,child:ListView(padding:const EdgeInsets.all(18),children:[
- DropdownButtonFormField<QuranReciter>(value:reciter,dropdownColor:AppColors.surfaceDark,items:service.reciters.map((r)=>DropdownMenuItem(value:r,child:Text(r.name+' — '+r.riwaya))).toList(),onChanged:(r){if(r!=null)setState(()=>{reciter=r,surah=1});}),
+ DropdownButtonFormField<QuranReciter>(value:reciter,dropdownColor:AppColors.surfaceDark,items:QuranAudioService.reciters.map((r)=>DropdownMenuItem(value:r,child:Text(r.name+' — '+r.riwaya))).toList(),onChanged:(r){if(r!=null)setState(() { reciter = r; surah = 1; });}),
  const SizedBox(height:16), Text(reciter.name,style:const TextStyle(color:AppColors.ivory,fontSize:24,fontWeight:FontWeight.w800)),Text(reciter.riwaya+' • '+reciter.surahTotal.toString()+' سورة',style:const TextStyle(color:AppColors.textMuted)),const SizedBox(height:12),
  DropdownButtonFormField<int>(value:surah,dropdownColor:AppColors.surfaceDark,items:List.generate(reciter.surahTotal,(i)=>DropdownMenuItem(value:i+1,child:Text((i+1).toString()+'. '+names[i]))),onChanged:(v){if(v!=null)setState(()=>surah=v);}),const SizedBox(height:14),
  FilledButton.icon(onPressed:loading?null:play,icon:const Icon(Icons.play_arrow_rounded),label:Text(loading?'جاري التشغيل…':'تشغيل السورة')),

@@ -109,9 +109,6 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     });
   }
 
-  int _audioSurahForPage(QuranPage data) =>
-      data.verses.isEmpty ? 1 : data.verses.first.surahNumber;
-
   Future<List<QuranAyahTiming>> _timingsFor(int surah) async {
     final timings = await QuranAudioService.instance.fetchAyahTimings(
       reciter: audioReciter,

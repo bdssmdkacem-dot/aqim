@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 enum QuranAudioTrust { catalog, officialArchive, thirdPartyArchive }
@@ -9,6 +11,13 @@ class QuranReciter {
   final QuranAudioTrust latestTrust;
   const QuranReciter({required this.id,required this.moshafId,required this.name,required this.nameEn,required this.riwaya,required this.style,required this.surahTotal,required this.server,this.latestTitle,this.latestTrust=QuranAudioTrust.catalog,this.latestSourceUrl});
   String audioUrl(int surah)=>server+surah.toString().padLeft(3,'0')+'.mp3';
+}
+
+class QuranAyahTiming {
+  final int ayah;
+  final int startTime;
+  final int endTime;
+  const QuranAyahTiming({required this.ayah, required this.startTime, required this.endTime});
 }
 
 class QuranAudioService {
@@ -33,6 +42,32 @@ class QuranAudioService {
     QuranReciter(id:16,moshafId:16,name:'العيون الكوشي',nameEn:'Aloyoon Al-Koshi',riwaya:'ورش عن نافع',style:'مرتل',surahTotal:114,server:'https://server11.mp3quran.net/koshi/'),
     QuranReciter(id:80,moshafId:80,name:'عمر القزابري',nameEn:'Omar Al-Qazabri',riwaya:'ورش عن نافع',style:'مرتل',surahTotal:114,server:'https://server9.mp3quran.net/omar_warsh/'),
   ];
+  final Map<String, List<QuranAyahTiming>> _timingCache = {};
+
+  Future<List<QuranAyahTiming>> fetchAyahTimings({
+    required QuranReciter reciter,
+    required int surah,
+  }) async {
+    final key = '\${reciter.moshafId}:\$surah';
+    final cached = _timingCache[key];
+    if (cached != null) return cached;
+
+    final uri = Uri.parse(
+      'https://mp3quran.net/api/v3/ayat_timing?surah=\$surah&read=\${reciter.moshafId}',
+    );
+    final response = await http.get(uri);
+    if (response.statusCode != 200) throw Exception('تعذر تحميل توقيتات الآيات');
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) return const [];
+    final result = decoded.whereType<Map>().map((item) => QuranAyahTiming(
+      ayah: (item['ayah'] as num?)?.toInt() ?? 0,
+      startTime: (item['start_time'] as num?)?.toInt() ?? 0,
+      endTime: (item['end_time'] as num?)?.toInt() ?? 0,
+    )).where((item) => item.ayah > 0 && item.endTime > item.startTime).toList();
+    _timingCache[key] = result;
+    return result;
+  }
+
   Future<bool> openLatestSource(QuranReciter r) async {
     final u=r.latestSourceUrl;
     if(u==null) return false;

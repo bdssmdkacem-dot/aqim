@@ -37,6 +37,8 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
   QuranPlaybackMode audioMode = QuranPlaybackMode.ayah;
   int? audioSurah;
   int? audioCurrentAyah;
+  int? highlightedSurah;
+  int? highlightedAyah;
   bool audioAdvancing = false;
   List<QuranAyahTiming> audioTimings = const [];
 
@@ -559,7 +561,21 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                                 color: AppColors.textMuted, fontSize: 11)),
                           onTap: () {
                             Navigator.pop(dialog);
+                            setState(() {
+                              highlightedSurah = v.surahNumber;
+                              highlightedAyah = v.numberInSurah;
+                            });
                             _go(v.page);
+                            Future<void>.delayed(const Duration(seconds: 4), () {
+                              if (!mounted) return;
+                              if (highlightedSurah == v.surahNumber &&
+                                  highlightedAyah == v.numberInSurah) {
+                                setState(() {
+                                  highlightedSurah = null;
+                                  highlightedAyah = null;
+                                });
+                              }
+                            });
                           },
                         );
                       },
@@ -714,6 +730,9 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                           audioState == PlayerState.playing &&
                           audioSurah == verse.surahNumber &&
                           audioCurrentAyah == verse.numberInSurah;
+                      final isSearchMatch =
+                          highlightedSurah == verse.surahNumber &&
+                          highlightedAyah == verse.numberInSurah;
                       return Column(children: [
                         if (rubChanged)
                           Padding(
@@ -730,9 +749,15 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                             duration: const Duration(milliseconds: 180),
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isPlayingVerse ? AppColors.gold.withOpacity(.16) : Colors.transparent,
+                              color: isPlayingVerse
+                                  ? AppColors.gold.withOpacity(.16)
+                                  : isSearchMatch
+                                      ? AppColors.gold.withOpacity(.10)
+                                      : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
-                              border: isPlayingVerse ? Border.all(color: AppColors.gold.withOpacity(.45)) : null,
+                              border: isPlayingVerse || isSearchMatch
+                                  ? Border.all(color: AppColors.gold.withOpacity(.45))
+                                  : null,
                             ),
                             child: RichText(
                               textAlign: TextAlign.right,

@@ -40,6 +40,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
   int? highlightedSurah;
   int? highlightedAyah;
   bool audioAdvancing = false;
+  bool audioChangingPage = false;
   List<QuranAyahTiming> audioTimings = const [];
 
   QuranRiwaya get mode =>
@@ -194,9 +195,14 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
         await _load(nextPageNumber);
         if (_data(nextPageNumber)?.verses.any((v) =>
                 v.surahNumber == audioSurah && v.numberInSurah == next.ayah) ?? false) {
-          controller.jumpToPage(nextPageNumber - 1);
-          if (mounted) setState(() => page = nextPageNumber);
-          await _save();
+          audioChangingPage = true;
+          try {
+            controller.jumpToPage(nextPageNumber - 1);
+            if (mounted) setState(() => page = nextPageNumber);
+            await _save();
+          } finally {
+            audioChangingPage = false;
+          }
         }
       }
       await audioPlayer.seek(Duration(milliseconds: next.startTime));
@@ -287,7 +293,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
                         )),
-                    Text(data.surahName + ' • ص ' + _ar(data.page) + ' • ' + modeLabel,
+                    Text(data.surahName + ' • ' + modeLabel,
                         style: const TextStyle(
                             color: AppColors.textMuted, fontSize: 9)),
                   ],
@@ -884,17 +890,24 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
           reverse: true,
           itemCount: pages,
           onPageChanged: (i) async {
+            page = i + 1;
+            if (audioChangingPage) {
+              if (mounted) setState(() {});
+              _load(page);
+              return;
+            }
             if (audioState == PlayerState.playing || audioState == PlayerState.paused) {
               await audioPlayer.stop();
             }
-            page = i + 1;
-            setState(() {
-              audioCurrentAyah = null;
-              audioSurah = null;
-              audioTimings = const [];
-              audioPosition = Duration.zero;
-              audioDuration = Duration.zero;
-            });
+            if (mounted) {
+              setState(() {
+                audioCurrentAyah = null;
+                audioSurah = null;
+                audioTimings = const [];
+                audioPosition = Duration.zero;
+                audioDuration = Duration.zero;
+              });
+            }
             _load(page);
             _save();
           },

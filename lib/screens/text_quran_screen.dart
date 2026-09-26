@@ -183,6 +183,23 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     if (next == null) return;
     audioAdvancing = true;
     try {
+      final currentPage = _data(page);
+      final visible = currentPage?.verses
+          .where((v) => v.surahNumber == audioSurah)
+          .toList() ?? const <QuranVerse>[];
+      final lastVisibleAyah = visible.isEmpty
+          ? 0
+          : visible.map((v) => v.numberInSurah).reduce((a, b) => a > b ? a : b);
+      if (lastVisibleAyah > 0 && next.ayah > lastVisibleAyah && page < pages) {
+        final nextPageNumber = page + 1;
+        await _load(nextPageNumber);
+        if (_data(nextPageNumber)?.verses.any((v) =>
+                v.surahNumber == audioSurah && v.numberInSurah == next.ayah) ?? false) {
+          controller.jumpToPage(nextPageNumber - 1);
+          if (mounted) setState(() => page = nextPageNumber);
+          await _save();
+        }
+      }
       await audioPlayer.seek(Duration(milliseconds: next.startTime));
       if (mounted) setState(() => audioCurrentAyah = next.ayah);
     } finally {

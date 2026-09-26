@@ -263,6 +263,33 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     if (selected != null) await _selectAudioReciter(selected);
   }
 
+  Future<void> _playAdjacentAyah(int delta) async {
+    final data = _data(page);
+    if (data == null || data.verses.isEmpty) return;
+
+    final currentIndex = audioCurrentAyah == null
+        ? (delta > 0 ? -1 : data.verses.length)
+        : data.verses.indexWhere((v) =>
+            v.surahNumber == audioSurah && v.numberInSurah == audioCurrentAyah);
+
+    var targetIndex = currentIndex + delta;
+    if (targetIndex >= 0 && targetIndex < data.verses.length) {
+      await _playAyah(data.verses[targetIndex]);
+      return;
+    }
+
+    if (audioCurrentAyah != null && audioSurah != null) {
+      final timings = await _timingsFor(audioSurah!);
+      final targetAyah = audioCurrentAyah! + delta;
+      final timing = timings.where((t) => t.ayah == targetAyah).firstOrNull;
+      if (timing != null) {
+        await audioPlayer.play(UrlSource(audioReciter.audioUrl(audioSurah!)));
+        await audioPlayer.seek(Duration(milliseconds: timing.startTime));
+        if (mounted) setState(() => audioCurrentAyah = targetAyah);
+      }
+    }
+  }
+
   Widget _audioBar(QuranPage data) {
     final modeLabel = audioMode == QuranPlaybackMode.ayah ? 'آية' : 'سورة';
     return Material(
@@ -330,6 +357,12 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
               ],
             ),
             IconButton(
+              tooltip: 'الآية السابقة',
+              onPressed: audioLoading ? null : () => _playAdjacentAyah(-1),
+              icon: const Icon(Icons.skip_previous_rounded,
+                  color: AppColors.goldSoft, size: 24),
+            ),
+            IconButton(
               tooltip: audioState == PlayerState.playing ? 'إيقاف مؤقت' : 'تشغيل',
               onPressed: audioLoading ? null : _playCurrentAudio,
               icon: audioLoading
@@ -345,6 +378,12 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                       color: AppColors.gold,
                       size: 30,
                     ),
+            ),
+            IconButton(
+              tooltip: 'الآية التالية',
+              onPressed: audioLoading ? null : () => _playAdjacentAyah(1),
+              icon: const Icon(Icons.skip_next_rounded,
+                  color: AppColors.goldSoft, size: 24),
             ),
           ],
         ),

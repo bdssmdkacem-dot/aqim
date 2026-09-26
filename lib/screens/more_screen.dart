@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import 'nearby_mosques_screen.dart';
 import 'prayer_guide_screen.dart';
 import 'qibla_screen.dart';
+import 'quran_radio_screen.dart';
 import 'week_report_screen.dart';
 
 class MoreScreen extends StatefulWidget {
@@ -46,6 +47,12 @@ class _MoreScreenState extends State<MoreScreen> {
                 subtitle: 'بوصلة حية',
                 onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const QiblaScreen()))),
+            _MenuTile(
+                icon: Icons.radio_rounded,
+                title: 'إذاعة القرآن',
+                subtitle: 'بث مباشر',
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const QuranRadioScreen()))),
             _MenuTile(
                 icon: Icons.menu_book_rounded,
                 title: 'كيف أقيم صلاتي؟',

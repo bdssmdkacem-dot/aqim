@@ -325,13 +325,6 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     );
   }
 
-  String _audioTime(Duration value) {
-    final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
-    final hours = value.inHours;
-    return hours > 0 ? hours.toString() + ':' + minutes + ':' + seconds : minutes + ':' + seconds;
-  }
-
   Future<void> _restore() async {
     if (widget.initialPage != null) return;
     final prefs = await SharedPreferences.getInstance();

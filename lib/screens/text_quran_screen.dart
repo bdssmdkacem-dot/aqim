@@ -264,7 +264,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
       color: AppColors.surfaceDark.withOpacity(.97),
       borderRadius: BorderRadius.circular(14),
       child: SizedBox(
-        height: 58,
+        height: 52,
         child: Row(
           children: [
             IconButton(
@@ -288,7 +288,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
                         )),
-                    Text(data.surahName + ' • ' + modeLabel,
+                    Text(data.surahName + ' • ص ' + _ar(data.page) + ' • ' + modeLabel,
                         style: const TextStyle(
                             color: AppColors.textMuted, fontSize: 9)),
                   ],

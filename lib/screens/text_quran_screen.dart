@@ -69,12 +69,8 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     audioPlayer.onDurationChanged.listen((duration) {
       if (mounted) setState(() => audioDuration = duration);
     });
-    audioPlayer.onPlayerError.listen((message) {
-      if (!mounted) return;
-      setState(() => audioLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر تشغيل صوت القارئ: $message')),
-      );
+    audioPlayer.onLog.listen((message) {
+      debugPrint('QuranAudio: $message');
     });
     _restore();
     _restoreAudio();
@@ -153,6 +149,12 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
       if (timing != null && audioState == PlayerState.playing) {
         await audioPlayer.seek(
           Duration(milliseconds: timing.startTime),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تشغيل صوت القارئ: $e')),
         );
       }
     } finally {

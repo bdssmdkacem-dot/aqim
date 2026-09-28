@@ -209,8 +209,12 @@ object AdhanAlarmScheduler {
         if (!prefs.getBoolean(KEY_ENABLED, false)) return
 
         val locationPrefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val lat = readDouble(locationPrefs, "flutter.last_lat", "last_lat") ?: return
-        val lng = readDouble(locationPrefs, "flutter.last_lng", "last_lng") ?: return
+        val lat = readDouble(locationPrefs, "flutter.last_lat", "last_lat")
+        val lng = readDouble(locationPrefs, "flutter.last_lng", "last_lng")
+        if (lat == null || lng == null) {
+            scheduleMaintenance(context)
+            return
+        }
         val date = SimpleDateFormat("dd-MM-yyyy", Locale.US).apply {
             timeZone = TimeZone.getDefault()
         }.format(calendar.time)

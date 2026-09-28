@@ -12,6 +12,7 @@ import '../screens/missed_prayer_response_screen.dart';
 import '../screens/pre_prayer_screen.dart';
 import '../screens/quran_screen.dart';
 import 'religious_events_service.dart';
+import 'offline_prayer_times_service.dart';
 
 class NotificationService {
   NotificationService._();
@@ -301,6 +302,108 @@ class NotificationService {
     await _scheduleQuranReminders(realTimes, savedPage);
     await _scheduleShafWitrReminder(realTimes[Prayer.isha]);
     await _scheduleReligiousEvents();
+    await _scheduleTomorrowSafety(realTimes);
+  }
+
+  Future<void> _scheduleTomorrowSafety(Map<Prayer, DateTime> todayTimes) async {
+    final prefs = await SharedPreferences.getInstance();
+    final lat = prefs.getDouble('last_lat');
+    final lng = prefs.getDouble('last_lng');
+    if (lat == null || lng == null) return;
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    final tomorrowTimes = OfflinePrayerTimesService.calculateForDate(
+      date: tomorrow, latitude: lat, longitude: lng);
+    if (tomorrowTimes == null) return;
+
+    const offset = 10000;
+    final now = DateTime.now();
+    final prePrayerEnabled = prefs.getBool('pre_prayer_enabled') ?? true;
+    final selectedPrePrayers = (prefs.getStringList('pre_prayer_prayers') ??
+            Prayer.values.map((p) => p.name).toList()).toSet();
+    final preMode = prefs.getString('pre_prayer_alert_mode') ?? 'alarm';
+    final adhanMode = prefs.getString('adhan_alert_mode') ?? 'adhan';
+
+    for (final entry in tomorrowTimes.entries) {
+      final prayer = entry.key;
+      final prayerTime = entry.value;
+      final isJumuah =
+          prayer == Prayer.dhuhr && prayerTime.weekday == DateTime.friday;
+      final base = offset + prayer.index * 10;
+      if (prePrayerEnabled && selectedPrePrayers.contains(prayer.name)) {
+        final alarmTime = prayerTime.subtract(Duration(minutes: beforeMinutes));
+        if (alarmTime.isAfter(now)) {
+          await _scheduleWakeAlarm(
+            id: base,
+            title: isJumuah ? 'استعد لصلاة الجمعة' : 'استعد لصلاة ${prayer.arabicName}',
+            body: isJumuah
+                ? 'تبقّى $beforeMinutes دقيقة على صلاة الجمعة.'
+                : 'تبقّى $beforeMinutes دقيقة على ${prayer.arabicName}.',
+            scheduledDate: alarmTime,
+            soundName: _wakeAlarmSoundFor(prayer, prayerTime),
+            payload: prayer.name);
+        }
+      }
+      if (adhanEnabled && adhanMode != 'adhan' && prayerTime.isAfter(now)) {
+        await _scheduleAdhan(
+          prayer: prayer, id: base + 2,
+          title: isJumuah ? 'حان وقت صلاة الجمعة' : 'حان وقت ${prayer.arabicName}',
+          body: 'حيّ على الصلاة، حيّ على الفلاح.',
+          scheduledDate: prayerTime, payload: prayer.name);
+      }
+      final missedTime = prayerTime.add(Duration(minutes: afterMinutes));
+      if (missedTime.isAfter(now)) {
+        await _scheduleCheckIn(
+          id: base + 1,
+          title: isJumuah ? 'فاتتك صلاة الجمعة' : 'فاتتك صلاة ${prayer.arabicName}',
+          body: 'اضغط هنا لتجيب مباشرة: هل صليتها أم لا؟',
+          scheduledDate: missedTime,
+          payload: '$_missedPrefix${prayer.name}');
+      }
+    }
+
+    final riwaya =
+        prefs.getString('quran_last_riwaya') == 'warsh' ? 'warsh' : 'hafs';
+    final savedPage = prefs.getInt('quran_resume_page_${riwaya}') ??
+        prefs.getInt('quran_next_page_${riwaya}') ??
+        prefs.getInt('quran_${riwaya}_page') ?? 1;
+    final quranSlots = <int, (DateTime?, String, String)>{
+      offset + _quranFajrId: (
+        tomorrowTimes[Prayer.fajr]?.add(const Duration(minutes: 15)),
+        'قرآن الفجر — أقم', 'اجعل بعد الفجر وردًا ثابتًا من كتاب الله.'),
+      offset + _quranDhuhrId: (
+        tomorrowTimes[Prayer.dhuhr]?.add(const Duration(minutes: 30)),
+        'ورد القرآن — وقت الظهر',
+        'خذ دقائق هادئة لقراءة القرآن وأكمل من الصفحة $savedPage.'),
+      offset + _quranAsrId: (
+        tomorrowTimes[Prayer.asr]?.add(const Duration(minutes: 30)),
+        'ورد القرآن — وقت العصر', 'تذكير لطيف لقراءة ما تيسر من القرآن غدًا.'),
+      offset + _quranMaghribId: (
+        tomorrowTimes[Prayer.maghrib]?.add(const Duration(minutes: 30)),
+        'ورد القرآن — بعد المغرب', 'قبل أن ينتهي الغد، افتح القرآن وأكمل وردك.'),
+    };
+    for (final entry in quranSlots.entries) {
+      final scheduled = entry.value.$1;
+      if (scheduled == null || !scheduled.isAfter(now)) continue;
+      await _scheduleExact(
+        id: entry.key, title: entry.value.$2, body: entry.value.$3,
+        scheduledDate: scheduled, payload: '$_quranPrefix$savedPage',
+        details: _reminderDetails(
+          channelId: 'aqim_quran_reading_$_channelVersion',
+          channelName: 'قراءة القرآن',
+          description: 'تذكيرات يومية متفرقة لقراءة القرآن الكريم'));
+    }
+    final witr = tomorrowTimes[Prayer.isha]?.add(const Duration(minutes: 5));
+    if (witr != null && witr.isAfter(now)) {
+      await _scheduleExact(
+        id: offset + _witrId, title: 'الشفع والوتر',
+        body: 'بعد صلاة العشاء، حان وقت صلاة الشفع والوتر بإذن الله.',
+        scheduledDate: witr,
+        payload: '$_witrPrefix${witr.toIso8601String()}',
+        details: _reminderDetails(
+          channelId: 'aqim_witr_$_channelVersion',
+          channelName: 'الشفع والوتر',
+          description: 'تذكير بعد صلاة العشاء بخمس دقائق بصلاة الشفع والوتر'));
+    }
   }
 
   Future<void> _scheduleReligiousEvents() async {

@@ -302,10 +302,10 @@ class NotificationService {
     await _scheduleQuranReminders(realTimes, savedPage);
     await _scheduleShafWitrReminder(realTimes[Prayer.isha]);
     await _scheduleReligiousEvents();
-    await _scheduleTomorrowSafety(realTimes);
+    await _scheduleTomorrowSafety(realTimes, beforeMinutes, afterMinutes, adhanEnabled);
   }
 
-  Future<void> _scheduleTomorrowSafety(Map<Prayer, DateTime> _) async {
+  Future<void> _scheduleTomorrowSafety(Map<Prayer, DateTime> _, int beforeMinutes, int afterMinutes, bool adhanEnabled) async {
     final prefs = await SharedPreferences.getInstance();
     final lat = prefs.getDouble('last_lat');
     final lng = prefs.getDouble('last_lng');
@@ -320,7 +320,6 @@ class NotificationService {
     final prePrayerEnabled = prefs.getBool('pre_prayer_enabled') ?? true;
     final selectedPrePrayers = (prefs.getStringList('pre_prayer_prayers') ??
             Prayer.values.map((p) => p.name).toList()).toSet();
-    final adhanMode = prefs.getString('adhan_alert_mode') ?? 'adhan';
 
     for (final entry in tomorrowTimes.entries) {
       final prayer = entry.key;
@@ -342,7 +341,7 @@ class NotificationService {
             payload: prayer.name);
         }
       }
-      if (adhanEnabled && adhanMode != 'adhan' && prayerTime.isAfter(now)) {
+      if (adhanEnabled && prayerTime.isAfter(now)) {
         await _scheduleAdhan(
           prayer: prayer, id: base + 2,
           title: isJumuah ? 'حان وقت صلاة الجمعة' : 'حان وقت ${prayer.arabicName}',

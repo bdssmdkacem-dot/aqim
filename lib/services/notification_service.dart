@@ -305,7 +305,7 @@ class NotificationService {
     await _scheduleTomorrowSafety(realTimes);
   }
 
-  Future<void> _scheduleTomorrowSafety(Map<Prayer, DateTime> todayTimes) async {
+  Future<void> _scheduleTomorrowSafety(Map<Prayer, DateTime> _) async {
     final prefs = await SharedPreferences.getInstance();
     final lat = prefs.getDouble('last_lat');
     final lng = prefs.getDouble('last_lng');
@@ -320,7 +320,6 @@ class NotificationService {
     final prePrayerEnabled = prefs.getBool('pre_prayer_enabled') ?? true;
     final selectedPrePrayers = (prefs.getStringList('pre_prayer_prayers') ??
             Prayer.values.map((p) => p.name).toList()).toSet();
-    final preMode = prefs.getString('pre_prayer_alert_mode') ?? 'alarm';
     final adhanMode = prefs.getString('adhan_alert_mode') ?? 'adhan';
 
     for (final entry in tomorrowTimes.entries) {

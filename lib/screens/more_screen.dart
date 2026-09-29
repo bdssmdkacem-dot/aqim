@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import 'nearby_mosques_screen.dart';
 import 'prayer_guide_screen.dart';
 import 'qibla_screen.dart';
+import 'quran_audio_screen.dart';
 import 'week_report_screen.dart';
 
 class MoreScreen extends StatefulWidget {
@@ -67,6 +68,12 @@ class _MoreScreenState extends State<MoreScreen> {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const WeekReportScreen()));
                 }),
+            _MenuTile(
+                icon: Icons.headphones_rounded,
+                title: 'الاستماع إلى القرآن',
+                subtitle: '17 قارئًا • حفص وورش',
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const QuranAudioScreen()))),
             _MenuTile(
                 icon: Icons.family_restroom_rounded,
                 title: 'شارك التطبيق مع عائلتك',

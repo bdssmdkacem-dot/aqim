@@ -48,12 +48,12 @@ class QuranAudioService {
     required QuranReciter reciter,
     required int surah,
   }) async {
-    final key = '\${reciter.moshafId}:\$surah';
+    final key = '\${reciter.id}:\$surah';
     final cached = _timingCache[key];
     if (cached != null) return cached;
 
     final uri = Uri.parse(
-      'https://mp3quran.net/api/v3/ayat_timing?surah=\$surah&read=\${reciter.moshafId}',
+      'https://mp3quran.net/api/v3/ayat_timing?surah=\$surah&read=\${reciter.id}',
     );
     final response = await http.get(uri);
     if (response.statusCode != 200) throw Exception('تعذر تحميل توقيتات الآيات');

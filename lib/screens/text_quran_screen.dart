@@ -193,6 +193,12 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
       if (timing != null && audioState == PlayerState.playing) {
         await audioPlayer.seek(Duration(milliseconds: timing.startTime));
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تشغيل صوت القارئ: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => audioLoading = false);
     }
@@ -800,7 +806,8 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
               ),
             ),
           InkWell(
-            onTap: () => _tafsir(verse),
+            onTap: () => _playAyah(verse),
+            onLongPress: () => _tafsir(verse),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 7),
               child: RichText(

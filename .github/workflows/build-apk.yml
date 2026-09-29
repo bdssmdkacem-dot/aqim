@@ -156,9 +156,60 @@ jobs:
           storeFile=app/upload-keystore.jks
           EOF
           echo "Android release keystore restored at android/app/upload-keystore.jks."
+      - name: Verify release keystore certificate
+        env:
+          AQIM_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          AQIM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          EXPECTED_SHA1="03:E1:62:FC:E3:CA:17:05:83:B8:E3:E7:8D:BF:09:D9:0D:29:3A:4E"
+          KEYSTORE="android/app/upload-keystore.jks"
+          test -s "$KEYSTORE"
+          ACTUAL_SHA1="$(
+            keytool -list -v -keystore "$KEYSTORE" -storepass "$AQIM_KEYSTORE_PASSWORD" -alias "$AQIM_KEY_ALIAS" |
+            awk -F': ' '/^[[:space:]]*SHA1: / {print $2; exit}'
+          )"
+          if [ -z "$ACTUAL_SHA1" ]; then
+            echo "Could not extract SHA-1 from release keystore."
+            exit 1
+          fi
+          echo "Release keystore SHA-1: $ACTUAL_SHA1"
+          if [ "$ACTUAL_SHA1" != "$EXPECTED_SHA1" ]; then
+            echo "ERROR: release keystore SHA-1 does not match the required Play certificate."
+            echo "Expected: $EXPECTED_SHA1"
+            echo "Actual:   $ACTUAL_SHA1"
+            exit 1
+          fi
+          echo "Release keystore certificate matches the required Play SHA-1."
 
       - name: Build release AAB
         run: flutter build appbundle --release
+
+      - name: Verify AAB certificate
+        env:
+          AQIM_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          AQIM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          EXPECTED_SHA1="03:E1:62:FC:E3:CA:17:05:83:B8:E3:E7:8D:BF:09:D9:0D:29:3A:4E"
+          AAB="build/app/outputs/bundle/release/app-release.aab"
+          test -s "$AAB"
+          ACTUAL_AAB_SHA1="$(
+            keytool -printcert -jarfile "$AAB" |
+            awk -F': ' '/^[[:space:]]*SHA1: / {print $2; exit}'
+          )"
+          if [ -z "$ACTUAL_AAB_SHA1" ]; then
+            echo "Could not extract SHA-1 from release AAB."
+            exit 1
+          fi
+          echo "Release AAB SHA-1: $ACTUAL_AAB_SHA1"
+          if [ "$ACTUAL_AAB_SHA1" != "$EXPECTED_SHA1" ]; then
+            echo "ERROR: AAB certificate does not match the required Play SHA-1."
+            echo "Expected: $EXPECTED_SHA1"
+            echo "Actual:   $ACTUAL_AAB_SHA1"
+            exit 1
+          fi
+          echo "Release AAB certificate matches the required Play SHA-1."
 
       - name: Build release APK
         run: flutter build apk --release

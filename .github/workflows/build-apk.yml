@@ -162,7 +162,7 @@ jobs:
           AQIM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           set -euo pipefail
-          EXPECTED_SHA1="03:E1:62:FC:E3:CA:17:05:83:B8:E3:E7:8D:BF:09:D9:0D:29:3A:4E"
+          EXPECTED_SHA1="2E:49:21:FC:3C:99:26:48:17:AE:D7:26:DC:CC:B5:4C:51:2B:E7:D8"
           KEYSTORE="android/app/upload-keystore.jks"
           test -s "$KEYSTORE"
           ACTUAL_SHA1="$(
@@ -191,7 +191,7 @@ jobs:
           AQIM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           set -euo pipefail
-          EXPECTED_SHA1="03:E1:62:FC:E3:CA:17:05:83:B8:E3:E7:8D:BF:09:D9:0D:29:3A:4E"
+          EXPECTED_SHA1="2E:49:21:FC:3C:99:26:48:17:AE:D7:26:DC:CC:B5:4C:51:2B:E7:D8"
           AAB="build/app/outputs/bundle/release/app-release.aab"
           test -s "$AAB"
           ACTUAL_AAB_SHA1="$(

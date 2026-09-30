@@ -43,12 +43,94 @@ class QuranAudioService {
     QuranReciter(id:80,moshafId:80,name:'عمر القزابري',nameEn:'Omar Al-Qazabri',riwaya:'ورش عن نافع',style:'مرتل',surahTotal:114,server:'https://server9.mp3quran.net/omar_warsh/'),
   ];
   final Map<String, List<QuranAyahTiming>> _timingCache = {};
+  Future<List<Map<String, dynamic>>>? _timingReadsFuture;
+
+  Future<List<Map<String, dynamic>>> _timingReads() =>
+      _timingReadsFuture ??= _fetchTimingReads();
+
+  Future<List<Map<String, dynamic>>> _fetchTimingReads() async {
+    final response = await http.get(Uri.parse(
+      'https://mp3quran.net/api/v3/ayat_timing/reads',
+    ));
+    if (response.statusCode != 200) {
+      throw Exception('تعذر تحميل قائمة قراءات التوقيت');
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) return const [];
+    return decoded
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList(growable: false);
+  }
+
+  String _normalizeUrl(String value) => value.trim().replaceFirst(RegExp(r'/+
+    final cached = _timingCache[key];
+    if (cached != null) return cached;
+
+    final timingReadId = await _resolveTimingReadId(reciter);
+    final uri = Uri.parse(
+      'https://mp3quran.net/api/v3/ayat_timing?surah=$surah&read=$timingReadId',
+    );
+    final response = await http.get(uri);
+    if (response.statusCode != 200) throw Exception('تعذر تحميل توقيتات الآيات');
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List) return const [];
+    final result = decoded.whereType<Map>().map((item) => QuranAyahTiming(
+      ayah: (item['ayah'] as num?)?.toInt() ?? 0,
+      startTime: (item['start_time'] as num?)?.toInt() ?? 0,
+      endTime: (item['end_time'] as num?)?.toInt() ?? 0,
+    )).where((item) => item.ayah > 0 && item.endTime > item.startTime).toList();
+    _timingCache[key] = result;
+    return result;
+  }
+
+  Future<bool> openLatestSource(QuranReciter r) async {
+    final u=r.latestSourceUrl;
+    if(u==null) return false;
+    return launchUrl(Uri.parse(u),mode:LaunchMode.externalApplication);
+  }
+}
+), '');
+
+  Future<int> _resolveTimingReadId(QuranReciter reciter) async {
+    try {
+      final reads = await _timingReads();
+      final server = _normalizeUrl(reciter.server);
+
+      // Prefer the exact audio folder + selected riwaya. This avoids using
+      // another timing map when a reciter has more than one moshaf/read.
+      final byFolder = reads.where((item) {
+        final rewaya = item['rewaya']?.toString().trim();
+        final folder = item['folder_url']?.toString();
+        return rewaya == reciter.riwaya &&
+            folder != null &&
+            _normalizeUrl(folder) == server;
+      }).firstOrNull;
+      if (byFolder != null) {
+        final id = (byFolder['id'] as num?)?.toInt();
+        if (id != null && id > 0) return id;
+      }
+
+      final byName = reads.where((item) {
+        final name = item['name']?.toString().trim();
+        final rewaya = item['rewaya']?.toString().trim();
+        return name == reciter.name.trim() && rewaya == reciter.riwaya;
+      }).firstOrNull;
+      if (byName != null) {
+        final id = (byName['id'] as num?)?.toInt();
+        if (id != null && id > 0) return id;
+      }
+    } catch (_) {
+      // Keep the bundled moshaf ID as a safe offline/API fallback.
+    }
+    return reciter.moshafId;
+  }
 
   Future<List<QuranAyahTiming>> fetchAyahTimings({
     required QuranReciter reciter,
     required int surah,
   }) async {
-    final key = '${reciter.id}:$surah';
+    final key = '${reciter.id}:${reciter.riwaya}:$surah';
     final cached = _timingCache[key];
     if (cached != null) return cached;
 

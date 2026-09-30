@@ -53,7 +53,7 @@ class QuranAudioService {
     if (cached != null) return cached;
 
     final uri = Uri.parse(
-      'https://mp3quran.net/api/v3/ayat_timing?surah=$surah&read=${reciter.id}',
+      'https://mp3quran.net/api/v3/ayat_timing?surah=$surah&read=${reciter.moshafId}',
     );
     final response = await http.get(uri);
     if (response.statusCode != 200) throw Exception('تعذر تحميل توقيتات الآيات');

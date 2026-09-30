@@ -63,7 +63,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
     audioPlayer.onPositionChanged.listen((position) {
       if (mounted) {
         setState(() => audioPosition = position);
-        _advanceAyahIfNeeded(position);
+        _syncAudioToPosition(position);
       }
     });
     audioPlayer.onDurationChanged.listen((duration) {
@@ -129,27 +129,24 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
   }
 
   Future<void> _playAyah(QuranVerse verse) async {
-    setState(() => audioLoading = true);
+    if (audioLoading) return;
+    if (mounted) {
+      setState(() {
+        audioLoading = true;
+        audioSurah = verse.surahNumber;
+        audioCurrentAyah = verse.numberInSurah;
+      });
+    }
     try {
-      // Start the MP3 first. Timing data is optional and must never block audio.
       await audioPlayer.play(
         UrlSource(audioReciter.audioUrl(verse.surahNumber)),
       );
-      if (mounted) {
-        setState(() {
-          audioSurah = verse.surahNumber;
-          audioCurrentAyah = verse.numberInSurah;
-        });
-      }
-
       final timings = await _timingsFor(verse.surahNumber);
       final timing = timings
           .where((t) => t.ayah == verse.numberInSurah)
           .firstOrNull;
-      if (timing != null && audioState == PlayerState.playing) {
-        await audioPlayer.seek(
-          Duration(milliseconds: timing.startTime),
-        );
+      if (timing != null) {
+        await audioPlayer.seek(Duration(milliseconds: timing.startTime));
       }
     } catch (e) {
       if (mounted) {
@@ -165,82 +162,110 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
   Future<void> _playCurrentAudio() async {
     final data = _data(page);
     if (data == null || data.verses.isEmpty) return;
+
     if (audioState == PlayerState.playing) {
       await audioPlayer.pause();
       return;
     }
-    if (audioMode == QuranPlaybackMode.ayah) {
-      await _playAyah(data.verses.first);
+    if (audioState == PlayerState.paused) {
+      await audioPlayer.resume();
       return;
     }
-    final firstVerse = data.verses.first;
-    final surahNumber = firstVerse.surahNumber;
-    setState(() => audioLoading = true);
-    try {
-      // Start the full surah immediately; timing is only used for positioning.
-      await audioPlayer.play(UrlSource(audioReciter.audioUrl(surahNumber)));
-      if (mounted) {
-        setState(() {
-          audioSurah = surahNumber;
-          audioCurrentAyah = firstVerse.numberInSurah;
-        });
-      }
 
-      final timings = await _timingsFor(surahNumber);
-      final timing = timings
-          .where((t) => t.ayah == firstVerse.numberInSurah)
-          .firstOrNull;
-      if (timing != null && audioState == PlayerState.playing) {
-        await audioPlayer.seek(Duration(milliseconds: timing.startTime));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر تشغيل صوت القارئ: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => audioLoading = false);
+    await _playAyah(data.verses.first);
+  }
+
+  Future<void> _syncAudioToPosition(Duration position) async {
+    if (audioSurah == null || audioTimings.isEmpty || audioAdvancing) return;
+
+    final timing = audioTimings.firstWhere(
+      (t) => position.inMilliseconds >= t.startTime &&
+          position.inMilliseconds < t.endTime,
+      orElse: () => const QuranAyahTiming(ayah: 0, startTime: 0, endTime: 0),
+    );
+    if (timing.ayah <= 0) return;
+
+    final changed = timing.ayah != audioCurrentAyah;
+    if (changed && mounted) {
+      setState(() => audioCurrentAyah = timing.ayah);
+    }
+    if (changed) {
+      await _moveToAudioAyahPage(audioSurah!, timing.ayah);
     }
   }
 
-  Future<void> _advanceAyahIfNeeded(Duration position) async {
-    if (audioMode != QuranPlaybackMode.ayah ||
-        audioCurrentAyah == null ||
-        audioTimings.isEmpty ||
-        audioAdvancing) return;
-    final current = audioTimings.where((t) => t.ayah == audioCurrentAyah).firstOrNull;
-    if (current == null || position.inMilliseconds < current.endTime - 120) return;
-    final next = audioTimings.where((t) => t.ayah == audioCurrentAyah! + 1).firstOrNull;
-    if (next == null) return;
-    audioAdvancing = true;
-    try {
-      final currentPage = _data(page);
-      final visible = currentPage?.verses
-          .where((v) => v.surahNumber == audioSurah)
-          .toList() ?? const <QuranVerse>[];
-      final lastVisibleAyah = visible.isEmpty
-          ? 0
-          : visible.map((v) => v.numberInSurah).reduce((a, b) => a > b ? a : b);
-      if (lastVisibleAyah > 0 && next.ayah > lastVisibleAyah && page < pages) {
-        final nextPageNumber = page + 1;
-        await _load(nextPageNumber);
-        if (_data(nextPageNumber)?.verses.any((v) =>
-                v.surahNumber == audioSurah && v.numberInSurah == next.ayah) ?? false) {
-          audioChangingPage = true;
-          try {
-            controller.jumpToPage(nextPageNumber - 1);
-            if (mounted) setState(() => page = nextPageNumber);
-            await _save();
-          } finally {
-            audioChangingPage = false;
-          }
-        }
+  Future<void> _moveToAudioAyahPage(int surah, int ayah) async {
+    if (audioChangingPage) return;
+
+    var targetPage = page;
+    for (final candidatePage in <int>[page, page + 1, page - 1]) {
+      if (candidatePage < 1 || candidatePage > pages) continue;
+      if (_data(candidatePage) == null) await _load(candidatePage);
+      final found = _data(candidatePage)?.verses.where(
+        (v) => v.surahNumber == surah && v.numberInSurah == ayah,
+      ).firstOrNull;
+      if (found != null) {
+        targetPage = candidatePage;
+        break;
       }
-      await audioPlayer.seek(Duration(milliseconds: next.startTime));
-      if (mounted) setState(() => audioCurrentAyah = next.ayah);
+    }
+
+    if (targetPage == page || !mounted) return;
+
+    audioChangingPage = true;
+    try {
+      controller.jumpToPage(targetPage - 1);
+      setState(() => page = targetPage);
+      await _save();
     } finally {
-      audioAdvancing = false;
+      audioChangingPage = false;
+    }
+  }
+
+  Future<void> _playAdjacentAyah(int delta) async {
+    if (audioLoading) return;
+
+    final surah = audioSurah;
+    final current = audioCurrentAyah;
+    if (surah == null || current == null) {
+      final data = _data(page);
+      if (data != null && data.verses.isNotEmpty) {
+        await _playAyah(delta > 0 ? data.verses.first : data.verses.last);
+      }
+      return;
+    }
+
+    QuranVerse? target;
+    final currentData = _data(page);
+    target = currentData?.verses.where(
+      (v) => v.surahNumber == surah && v.numberInSurah == current + delta,
+    ).firstOrNull;
+
+    if (target == null) {
+      final candidates = <int>[page + delta.sign, page - delta.sign];
+      for (final candidatePage in candidates) {
+        if (candidatePage < 1 || candidatePage > pages) continue;
+        if (_data(candidatePage) == null) await _load(candidatePage);
+        target = _data(candidatePage)?.verses.where(
+          (v) => v.surahNumber == surah && v.numberInSurah == current + delta,
+        ).firstOrNull;
+        if (target != null) break;
+      }
+    }
+
+    if (target != null) {
+      await _playAyah(target);
+      return;
+    }
+
+    final timings = await _timingsFor(surah);
+    final targetAyah = current + delta;
+    final timing = timings.where((t) => t.ayah == targetAyah).firstOrNull;
+    if (timing != null) {
+      await audioPlayer.play(UrlSource(audioReciter.audioUrl(surah)));
+      await audioPlayer.seek(Duration(milliseconds: timing.startTime));
+      if (mounted) setState(() => audioCurrentAyah = targetAyah);
+      await _moveToAudioAyahPage(surah, targetAyah);
     }
   }
 
@@ -391,7 +416,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
             IconButton(
               tooltip: 'الآية السابقة',
               onPressed: audioLoading ? null : () => _playAdjacentAyah(-1),
-              icon: const Icon(Icons.skip_previous_rounded,
+              icon: const Icon(Icons.arrow_forward_rounded,
                   color: AppColors.goldSoft, size: 24),
             ),
             IconButton(
@@ -414,7 +439,7 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
             IconButton(
               tooltip: 'الآية التالية',
               onPressed: audioLoading ? null : () => _playAdjacentAyah(1),
-              icon: const Icon(Icons.skip_next_rounded,
+              icon: const Icon(Icons.arrow_back_rounded,
                   color: AppColors.goldSoft, size: 24),
             ),
           ],
@@ -808,8 +833,18 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
           InkWell(
             onTap: () => _playAyah(verse),
             onLongPress: () => _tafsir(verse),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 7),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 6),
+              decoration: (audioSurah == verse.surahNumber &&
+                      audioCurrentAyah == verse.numberInSurah)
+                  ? BoxDecoration(
+                      color: AppColors.gold.withOpacity(.10),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: AppColors.gold.withOpacity(.45)),
+                    )
+                  : null,
               child: RichText(
                 textAlign: TextAlign.right,
                 textDirection: TextDirection.rtl,
@@ -932,25 +967,9 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
           itemCount: pages,
           onPageChanged: (i) async {
             page = i + 1;
-            if (audioChangingPage) {
-              if (mounted) setState(() {});
-              _load(page);
-              return;
-            }
-            if (audioState == PlayerState.playing || audioState == PlayerState.paused) {
-              await audioPlayer.stop();
-            }
-            if (mounted) {
-              setState(() {
-                audioCurrentAyah = null;
-                audioSurah = null;
-                audioTimings = const [];
-                audioPosition = Duration.zero;
-                audioDuration = Duration.zero;
-              });
-            }
-            _load(page);
-            _save();
+            if (mounted) setState(() {});
+            await _load(page);
+            await _save();
           },
           itemBuilder: (_, i) {
             final data = _data(i + 1);

@@ -270,6 +270,9 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
   }
 
   Future<void> _showAudioReciters() async {
+    final available = QuranAudioService.reciters
+        .where((r) => r.riwaya == label)
+        .toList(growable: false);
     final selected = await showModalBottomSheet<QuranReciter>(
       context: context,
       backgroundColor: AppColors.surfaceDark,
@@ -292,9 +295,9 @@ class _TextQuranScreenState extends State<TextQuranScreen> {
                 ),
                 Expanded(
                   child: ListView.builder(
-                    itemCount: QuranAudioService.reciters.length,
+                    itemCount: available.length,
                     itemBuilder: (_, i) {
-                      final r = QuranAudioService.reciters[i];
+                      final r = available[i];
                       final selected = r.id == audioReciter.id;
                       return ListTile(
                         leading: Icon(

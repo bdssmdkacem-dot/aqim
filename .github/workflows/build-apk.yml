@@ -60,6 +60,14 @@ jobs:
       - name: Flutter Doctor
         run: flutter doctor -v
 
+      - name: Install audio validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg
+
+      - name: Verify bundled prayer and adhkar audio
+        run: python3 scripts/verify_audio_assets.py
+
       - name: Install dependencies
         run: flutter pub get
 

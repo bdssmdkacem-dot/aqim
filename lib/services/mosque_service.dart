@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
@@ -24,7 +25,12 @@ class MosqueInfo {
 }
 
 class MosqueService {
-  static const String _endpoint = "https://overpass-api.de/api/interpreter";
+  // Keep multiple public Overpass instances so a single unavailable server
+  // does not make the nearby-mosques feature fail.
+  static const List<String> _endpoints = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+  ];
 
   static Future<List<MosqueInfo>?> fetchNearby({
     required double latitude,
@@ -32,82 +38,87 @@ class MosqueService {
     double radiusMeters = 3000,
   }) async {
     final query = """
-[out:json][timeout:25];
+[out:json][timeout:20];
 (
-node["amenity"="place_of_worship"]["religion"="muslim"](around:$radiusMeters,$latitude,$longitude);
-way["amenity"="place_of_worship"]["religion"="muslim"](around:$radiusMeters,$latitude,$longitude);
-relation["amenity"="place_of_worship"]["religion"="muslim"](around:$radiusMeters,$latitude,$longitude);
+  nwr["amenity"="place_of_worship"]["religion"="muslim"](around:$radiusMeters,$latitude,$longitude);
+  nwr["amenity"="mosque"](around:$radiusMeters,$latitude,$longitude);
+  nwr["building"="mosque"](around:$radiusMeters,$latitude,$longitude);
 );
 out center;
 """;
 
-    try {
-      final response = await http.post(
-        Uri.parse(_endpoint),
-        headers: {
-          "User-Agent": "Aqim/1.0",
-          "Accept": "application/json",
-        },
-        body: {"data": query},
-      ).timeout(const Duration(seconds: 25));
+    for (final endpoint in _endpoints) {
+      try {
+        final response = await http
+            .post(
+              Uri.parse(endpoint),
+              headers: {
+                "User-Agent": "Aqim/1.0",
+                "Accept": "application/json",
+              },
+              body: {"data": query},
+            )
+            .timeout(const Duration(seconds: 25));
 
-      if (response.statusCode != 200) {
-        print(response.statusCode);
-        print(response.body);
-        return null;
-      }
+        if (response.statusCode != 200) continue;
 
-      final json = jsonDecode(response.body);
+        final decoded = jsonDecode(response.body);
+        if (decoded is! Map<String, dynamic>) continue;
 
-      final elements = json["elements"] as List?;
+        final elements = decoded["elements"];
+        if (elements is! List) continue;
 
-      if (elements == null) {
-        return [];
-      }
+        final mosques = <MosqueInfo>[];
+        final seen = <String>{};
 
-      List<MosqueInfo> mosques = [];
+        for (final element in elements) {
+          if (element is! Map) continue;
 
-      for (final e in elements) {
-        double? lat;
-        double? lon;
+          final coordinates = element["center"] is Map
+              ? element["center"] as Map
+              : element;
+          final rawLatitude = coordinates["lat"];
+          final rawLongitude = coordinates["lon"];
+          if (rawLatitude is! num || rawLongitude is! num) continue;
 
-        if (e["lat"] != null) {
-          lat = (e["lat"] as num).toDouble();
-          lon = (e["lon"] as num).toDouble();
-        } else if (e["center"] != null) {
-          lat = (e["center"]["lat"] as num).toDouble();
-          lon = (e["center"]["lon"] as num).toDouble();
+          final mosqueLatitude = rawLatitude.toDouble();
+          final mosqueLongitude = rawLongitude.toDouble();
+          final distance = Geolocator.distanceBetween(
+            latitude,
+            longitude,
+            mosqueLatitude,
+            mosqueLongitude,
+          );
+          if (distance > radiusMeters) continue;
+
+          final id = element["id"]?.toString();
+          if (id != null && !seen.add(id)) continue;
+
+          final tags = element["tags"];
+          final rawName = tags is Map ? tags["name"] : null;
+          final name = rawName is String && rawName.trim().isNotEmpty
+              ? rawName.trim()
+              : "مسجد";
+
+          mosques.add(
+            MosqueInfo(
+              name: name,
+              latitude: mosqueLatitude,
+              longitude: mosqueLongitude,
+              distanceMeters: distance,
+            ),
+          );
         }
 
-        if (lat == null || lon == null) continue;
-
-        final tags = e["tags"] ?? {};
-
-        final distance = Geolocator.distanceBetween(
-          latitude,
-          longitude,
-          lat,
-          lon,
+        mosques.sort(
+          (a, b) => a.distanceMeters.compareTo(b.distanceMeters),
         );
-
-        mosques.add(
-          MosqueInfo(
-            name: tags["name"] ?? "مسجد",
-            latitude: lat,
-            longitude: lon,
-            distanceMeters: distance,
-          ),
-        );
+        return mosques;
+      } catch (_) {
+        // Try the next Overpass instance before reporting a network failure.
       }
-
-      mosques.sort(
-        (a, b) => a.distanceMeters.compareTo(b.distanceMeters),
-      );
-
-      return mosques;
-    } catch (e) {
-      print(e);
-      return null;
     }
+
+    return null;
   }
 }

@@ -89,10 +89,9 @@ out center;
             mosqueLatitude,
             mosqueLongitude,
           );
-          if (distance > radiusMeters) continue;
-
           final id = element["id"]?.toString();
-          if (id != null && !seen.add(id)) continue;
+          final type = element["type"]?.toString() ?? "element";
+          if (id != null && !seen.add("$type:$id")) continue;
 
           final tags = element["tags"];
           final rawName = tags is Map ? tags["name"] : null;
